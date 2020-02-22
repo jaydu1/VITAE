@@ -21,6 +21,10 @@ n_states = int(NUM_CLUSTER*(NUM_CLUSTER+1)/2)
 A, B = np.nonzero(np.triu(np.ones(NUM_CLUSTER)))
 cluster_center = [int((NUM_CLUSTER+(1-i)/2)*i) for i in range(NUM_CLUSTER)]
 
+
+'''
+Trajectory
+'''
 # -----------------------------------------------------------------------
 # Scoring edges
 # -----------------------------------------------------------------------
@@ -109,3 +113,84 @@ update_data('value',NUM_CLUSTER-1,NUM_CLUSTER-1)
 
 curdoc().add_root(row(slider, plot))
 curdoc().title = "Sliders"
+
+
+
+'''
+Pseudotime
+'''
+# -----------------------------------------------------------------------
+# Interactive plot
+# -----------------------------------------------------------------------
+graph = np.zeros((NUM_CLUSTER,NUM_CLUSTER), dtype=int)
+select_edges = edges[np.argsort(edges_score)[-4:]]
+graph[A[select_edges], B[select_edges]] = 1
+graph = csr_matrix(graph)
+
+names = np.arange(NUM_CLUSTER)
+
+n_components, labels = connected_components(csgraph=graph, directed=False, return_labels=True)
+print(labels)
+
+
+# -----------------------------------------------------------------------
+# Prune Graph
+# -----------------------------------------------------------------------
+Tcsr = minimum_spanning_tree(graph)
+mst_graph = Tcsr + Tcsr.T
+mst_graph = mst_graph.astype(int)
+
+
+# -----------------------------------------------------------------------
+# Build Milestone Network for Each Component
+# -----------------------------------------------------------------------
+def build_df_subgraph(subgraph, indexes, init_node):
+    '''
+    Args:
+        subgraph     - a connected component of the graph, csr_matrix
+        indexes      - indexes of each nodes in the original graphes
+        init_node    - root node
+    Returns:
+        df_subgraph  - dataframe of milestone network
+    '''
+
+    _n_nodes = len(indexes)
+    (idx, idy) = subgraph.nonzero()
+    
+    if subgraph.getnnz(0)[0]==0:
+        raise Exception('Singular node.')
+    else:
+        # Dijkstra's Algorithm
+        unvisited = {node: {'parent':None,
+                           'distance':np.inf} for node in np.arange(_n_nodes)}
+        current = init_node
+        currentDistance = 0
+        unvisited[current]['distance'] = currentDistance
+
+        df_subgraph = pd.DataFrame(columns=['from', 'to', 'weight'])
+        while True:
+            for neighbour in idy[idx==current]:
+                distance = subgraph[current, neighbour]
+
+                if neighbour not in unvisited: continue
+                newDistance = currentDistance + distance
+                if unvisited[neighbour]['distance'] > newDistance:
+                    unvisited[neighbour]['distance'] = newDistance
+                    unvisited[neighbour]['parent'] = current
+
+            if len(unvisited)<_n_nodes:
+                df_subgraph = df_subgraph.append({'from':indexes[unvisited[current]['parent']],
+                                            'to':indexes[current],
+                                            'weight':unvisited[current]['distance']}, ignore_index=True)
+            del unvisited[current]
+            if not unvisited: break
+            current, currentDistance = sorted([(i[0],i[1]['distance']) for i in unvisited.items()],
+                                              key = lambda x: x[1])[0]
+    return df_subgraph
+
+df_subgraph = build_df_subgraph(mst_graph, np.arange(NUM_CLUSTER), 3)
+
+
+# -----------------------------------------------------------------------
+# Sort Points
+# -----------------------------------------------------------------------
