@@ -16,12 +16,19 @@ import matplotlib.pyplot as plt
 from model import VariationalAutoEncoder
 from utils import Early_Stopping
 
+def clear_session():
+    tf.keras.backend.clear_session()
+    return None
+
+def warp_dataset(X, X_normalized, Scale_factor, BATCH_SIZE):
+    train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, Scale_factor))
+    train_dataset = train_dataset.shuffle(buffer_size = X.shape[0]).batch(BATCH_SIZE)
+    return train_dataset
+
 
 # ---------------------------------------------------------------------------- #
 # Specify Parameters
 # ---------------------------------------------------------------------------- #
-tf.keras.backend.clear_session()
-
 # Hyperparamter
 BATCH_SIZE = 32
 NUM_EPOCH_PRE = 300
@@ -33,8 +40,7 @@ DIM_LATENT = 16
 DIM_ORIGIN = X.shape[1]
 
 # Load data and preprocess.
- train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, Scale_factor))
-train_dataset = train_dataset.shuffle(buffer_size=n).batch(BATCH_SIZE)
+
 
 vae = VariationalAutoEncoder(NUM_CLUSTER, DIM_ORIGIN, [128,32], DIM_LATENT,
                              data_type='non-UMI')
