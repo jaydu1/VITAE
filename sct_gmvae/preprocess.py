@@ -16,7 +16,7 @@ def normalization(x, K = 1e4):
     x_normalized = np.log(x/scale_factor + 1)
     print('max normailized value: ' + str(np.min(x_normalized)))
     print('max normailized value: ' + str(np.max(x_normalized)))
-    return x, scale_factor
+    return x_normalized, scale_factor
 
 
 def feature_select(x, gene_num = 2000):
@@ -80,7 +80,7 @@ def preprocess(x, grouping = None, K = 1e4, gene_num = 2000):
         print('Number of cells in each class: ')
         print(pd.value_counts(grouping))
     x = feature_select(x, gene_num)
-    x, scale_factor = normalization(x, K)
-    return x, scale_factor, label, le
+    x_normalized, scale_factor = normalization(x, K)
+    return x_normalized, x, scale_factor, label, le
 
 
