@@ -1,9 +1,8 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Layer, Dense, BatchNormalization
 import tensorflow.keras.backend as K
-
 import numpy as np
-import pandas as pd
+
 
 
 class Sampling(Layer):
@@ -12,7 +11,7 @@ class Sampling(Layer):
     Used in Encoder.
     """
     def call(self, z_mean, z_log_var):
-        epsilon = tf.random.normal(shape=tf.shape(z_mean))
+        epsilon = tf.random.normal(shape = tf.shape(z_mean))
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
         return z
@@ -28,14 +27,14 @@ class Encoder(Layer):
                        encoder expcept the latent layer.
           dim_latent  - dimension of latent layer.
         '''
-        super(Encoder, self).__init__(name=name, **kwargs)
-        self.dense_layers = [Dense(dim, activation='relu',
-                                          name='encoder_%i'%(i+1)) \
-                             for (i,dim) in enumerate(dimensions)]
+        super(Encoder, self).__init__(name = name, **kwargs)
+        self.dense_layers = [Dense(dim, activation = 'relu',
+                                          name = 'encoder_%i'%(i+1)) \
+                             for (i, dim) in enumerate(dimensions)]
         self.batch_norm_layers = [BatchNormalization() \
                                     for _ in range(len((dimensions)))]
-        self.latent_mean = Dense(dim_latent, name='latent_mean')
-        self.latent_log_var = Dense(dim_latent, name='latent_log_var')
+        self.latent_mean = Dense(dim_latent, name = 'latent_mean')
+        self.latent_log_var = Dense(dim_latent, name = 'latent_log_var')
         self.sampling = Sampling()
 
     def call(self, x):
@@ -61,29 +60,29 @@ class Decoder(Layer):
     Decoder, model p(x|z).
     '''
     def __init__(self, dimensions, dim_origin,
-                 data_type='UMI', name='decoder', **kwargs):
+                 data_type = 'UMI', name = 'decoder', **kwargs):
         '''
         Input:
             dimensions  - list of dimensions of layers in dense layers of
                                 decoder expcept the output layer.
             dim_origin  - dimension of output layer.
         '''
-        super(Decoder, self).__init__(name=name, **kwargs)
+        super(Decoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
-        self.dense_layers = [Dense(dim, activation='relu',
-                                          name='decoder_%i'%(i+1)) \
+        self.dense_layers = [Dense(dim, activation = 'relu',
+                                          name = 'decoder_%i'%(i+1)) \
                              for (i,dim) in enumerate(dimensions)]
         self.batch_norm_layers = [BatchNormalization() \
                                     for _ in range(len((dimensions)))]
-        self.log_lambda_z = Dense(dim_origin, name='log_lambda_z')
+        self.log_lambda_z = Dense(dim_origin, name = 'log_lambda_z')
                 
         # dispersion parameter
         self.log_r = tf.Variable(tf.zeros([1, dim_origin]),
-                                 constraint=lambda t: tf.clip_by_value(t,-30.,6.),
-                                 name="log_r")
+                                 constraint = lambda t: tf.clip_by_value(t,-30.,6.),
+                                 name = "log_r")
         
-        if self.data_type=='non-UMI':
-            self.phi = Dense(dim_origin, activation='sigmoid', name="phi")
+        if self.data_type == 'non-UMI':
+            self.phi = Dense(dim_origin, activation = 'sigmoid', name = "phi")
             
     def call(self, z):
         '''
@@ -110,7 +109,7 @@ class GMM(Layer):
 GMM layer.
 It contains parameters related to model assumptions of GMM.
 '''
-def __init__(self, n_clusters, dim_latent, M=100, name='GMM', **kwargs):
+def __init__(self, n_clusters, dim_latent, M = 100, name = 'GMM', **kwargs):
     '''
     Input:
       dim_latent   - dimension of latent layer.
@@ -135,16 +134,16 @@ def __init__(self, n_clusters, dim_latent, M=100, name='GMM', **kwargs):
     # Uniform random variable
     self.M = tf.convert_to_tensor(M, tf.int32)
     self.w =  tf.convert_to_tensor(
-        np.resize(np.arange(0,M)/M, (1, M)), tf.float32)
+        np.resize(np.arange(0, M)/M, (1, M)), tf.float32)
 
     # [pi_1, ... , pi_K] in R^(n_states)
     self.pi = tf.Variable(tf.ones([1, self.n_states]) / self.n_states,
-                            name='pi')
+                            name = 'pi')
     
     # [mu_1, ... , mu_K] in R^(dim_latent * n_clusters)
     self.mu = tf.Variable(tf.random.uniform([self.dim_latent, self.n_clusters],
-                                            minval=-1,maxval=1),
-                            name="mu")
+                                            minval = -1, maxval = 1),
+                            name = "mu")
             
     # [diag(Sigma_1), ... , diag(Sigma_K)] in R^(dim_latent * n_clusters)
     # self.Sigma = tf.Variable(tf.ones([self.dim_latent, self.n_clusters]),
@@ -213,29 +212,47 @@ def call(self, z, cluster=False, inference=False):
                             
         if inference:
             # p_c_x     -   predicted probability distribution
-            p_c_x = tf.math.reduce_logsumexp(log_p_zc_w, axis=2)
+            p_c_x = tf.math.reduce_logsumexp(log_p_zc_w, axis=2)/tf.expand_dims(tf.math.exp(logp_z), 1)
             # w         -   E(w|x)
-            w =  tf.squeeze(
+            w = tf.squeeze(
                     tf.tile(self.w, (batch_size,1)) *
-                    tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1))) /
+                    tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
                     tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
                     tf.cast(self.M, tf.float32)
                 )
             # var_w     -   Var(w|x)
-            var_w =  tf.squeeze(
+            var_w = tf.squeeze(
                         tf.square(tf.tile(self.w, (batch_size,1)) - w) *
-                        tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1))) /
+                        tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
                         tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
                         tf.cast(self.M, tf.float32)
                     )
             # c         -   predicted clusters
-            c = tf.math.argmax(
-                tf.math.reduce_logsumexp(log_p_zc_w, axis=2), axis=1)
+            c = tf.math.argmax(p_c_x, axis=1)
             c = tf.cast(c, 'int32')
             c = tf.where(w>0, c,
                          tf.gather(self.clusters_ind, tf.gather(self.A, c)))
             c = tf.where(w<1, c,
                          tf.gather(self.clusters_ind, tf.gather(self.B, c)))
+            
+            ####!!!here!!!!
+            # w|c         -   E(w|x,c)
+            wc = tf.squeeze(
+                    tf.tile(self.w, (batch_size,1)) *
+                    tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
+                    tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
+                    tf.cast(self.M, tf.float32)
+                )
+            # var_w|c     -   Var(w|x,c)
+            var_wc = tf.squeeze(
+                        tf.square(tf.tile(self.w, (batch_size,1)) - w) *
+                        tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
+                        tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
+                        tf.cast(self.M, tf.float32)
+                    )
+            ######!!!!!!
+
+
             # proj_z    -   projection of z to the segment of two clusters
             #               in the latent space
             proj_z = tf.transpose(
@@ -253,7 +270,7 @@ class VariationalAutoEncoder(tf.keras.Model):
 Combines the encoder, decoder and GMM into an end-to-end model for training.
 """
 def __init__(self, n_clusters, dim_origin, dimensions, dim_latent,
-             data_type='UMI', name='autoencoder', **kwargs):
+             data_type = 'UMI', name = 'autoencoder', **kwargs):
     '''
     Args:
         n_clusters  -   Number of clusters.
@@ -265,7 +282,7 @@ def __init__(self, n_clusters, dim_origin, dimensions, dim_latent,
                         'UMI' for negative binomial loss;
                         'non-UMI' for zero-inflated negative binomial loss.
     '''
-    super(VariationalAutoEncoder, self).__init__(name=name, **kwargs)
+    super(VariationalAutoEncoder, self).__init__(name = name, **kwargs)
     self.data_type = data_type
     self.dim_origin = dim_origin
     self.dim_latent = dim_latent
@@ -275,8 +292,8 @@ def __init__(self, n_clusters, dim_origin, dimensions, dim_latent,
     self.GMM = GMM(n_clusters, dim_latent)
     self.decoder = Decoder(dimensions[::-1], dim_origin, data_type)
 
-def call(self, x_normalized, x=None, scale_factor=1,
-         cluster=False, inference=False, pre_train=False):
+def call(self, x_normalized, x = None, scale_factor = 1,
+         cluster = False, inference = False, pre_train = False):
     # Feed forward through encoder, GMM layer and decoder.
     z_mean, z_log_var, z = self.encoder(x_normalized)
 
