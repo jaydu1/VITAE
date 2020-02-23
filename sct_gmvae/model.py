@@ -212,47 +212,57 @@ def call(self, z, cluster=False, inference=False):
                             
         if inference:
             # p_c_x     -   predicted probability distribution
-            p_c_x = tf.math.reduce_logsumexp(log_p_zc_w, axis=2)/tf.expand_dims(tf.math.exp(logp_z), 1)
-            # w         -   E(w|x)
-            w = tf.squeeze(
-                    tf.tile(self.w, (batch_size,1)) *
-                    tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
-                    tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
-                    tf.cast(self.M, tf.float32)
-                )
-            # var_w     -   Var(w|x)
-            var_w = tf.squeeze(
-                        tf.square(tf.tile(self.w, (batch_size,1)) - w) *
-                        tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
-                        tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
-                        tf.cast(self.M, tf.float32)
-                    )
+            p_c_x = tf.math.reduce_logsumexp(log_p_zc_w, axis=2)
+
             # c         -   predicted clusters
-            c = tf.math.argmax(p_c_x, axis=1)
+            c = tf.math.argmax(
+                tf.math.reduce_logsumexp(log_p_zc_w, axis=2), axis=1)
             c = tf.cast(c, 'int32')
-            c = tf.where(w>0, c,
-                         tf.gather(self.clusters_ind, tf.gather(self.A, c)))
-            c = tf.where(w<1, c,
-                         tf.gather(self.clusters_ind, tf.gather(self.B, c)))
-            
-            ####!!!here!!!!
-            # w|c         -   E(w|x,c)
-            wc = tf.squeeze(
+
+            # w         -   E(w|x)
+            w =  tf.reduce_sum(
                     tf.tile(self.w, (batch_size,1)) *
                     tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
                     tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
-                    tf.cast(self.M, tf.float32)
+                    tf.cast(self.M, tf.float32), axis=-1
                 )
-            # var_w|c     -   Var(w|x,c)
-            var_wc = tf.squeeze(
-                        tf.square(tf.tile(self.w, (batch_size,1)) - w) *
+            
+            # var_w     -   Var(w|x)
+            var_w =  tf.reduce_sum(
+                        tf.square(
+                            tf.tile(self.w, (batch_size,1)) -
+                            tf.expand_dims(w, -1)) *
                         tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
                         tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
-                        tf.cast(self.M, tf.float32)
+                        tf.cast(self.M, tf.float32), axis=-1
                     )
-            ######!!!!!!
+            # w|c       -   E(w|x,c)
+            map_log_p_zc_w = tf.gather_nd(log_p_zc_w,
+                                          list(zip(np.arange(batch_size),
+                                                   c.numpy())))
+            wc = tf.reduce_sum(
+                        tf.tile(self.w, (batch_size,1)) *
+                        tf.exp(map_log_p_zc_w -
+                            tf.math.reduce_logsumexp(
+                                map_log_p_zc_w, axis=1, keepdims=True)),
+                        axis=-1
+                    )
 
-
+            # var_w|c   -   Var(w|x,c)
+            var_wc = tf.reduce_sum(
+                        tf.square(tf.tile(self.w, (batch_size,1)) -
+                                  tf.expand_dims(wc, -1)) *
+                        tf.exp(map_log_p_zc_w -
+                           tf.math.reduce_logsumexp(
+                               map_log_p_zc_w, axis=1, keepdims=True)),
+                        axis=-1
+                    )
+            
+            # c = tf.where(w>0, c,
+            #              tf.gather(self.clusters_ind, tf.gather(self.A, c)))
+            # c = tf.where(w<1, c,
+            #              tf.gather(self.clusters_ind, tf.gather(self.B, c)))
+                  
             # proj_z    -   projection of z to the segment of two clusters
             #               in the latent space
             proj_z = tf.transpose(
@@ -260,7 +270,7 @@ def call(self, z, cluster=False, inference=False):
                 tf.expand_dims(w, 0) +
                 tf.gather(self.mu, tf.gather(self.B, c), axis=1) *
                 (1-tf.expand_dims(w, 0)))
-            return tf.nn.softmax(self.pi), self.mu, log_p_z, c, w, var_w, proj_z
+            return tf.nn.softmax(self.pi), self.mu, log_p_z, c, w, var_w, wc, var_wc, proj_z
         else:
             return tf.nn.softmax(self.pi), self.mu, log_p_z
 
