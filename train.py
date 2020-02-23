@@ -9,7 +9,6 @@ from sklearn.mixture import GaussianMixture
 
 import numpy as np
 import pandas as pd
-import math
 import umap
 
 import matplotlib.pyplot as plt
