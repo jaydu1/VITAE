@@ -24,7 +24,6 @@ class scTGMVAE():
 		data_type = 'UMI',
 		EARLY_STOPPING_PATIENCE = 10,
 		EARLY_STOPPING_TOLERANCE = 1e-3,
-		LEARING_RATE = 1e-3,
 		BATCH_SIZE = 32,
 		NUM_EPOCH_PRE = 300,
 		NUM_STEP_PER_EPOCH = self.X.shape[0]//BATCH_SIZE+1,
@@ -37,7 +36,6 @@ class scTGMVAE():
 		self.data_type = data_type
 		self.EARLY_STOPPING_PATIENCE = EARLY_STOPPING_PATIENCE
 		self.EARLY_STOPPING_TOLERANCE= EARLY_STOPPING_TOLERANCE
-		self.LEARING_RATE = LEARING_RATE
 		self.BATCH_SIZE = BATCH_SIZE
 		self.NUM_EPOCH_PRE = NUM_EPOCH_PRE
 		self.NUM_STEP_PER_EPOCH = NUM_STEP_PER_EPOCH
@@ -50,17 +48,37 @@ class scTGMVAE():
 			self.dimensions, 
 			self.dim_latent,
 			self.data_type)
-		self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, self.BATCH_SIZE)
+		self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, self.BATCH_SIZE, self.data_type)
 
-	def pre_train(self):
+	def pre_train(self, learning_rate = 1e-4):
 		train.clear_session()
-		pass
+		self.vae = train.pre_train(
+			self.train_dataset, self.vae, 
+			learining_rate, 
+			self.patience, 
+			self.tolerance, 
+			self.NUM_EPOCH_PRE, 
+			self.NUM_STEP_PER_EPOCH)
 
-	def train_together(self):
-		pass
+	def init_GMM_plot(self):
+		self.vae = train.init_GMM(self.vae, self.X_normalized, self.n_clusters)
+		train.plot_pre_train(self,vae, self.X_normalized)
 
-	def train(self):
-		pass
+	def train_together(self, learining_rate = 1e-4):
+		self.vae = train.trainTogether(
+			self.train_dataset, 
+			self.vae, 
+			learining_rate, 
+			self.EARLY_STOPPING_PATIENCE, 
+			self.EARLY_STOPPING_TOLERANCE, 
+			self.NUM_EPOCH, 
+			self.NUM_STEP_PER_EPOCH)
+
+	def train(self, pre_train_learning_rate = 1e-4, train_learning_rate = 1e-4):
+		self.pre_train(pre_train_learining_rate)
+		self.init_GMM_plot()
+		self.train_together(train_learning_rate)
+
 
 	def inference(self):
 		pass
