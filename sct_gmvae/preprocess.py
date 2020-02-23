@@ -2,58 +2,85 @@
 
 import numpy as np
 import pandas as pd
-import math
 import matplotlib.pyplot as plt
-
 import localreg
 from sklearn import preprocessing
 
-def normalization():
+def normalization(x, K = 1e4):
     """
-    LogNormalize that normalizes the feature expression measurements for each cell by the total expression, multiplies this by a size scale factor, and log-transforms the result.
+    Normalize the gene expression counts for each cell by the total expression counts, 
+    divide this by a size scale factor, which is determined by total counts and a constant K
+    then log-transforms the result.
     """
-
-    scale_factor = np.sum(x,axis=1, keepdims=True)/1e4
+    scale_factor = np.sum(x,axis=1, keepdims=True)/K
     x_normalized = np.log(x/scale_factor + 1)
-    print(np.min(x_normalized), np.max(x_normalized))
+    print('max normailized value: ' + str(np.min(x_normalized)))
+    print('max normailized value: ' + str(np.max(x_normalized)))
+    return x, scale_factor
 
-    return None
 
-
-def feature_select():
+def feature_select(x, gene_num = 2000):
     # https://www.biorxiv.org/content/biorxiv/early/2018/11/02/460147.full.pdf
     # Page 12-13: Data preprocessing - Feature selection for individual datasets
 
     # mean and variance of each gene of the unnormalized data
     mean, var = np.mean(x, axis=0), np.var(x, axis=0)
+    x = x[:, (mean > 0) & (var > 0)]
+    n, p = x.shape
+    mean, var = np.mean(x, axis=0), np.var(x, axis=0)
 
     # model log10(var)~log10(mean) by local fitting of polynomials of degree 2
-    fitted = localreg.localreg(np.log10(mean), np.log10(var),
-                               x0=None, degree=2, kernel=localreg.gaussian, frac=0.3)
-
+    fitted = localreg.localreg(np.log10(mean), np.log10(var), frac = 0.3,
+                               degree = 2, kernel = localreg.gaussian)
     # standardized feature
     z = (x - mean)/np.sqrt(10**fitted)
 
     # clipped the standardized features to remove outliers
-    z[z>np.sqrt(n)] = np.sqrt(n)
+    z = np.clip(z, -np.sqrt(n), np.sqrt(n))
+
     # the variance of standardized features across all cells represents a measure of
     # single cell dispersion after controlling for mean expression
     feature_score = np.var(z, axis=0)
-
-    return feature_score
     
-def plot_feature_score():
+    # feature selection
+    index = feature_score.argsort()[::-1][0:gene_num]
+
+    # plot scores
     plt.plot(np.log(np.sort(feature_score)))
-    quart_quantile = np.quantile(feature_score,0.45)
-    plt.hlines(np.log(quart_quantile), 1, p)
-    return None
+    threshold = feature_score[index[-1]]
+    plt.hlines(np.log(threshold), 1, p)
+    plt.show()
+    
+    return x[:,index]
+    
 
-
-def label_encoding():
-    y = grouping    
+def label_encoding(grouping):
+    # encode the class label by number (order of character)
     le = preprocessing.LabelEncoder()
     le.fit(np.unique(grouping))
     y = le.transform(grouping)
-    le.classes_
-    return None
+    return y, le
+
+
+def preprocess(x, grouping = None, K = 1e4, gene_num = 2000):
+    '''
+    input 
+    x: raw count matrix
+    K: sum number related to scale_factor
+    gene_num: total number of genes to select
+    grouping: true labels
+    '''
+    if grouping is None:
+        import warnings
+        warnings.warn('No labels for cells!')
+        label = np.ones(len(x))
+        le = None
+    else:
+        label, le = label_encoding(grouping)
+        print('Number of cells in each class: ')
+        print(pd.value_counts(grouping))
+    x = feature_select(x, gene_num)
+    x, scale_factor = normalization(x, K)
+    return x, scale_factor, label, le
+
 
