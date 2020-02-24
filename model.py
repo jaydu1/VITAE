@@ -270,7 +270,9 @@ class GMM(Layer):
                     tf.expand_dims(w, 0) +
                     tf.gather(self.mu, tf.gather(self.B, c), axis=1) *
                     (1-tf.expand_dims(w, 0)))
-                return tf.nn.softmax(self.pi), self.mu, log_p_z, c, w, var_w, wc, var_wc, proj_z
+                return (tf.nn.softmax(self.pi).numpy(), self.mu.numpy(), 
+                        log_p_z.numpy(), c.numpy(), w.numpy(), var_w.numpy(), 
+                        wc.numpy(), var_wc.numpy(), proj_z.numpy())
             else:
                 return tf.nn.softmax(self.pi), self.mu, log_p_z
 
@@ -279,14 +281,14 @@ class GMM(Layer):
         Args:
             c - Numpy array of indexes [1,*]
         '''
-        proj_c = tf.tile(tf.expand_dims(c, axis=0), (self.M,1)).T.flatten()
+        proj_c = np.tile(c, (self.M,1)).T.flatten()
         proj_z_M = tf.transpose(
                         tf.gather(self.mu, tf.gather(self.A, proj_c), axis=1) * 
                         tf.tile(self.w, (1,len(c))) + 
                         tf.gather(self.mu, tf.gather(self.B, proj_c), axis=1) * 
                         (1-tf.tile(self.w, (1,len(c))))
                     )
-        return proj_z
+        return proj_c, proj_z.numpy()
             
 class VariationalAutoEncoder(tf.keras.Model):
     """
