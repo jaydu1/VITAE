@@ -274,7 +274,20 @@ class GMM(Layer):
             else:
                 return tf.nn.softmax(self.pi), self.mu, log_p_z
 
-
+    def get_proj_z(self, c):
+        '''
+        Args:
+            c - Numpy array of indexes [1,*]
+        '''
+        proj_c = tf.tile(tf.expand_dims(c, axis=0), (self.M,1)).T.flatten()
+        proj_z_M = tf.transpose(
+                        tf.gather(self.mu, tf.gather(self.A, proj_c), axis=1) * 
+                        tf.tile(self.w, (1,len(c))) + 
+                        tf.gather(self.mu, tf.gather(self.B, proj_c), axis=1) * 
+                        (1-tf.tile(self.w, (1,len(c))))
+                    )
+        return proj_z
+            
 class VariationalAutoEncoder(tf.keras.Model):
     """
     Combines the encoder, decoder and GMM into an end-to-end model for training.
@@ -359,3 +372,10 @@ class VariationalAutoEncoder(tf.keras.Model):
                             )
             self.add_loss(E_qzx)
             return None
+    
+    def get_proj_z(self, c):
+        '''
+        Args:
+            c - Numpy array of indexes [1,*]
+        '''
+        return self.GMM.get_proj_z(c)
