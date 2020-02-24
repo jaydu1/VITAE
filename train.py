@@ -28,7 +28,7 @@ def warp_dataset(X, X_normalized, Scale_factor, BATCH_SIZE, data_type):
     return train_dataset
 
 
-def pre_train(train_dataset, vae, learining_rate, patience, tolerance, NUM_EPOCH_PRE, NUM_STEP_PER_EPOCH):
+def pre_train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH_PRE, NUM_STEP_PER_EPOCH):
     optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
     loss_metric = tf.keras.metrics.Mean()
     early_stopping = Early_Stopping(patience = patience, tolerance = tolerance)
@@ -80,25 +80,25 @@ def init_GMM(vae, X_normalized, NUM_CLUSTER):
     return vae
 
 
-def plot_pre_train(vae, X_normalized):
+def plot_pre_train(vae, X_normalized, label):
     print('-------UMAP for latent space after preTrain:-------')
     z_mean, _,_ = vae.encoder(X_normalized)
     fit = umap.UMAP()
-    uz = fit.fit_transform(z_mean)
-    u = fit.transform(vae.mu.numpy().T)
+    u = fit.fit_transform(tf.concat((z_mean,tf.transpose(vae.GMM.mu)),axis=0))
+    uz = u[:len(label),:]
+    um = u[len(label):,:]
     plt.figure(figsize=(20,10))
     ax = plt.subplot(111)
-    scatter = plt.scatter(uz[:,0], uz[:,1], c=y, alpha = 0.8, s=10)
+    scatter = plt.scatter(uz[:,0], uz[:,1], c=label, alpha = 0.8, s=10)
     ax.set_title('Prediction')        
     legend1 = ax.legend(*scatter.legend_elements(), loc="lower left", title="Classes")
     ax.add_artist(legend1)
-    cluster_center = [(len(u)+(1-i)/2)*i for i in range(len(u))]  
-    plt.scatter(u[:,0], u[:,1], c=cluster_center, s=200, marker='s')
+    plt.scatter(um[:,0], um[:,1], c='black', s=200, marker='s')
     plt.show()
 
 
-def trainTogether(train_dataset, vae, learining_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH):
-    optimizer = tf.keras.optimizers.Adam(learining_rate)
+def trainTogether(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, label, X_normalized):
+    optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()
     loss_neg_E_pz = tf.keras.metrics.Mean()
@@ -144,26 +144,27 @@ def trainTogether(train_dataset, vae, learining_rate, patience, tolerance, NUM_E
         loss_E_qzx.reset_states()
 
         if epoch%10==0 or epoch==NUM_EPOCH-1:        
-            pi,mu,c,w,var_w,z_mean,proj_z = vae(X_normalized, inference=True)
+            pi,mu,c,w,var_w,wc,var_wc,z_mean,proj_z = vae(X_normalized, inference=True)
 
             fit = umap.UMAP()
-            uz = fit.fit_transform(z_mean)
-            u = fit.transform(mu.numpy().T)
+            u = fit.fit_transform(tf.concat((z_mean,tf.transpose(mu)),axis=0))
+            uz = u[:len(label),:]
+            um = u[len(label):,:]
 
-            plt.figure(figsize=(8,4))
+            plt.figure(figsize=(16,6))
             ax = plt.subplot(121)
-            plt.scatter(uz[:,0], uz[:,1], c=y, s=2)
+            plt.scatter(uz[:,0], uz[:,1], c = label, s = 2)
             ax.set_title('Ground Truth')
 
             ax = plt.subplot(122)
-            scatter = plt.scatter(uz[:,0], uz[:,1], c=c, s=2)
+            scatter = plt.scatter(uz[:,0], uz[:,1], c = c, s = 2, alpha = 0.5)
             ax.set_title('Prediction')        
             # legend1 = ax.legend(*scatter.legend_elements(),
             #                     loc="lower left", title="Classes")
             # ax.add_artist(legend1)
-            cluster_center = [(NUM_CLUSTER+(1-i)/2)*i for i in range(NUM_CLUSTER)]        
-            plt.scatter(u[:,0], u[:,1], c=cluster_center, s=60, marker='s')
-            plt.savefig('/content/drive/My Drive/Data/%d.png'%epoch, dpi=300)
+            cluster_center = [(len(um)+(1-i)/2)*i for i in range(len(um))]        
+            plt.scatter(um[:,0], um[:,1], c=cluster_center, s=100, marker='s')
+            plt.savefig('%d.png'%epoch, dpi=300)
             plt.show()
             vae.save_weights('train.checkpoint')
     print('Training Done!')
