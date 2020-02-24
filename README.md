@@ -12,3 +12,14 @@
 ┣━━━ train_cluster.py	# train with clustering loss
 ┗━━━ 
 ```
+
+
+Dependency:
+
+%tensorflow_version 2.x
+localreg
+numpy
+pandas
+sklearn
+matplotlib
+umap
