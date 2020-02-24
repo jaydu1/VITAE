@@ -14,12 +14,11 @@
 ```
 
 
-Dependency:
-
-%tensorflow_version 2.x
-localreg
-numpy
-pandas
-sklearn
-matplotlib
-umap
+**Dependency:**
+- %tensorflow_version 2.x
+- localreg
+- numpy
+- pandas
+- sklearn
+- matplotlib
+- umap
