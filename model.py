@@ -288,7 +288,7 @@ class GMM(Layer):
                         tf.gather(self.mu, tf.gather(self.B, proj_c), axis=1) * 
                         (1-tf.tile(self.w, (1,len(c))))
                     )
-        return proj_c, proj_z.numpy()
+        return proj_c, proj_z_M.numpy()
             
 class VariationalAutoEncoder(tf.keras.Model):
     """
