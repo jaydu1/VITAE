@@ -19,6 +19,7 @@ class Inferer(object):
         self.C[self.C>0] = np.arange(self.NUM_STATE)
         self.C = self.C.astype(int)
         
+        
     def get_edges_score(self, c):
         df_states = pd.value_counts(list(c))/len(c)
         df_edges = df_states[~df_states.index.isin(self.CLUSTER_CENTER)].to_frame()
@@ -103,7 +104,8 @@ class Inferer(object):
 
     def comp_trajectory(self, c, w, proj_c, proj_z_M, no_loop=False):
         self.c = c
-        self.w = w        
+        self.w = w                       
+        self.no_loop = no_loop
         
         # Score edges
         df_edges = self.get_edges_score(c)
@@ -188,13 +190,19 @@ class Inferer(object):
                            key = lambda x: x[1])[0]
             return np.array(milestone_net)
     
-    def plot_pseudotime(self, mu, w, z, node, no_loop=False):
+    def plot_pseudotime(self, mu, w, z, node):
         dist_mu = pairwise_distances(mu.T)
         
         connected_comps = nx.node_connected_component(self.G, node)
         subG = self.G.subgraph(connected_comps)
         subG_mu = nx.from_numpy_array(dist_mu).subgraph(connected_comps)
 
+        # To do:
+        # prune and merge points if there are loops
+        if not self.no_loop:
+            pass
+        
+        # compute milestone network
         milestone_net = self.build_df_subgraph(subG,subG_mu,node)
 
         # compute pseudotime
@@ -215,7 +223,6 @@ class Inferer(object):
                 _from,_to = _to,_from
             state = self.C[_from,_to]
 
-            # bug 
             if flag:
                 pseudotime[c == state] = (1-w[c == state]) * milestone_net[i,-1] + np.sum(milestone_net[:i,-1])
             else:
@@ -248,15 +255,3 @@ class Inferer(object):
         plt.title('Pseudotime')
         plt.colorbar(sc)
         plt.show()
-    
-with open('result.pkl', 'rb') as f:
-    result = pk.load(f)
-
-NUM_CLUSTER = 5 
-
-inferer = Inferer(NUM_CLUSTER)
-   
-c,proj_c,proj_z_M,pi,mu,c,w,var_w,wc,var_wc,z,proj_z = result
-inferer.comp_trajectory(c, w, proj_c, proj_z_M, no_loop=True)
-inferer.plot_trajectory(cutoff=None)
-inferer.plot_pseudotime(mu, w, z, 1, no_loop=False)

@@ -2,6 +2,7 @@ import model
 import preprocess
 import utils
 import train
+from inference import Inferer
 # import inference
 
 class scTGMVAE():
@@ -13,7 +14,7 @@ class scTGMVAE():
 	inference
 	"""
 	def __init__(self):
-		pass
+		self.inferer = Inferer(NUM_CLUSTER)
 
 	# get data for model
 	# X: 2-dimension np array, original counts data
@@ -116,6 +117,19 @@ class scTGMVAE():
 		self.train_together(train_learning_rate)
 
 	# inference for trajectory
-	def inference(self):
-		pass
-
+    def init_inference(self, no_loop=False):
+        pi,mu,c,w,var_w,wc,var_wc,z,proj_z = self.vae(self.X_normalized, inference=True)
+       
+        cluster_center = [int((self.n_clusters+(1-i)/2)*i) for i in range(self.n_clusters)]
+        edges = [i for i in np.unique(c) if i not in cluster_center]
+        proj_c, proj_z_M = self.vae.get_proj_z(edges)
+        
+        self.inferer.comp_trajectory(c, w, proj_c, proj_z_M, no_loop=no_loop)
+        
+        
+    def plot_trajectory(self, cutoff=None):
+        self.inferer.plot_trajectory(cutoff=cutoff)
+        
+        
+    def plot_pseudotime(self, init_node, no_loop=False):
+        self.inferer.plot_pseudotime(mu, w, z, init_node)
