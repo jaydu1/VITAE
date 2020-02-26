@@ -13,7 +13,7 @@ class Inferer(object):
     def __init__(self, NUM_CLUSTER):
         self.NUM_CLUSTER = NUM_CLUSTER
         self.NUM_STATE = int(NUM_CLUSTER*(NUM_CLUSTER+1)/2)
-        self.CLUSTER_CENTER = [int((NUM_CLUSTER+(1-i)/2)*i) for i in range(NUM_CLUSTER)]    
+        self.CLUSTER_CENTER = np.array([int((NUM_CLUSTER+(1-i)/2)*i) for i in range(NUM_CLUSTER)])
         self.A, self.B = np.nonzero(np.triu(np.ones(NUM_CLUSTER)))
         self.C = np.triu(np.ones(NUM_CLUSTER))
         self.C[self.C>0] = np.arange(self.NUM_STATE)
@@ -175,7 +175,7 @@ class Inferer(object):
                     if unvisited[neighbour]['score'] > newScore:
                         unvisited[neighbour]['score'] = newScore
                         unvisited[neighbour]['parent'] = current
-                        unvisited[neighbour]['distance'] = currentDistance + subG_mu[current][neighbour]['weight']
+                        unvisited[neighbour]['distance'] = subG_mu[current][neighbour]['weight']
 
                 if len(unvisited)<len(subgraph):
                     milestone_net.append([unvisited[current]['parent'],
@@ -194,47 +194,59 @@ class Inferer(object):
         connected_comps = nx.node_connected_component(self.G, node)
         subG = self.G.subgraph(connected_comps)
         subG_mu = nx.from_numpy_array(dist_mu).subgraph(connected_comps)
-        
-        # prune sub-graph
-        if no_loop and not self.no_loop:
-            subG = subG.minimum_spanning_tree(subG)
+
         milestone_net = self.build_df_subgraph(subG,subG_mu,node)
-        
+
         # compute pseudotime
         pseudotime = - np.ones_like(c) 
+        pseudotime_node = - np.ones_like(self.CLUSTER_CENTER) 
         for i in range(len(milestone_net)):
-            _from , _to = milestone_net[i,:2]
+            _from, _to = milestone_net[i,:2]
+            _from, _to = int(_from), int(_to)
+            if i==0:
+                pseudotime[c==self.CLUSTER_CENTER[_from]] = \
+                    pseudotime_node[_from] = 0
+            pseudotime[c==self.CLUSTER_CENTER[_to]] = \
+                pseudotime_node[_to] = np.sum(milestone_net[:i+1,-1])
+
             flag = False
             if _from>_to:
                 flag = True
                 _from,_to = _to,_from
+            state = self.C[_from,_to]
 
-            state = self.C[int(_from),int(_to)]
-            if i==0:
-                pseudotime[c==_to] = 0
-            pseudotime[c==_from] = milestone_net[i,-1]
-
+            # bug 
             if flag:
-                pseudotime[c == state] = (1-w[c == state]) * milestone_net[i,-1]
+                pseudotime[c == state] = (1-w[c == state]) * milestone_net[i,-1] + np.sum(milestone_net[:i,-1])
             else:
-                pseudotime[c == state] = w[c == state] * milestone_net[i,-1]
+                pseudotime[c == state] = w[c == state] * milestone_net[i,-1] + np.sum(milestone_net[:i,-1])
 
-                
+
         fig, ax = plt.subplots(1, figsize=(7, 5))
-        
-        normalize = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))      
+
+        norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))      
+        cmap = matplotlib.cm.get_cmap('viridis')
+
         if np.sum(pseudotime==-1)>0:
-            plt.scatter(*self.embed_z[pseudotime==-1,:].T, 
-                        c='gray', s=1, alpha=0.5)
-        plt.scatter(*self.embed_z[pseudotime>-1,:].T, 
-                        norm=normalize,
-                        cmap = 'BuPu', s=1, alpha=0.5)
-        
+            plt.scatter(*embed_z[pseudotime==-1,:].T, 
+                        c='gray', s=1, alpha=0.4)
+        sc = plt.scatter(*embed_z[pseudotime>-1,:].T, 
+                         norm=norm,
+                         c=pseudotime[pseudotime>-1],
+                         s=1, alpha=0.4)
+
         for idx,i in enumerate(self.CLUSTER_CENTER):
-            plt.scatter(*self.embed_mu[idx:idx+1,:].T, c='black',
-                        s=100, marker='*', label=str(idx))
+            plt.scatter(*embed_mu[idx:idx+1,:].T, c=[cmap(norm(pseudotime_node[idx]))],
+                        norm=normalize,
+                        s=200, marker='*', label=str(idx))
         plt.setp(ax, xticks=[], yticks=[])
-        plt.legend()
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                         box.width, box.height * 0.9])
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                  fancybox=True, shadow=True, ncol=5)
+        plt.title('Pseudotime')
+        plt.colorbar(sc)
         plt.show()
     
 with open('result.pkl', 'rb') as f:
@@ -247,4 +259,4 @@ inferer = Inferer(NUM_CLUSTER)
 c,proj_c,proj_z_M,pi,mu,c,w,var_w,wc,var_wc,z,proj_z = result
 inferer.comp_trajectory(c, w, proj_c, proj_z_M, no_loop=True)
 inferer.plot_trajectory(cutoff=None)
-inferer.plot_pseudotime(mu, w, z, 0, no_loop=False)
+inferer.plot_pseudotime(mu, w, z, 1, no_loop=False)
