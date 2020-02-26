@@ -102,9 +102,10 @@ class Inferer(object):
         return lines
 
 
-    def comp_trajectory(self, c, w, proj_c, proj_z_M, no_loop=False):
+    def comp_trajectory(self, c, w, mu, z, proj_c, proj_z_M, no_loop=False):
         self.c = c
-        self.w = w                       
+        self.w = w     
+        self.mu = mu             
         self.no_loop = no_loop
         
         # Score edges
@@ -121,10 +122,10 @@ class Inferer(object):
         self.edges_score = np.array(df_edges['score'])
 
         # Umap
-        self.embed_z, self.embed_mu, self.embed_edges = self.get_umap(z, mu, proj_z_M)
+        self.embed_z, self.embed_mu, embed_edges = self.get_umap(z, mu, proj_z_M)
 
         # Smooth lines
-        self.lines = self.smooth_line(self.ind_edges, self.embed_mu, self.embed_edges, proj_c)
+        self.lines = self.smooth_line(self.ind_edges, self.embed_mu, embed_edges, proj_c)
 
         return None
 
@@ -190,8 +191,8 @@ class Inferer(object):
                            key = lambda x: x[1])[0]
             return np.array(milestone_net)
     
-    def plot_pseudotime(self, mu, w, z, node):
-        dist_mu = pairwise_distances(mu.T)
+    def plot_pseudotime(self, node):
+        dist_mu = pairwise_distances(self.mu.T)
         
         connected_comps = nx.node_connected_component(self.G, node)
         subG = self.G.subgraph(connected_comps)
@@ -199,22 +200,22 @@ class Inferer(object):
 
         # To do:
         # prune and merge points if there are loops
-        if not self.no_loop:
+        if not self.no_loop and not nx.is_tree(subG):
             pass
         
         # compute milestone network
         milestone_net = self.build_df_subgraph(subG,subG_mu,node)
 
         # compute pseudotime
-        pseudotime = - np.ones_like(c) 
+        pseudotime = - np.ones_like(self.c) 
         pseudotime_node = - np.ones_like(self.CLUSTER_CENTER) 
         for i in range(len(milestone_net)):
             _from, _to = milestone_net[i,:2]
             _from, _to = int(_from), int(_to)
             if i==0:
-                pseudotime[c==self.CLUSTER_CENTER[_from]] = \
+                pseudotime[self.c==self.CLUSTER_CENTER[_from]] = \
                     pseudotime_node[_from] = 0
-            pseudotime[c==self.CLUSTER_CENTER[_to]] = \
+            pseudotime[self.c==self.CLUSTER_CENTER[_to]] = \
                 pseudotime_node[_to] = np.sum(milestone_net[:i+1,-1])
 
             flag = False
@@ -224,9 +225,13 @@ class Inferer(object):
             state = self.C[_from,_to]
 
             if flag:
-                pseudotime[c == state] = (1-w[c == state]) * milestone_net[i,-1] + np.sum(milestone_net[:i,-1])
+                pseudotime[self.c == state] = ((1-self.w[self.c == state]) * 
+                                               milestone_net[i,-1] + 
+                                               np.sum(milestone_net[:i,-1]))
             else:
-                pseudotime[c == state] = w[c == state] * milestone_net[i,-1] + np.sum(milestone_net[:i,-1])
+                pseudotime[self.c == state] = (self.w[self.c == state] * 
+                                               milestone_net[i,-1] + 
+                                               np.sum(milestone_net[:i,-1]))
 
 
         fig, ax = plt.subplots(1, figsize=(7, 5))
@@ -235,15 +240,15 @@ class Inferer(object):
         cmap = matplotlib.cm.get_cmap('viridis')
 
         if np.sum(pseudotime==-1)>0:
-            plt.scatter(*embed_z[pseudotime==-1,:].T, 
+            plt.scatter(*self.embed_z[pseudotime==-1,:].T, 
                         c='gray', s=1, alpha=0.4)
-        sc = plt.scatter(*embed_z[pseudotime>-1,:].T, 
+        sc = plt.scatter(*self.embed_z[pseudotime>-1,:].T, 
                          norm=norm,
                          c=pseudotime[pseudotime>-1],
                          s=1, alpha=0.4)
 
         for idx,i in enumerate(self.CLUSTER_CENTER):
-            plt.scatter(*embed_mu[idx:idx+1,:].T, c=[cmap(norm(pseudotime_node[idx]))],
+            plt.scatter(*self.embed_mu[idx:idx+1,:].T, c=[cmap(norm(pseudotime_node[idx]))],
                         norm=normalize,
                         s=200, marker='*', label=str(idx))
         plt.setp(ax, xticks=[], yticks=[])

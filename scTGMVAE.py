@@ -124,12 +124,12 @@ class scTGMVAE():
         edges = [i for i in np.unique(c) if i not in cluster_center]
         proj_c, proj_z_M = self.vae.get_proj_z(edges)
         
-        self.inferer.comp_trajectory(c, w, proj_c, proj_z_M, no_loop=no_loop)
+        self.inferer.comp_trajectory(c, w, mu, z, proj_c, proj_z_M, no_loop=no_loop)
         
         
     def plot_trajectory(self, cutoff=None):
         self.inferer.plot_trajectory(cutoff=cutoff)
         
         
-    def plot_pseudotime(self, init_node, no_loop=False):
-        self.inferer.plot_pseudotime(mu, w, z, init_node)
+    def plot_pseudotime(self, init_node):
+        self.inferer.plot_pseudotime(init_node)
