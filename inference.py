@@ -22,42 +22,53 @@ class Inferer(object):
         
     def get_edges_score(self, c):
         df_states = pd.value_counts(list(c))/len(c)
+        # add null clusters
+        null_clusters = [[i,0] for i in self.CLUSTER_CENTER if i not in df_states.index]
+        df_states = df_states.append(null_clusters)
+        # compute score of edges
         df_edges = df_states[~df_states.index.isin(self.CLUSTER_CENTER)].to_frame()
+        df_edges.index.names = ['edge']
+        df_edges.columns = ['count']
         if len(df_edges)==0:
             return None
         else:
-            # To Do:
-            # add score functions
-            def _score(row):
+            def max_relative_score(row):
                 i = row.name
-                # To Do:
-                # What if df_states[cluster_center[A[i]]]=0?
                 score = row / (0.01+
                                np.min([df_states[self.CLUSTER_CENTER[self.A[i]]], 
                                        df_states[self.CLUSTER_CENTER[self.B[i]]]]))
                 return score
-            df_edges['score'] = df_edges.apply(_score, axis=1)
-
+            def mean_relative_score(row):
+                i = row.name
+                
+                score = row['count'] / (0.01+df_states[self.CLUSTER_CENTER[self.A[i]]]+
+                                         df_states[self.CLUSTER_CENTER[self.B[i]]])
+                return score
+            df_edges['max_relative_score'] = df_edges.apply(max_relative_score, axis=1)
+            df_edges['mean_relative_score'] = df_edges.apply(mean_relative_score, axis=1)
+            df_edges = df_edges.sort_values(self.metric, ascending=False)
             return df_edges
 
 
-    def build_graph(self, df_edges, no_loop=False):
-        edges = list(df_edges.index)
-        graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER), dtype=int)
-        graph[self.A[edges], self.B[edges]] = np.array(df_edges['score'])
+    def build_graph(self, df_edges):
+        edges = list(df_edges.index)  
+        graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER))
+        graph[self.A[edges], self.B[edges]] = np.array(df_edges[self.metric])
         G = nx.from_numpy_array(graph)
 
-        if no_loop and not nx.is_tree(G):
+    #     if names:        
+    #         mapping = {i:names[i] for i in cluster_center}
+    #         G = nx.relabel_nodes(G, mapping)
+
+        if self.no_loop and not nx.is_tree(G):
             # prune and merge points if there are loops            
             T = nx.minimum_spanning_tree(G)
             del_edges = [self.C[i] for i in G.edges if i not in T.edges]
             for i in del_edges:
                 self.c[(self.c==i)&(self.w<0.5)] = self.A[i]
-                self.c[(self.c==i)&(self.w>=0.5)] = self.B[i]   
-
-        if no_loop:
-            G = nx.minimum_spanning_tree(G)
-
+                self.c[(self.c==i)&(self.w>=0.5)] = self.B[i]    
+            G = T
+            
         return G
 
 
@@ -106,44 +117,44 @@ class Inferer(object):
         return lines
 
 
-    def init_inference(self, c, w, mu, z, proj_c, proj_z_M, no_loop=False):
+    def init_inference(self, c, w, mu, z, proj_c, proj_z_M, 
+                       metric='max_relative_score', no_loop=False):
         self.c = c
         self.w = w     
         self.mu = mu             
         self.no_loop = no_loop
+        self.metric = metric
         
         # Score edges
-        df_edges = self.get_edges_score(c)
+        df_edges = self.get_edges_score(c)        
         if df_edges is None:
             # only plot nodes
             return None
 
-
         # Build graph
-        self.G = self.build_graph(df_edges, no_loop)
-        self.ind_edges = np.array([self.C[e] for e in self.G.edges])
-        df_edges = df_edges[df_edges.index.isin(self.ind_edges)]
-        self.edges_score = np.array(df_edges['score'])
-
+        self.G = self.build_graph(df_edges)
+        ind_edges = np.array([self.C[e] for e in self.G.edges])
+        self.df_edges = df_edges[df_edges.index.isin(ind_edges)]
+        print(self.df_edges)
+        
         # Umap
         self.embed_z, self.embed_mu, embed_edges = self.get_umap(z, mu, proj_z_M)
 
         # Smooth lines
-        self.lines = self.smooth_line(self.ind_edges, self.embed_mu, embed_edges, proj_c)
-
-        return None
+        self.lines = self.smooth_line(ind_edges, self.embed_mu, embed_edges, proj_c)
 
     
     def plot_trajectory(self, cutoff=None):
         if cutoff is None:
-            select_edges = self.ind_edges[np.argsort(self.edges_score)[-self.NUM_CLUSTER+1:]]
+            self.select_edges = self.df_edges.sort_values(
+                self.metric).iloc[-self.NUM_CLUSTER+1:]
         else:
-            select_edges = self.ind_edges[self.edges_score>=cutoff]
+            self.select_edges = self.df_edges[self.df_edges[self.metric]>=cutoff]
         colors = [plt.cm.jet(float(i)/self.NUM_STATE) for i in range(self.NUM_STATE)]
-
+        
         fig, ax = plt.subplots(1, figsize=(7, 5))
         plt.scatter(*self.embed_z.T, c=np.array([colors[i] for i in self.c]), s=1, alpha=0.1)
-        for i in select_edges:
+        for i in self.select_edges.index:
             plt.plot(*self.lines[i].T, color="black", alpha=0.5)
 
         for idx,i in enumerate(self.CLUSTER_CENTER):
@@ -153,7 +164,7 @@ class Inferer(object):
         plt.legend()
         plt.show()  
         
-    def build_df_subgraph(self, subgraph, subG_mu, init_node):
+    def build_milestone_net(self, subgraph, subG_mu, init_node):
         '''
         Args:
             subgraph     - a connected component of the graph, csr_matrix
@@ -198,12 +209,13 @@ class Inferer(object):
     def plot_pseudotime(self, node):
         dist_mu = pairwise_distances(self.mu.T)
         
-        connected_comps = nx.node_connected_component(self.G, node)
-        subG = nx.minimum_spanning_tree(self.G.subgraph(connected_comps))
+        G = self.build_graph(self.select_edges)
+        connected_comps = nx.node_connected_component(G, node)
+        subG = G.subgraph(connected_comps)
         subG_mu = nx.from_numpy_array(dist_mu).subgraph(connected_comps)
         
         # compute milestone network
-        milestone_net = self.build_df_subgraph(subG,subG_mu,node)
+        milestone_net = self.build_milestone_net(subG,subG_mu,node)
 
         # compute pseudotime
         pseudotime = - np.ones_like(self.c) 
@@ -232,9 +244,7 @@ class Inferer(object):
                                                milestone_net[i,-1] + 
                                                np.sum(milestone_net[:i,-1]))
 
-
         fig, ax = plt.subplots(1, figsize=(7, 5))
-
         norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))      
         cmap = matplotlib.cm.get_cmap('viridis')
 
