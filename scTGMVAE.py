@@ -117,7 +117,7 @@ class scTGMVAE():
 		self.train_together(train_learning_rate)
 
 	# inference for trajectory
-    def init_inference(self, no_loop=False):
+    def init_inference(self, metric='max_relative_score', no_loop=False):
         pi,mu,c,w,var_w,wc,var_wc,z,proj_z = self.vae(self.X_normalized, inference=True)
        
         cluster_center = [int((self.n_clusters+(1-i)/2)*i) for i in range(self.n_clusters)]
