@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import tensorflow as tf
-from tensorflow.keras.layers import Layer, Dense, BatchNormalization
 from tensorflow.keras.utils import Progbar
-import tensorflow.keras.backend as K
 
 from sklearn.mixture import GaussianMixture
 
@@ -40,7 +38,7 @@ def pre_train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH_
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, x_scale_factor) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
-                reconstructed = vae(x_norm_batch, x_batch, x_scale_factor, pre_train=True)
+                _ = vae(x_norm_batch, x_batch, x_scale_factor, pre_train=True)
                 # Compute reconstruction loss
                 loss = tf.reduce_sum(vae.losses[0]) 
                 
@@ -111,7 +109,7 @@ def trainTogether(train_dataset, vae, learning_rate, patience, tolerance, NUM_EP
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, x_scale_factor) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
-                reconstructed = vae(x_norm_batch, x_batch, x_scale_factor)
+                _ = vae(x_norm_batch, x_batch, x_scale_factor)
                 loss = tf.reduce_sum(vae.losses)  
 
             grads = tape.gradient(loss, vae.trainable_weights,
@@ -157,7 +155,7 @@ def trainTogether(train_dataset, vae, learning_rate, patience, tolerance, NUM_EP
             ax.set_title('Ground Truth')
 
             ax = plt.subplot(122)
-            scatter = plt.scatter(uz[:,0], uz[:,1], c = c, s = 2, alpha = 0.5)
+            plt.scatter(uz[:,0], uz[:,1], c = c, s = 2, alpha = 0.5)
             ax.set_title('Prediction')        
             # legend1 = ax.legend(*scatter.legend_elements(),
             #                     loc="lower left", title="Classes")
