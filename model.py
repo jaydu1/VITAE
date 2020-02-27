@@ -378,6 +378,6 @@ class VariationalAutoEncoder(tf.keras.Model):
     def get_proj_z(self, c):
         '''
         Args:
-            c - Numpy array of indexes [1,*]
+            c - List of indexes of edges
         '''
         return self.GMM.get_proj_z(c)

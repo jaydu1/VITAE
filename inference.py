@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import pickle as pk
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy.interpolate import splrep, splev
@@ -259,8 +258,7 @@ class Inferer(object):
 
         for idx,i in enumerate(self.CLUSTER_CENTER):
             plt.scatter(*self.embed_mu[idx:idx+1,:].T, c=[cmap(norm(pseudotime_node[idx]))],
-                        norm=normalize,
-                        s=200, marker='*', label=str(idx))
+                        norm=norm, s=200, marker='*', label=str(idx))
         plt.setp(ax, xticks=[], yticks=[])
         box = ax.get_position()
         ax.set_position([box.x0, box.y0 + box.height * 0.1,
