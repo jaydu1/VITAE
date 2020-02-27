@@ -1,6 +1,5 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Layer, Dense, BatchNormalization
-import tensorflow.keras.backend as K
 import numpy as np
 import math
 
