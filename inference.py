@@ -162,6 +162,7 @@ class Inferer(object):
                         s=100, marker='*', label=str(idx))
         plt.setp(ax, xticks=[], yticks=[])
         plt.legend()
+        plt.title('Trajectory')
         plt.show()  
         
     def build_milestone_net(self, subgraph, subG_mu, init_node):
