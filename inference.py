@@ -47,9 +47,13 @@ class Inferer(object):
         graph[self.A[edges], self.B[edges]] = np.array(df_edges['score'])
         G = nx.from_numpy_array(graph)
 
-    #     if names:        
-    #         mapping = {i:names[i] for i in cluster_center}
-    #         G = nx.relabel_nodes(G, mapping)
+        if no_loop and not nx.is_tree(G):
+            # prune and merge points if there are loops            
+            T = nx.minimum_spanning_tree(G)
+            del_edges = [self.C[i] for i in G.edges if i not in T.edges]
+            for i in del_edges:
+                self.c[(self.c==i)&(self.w<0.5)] = self.A[i]
+                self.c[(self.c==i)&(self.w>=0.5)] = self.B[i]   
 
         if no_loop:
             G = nx.minimum_spanning_tree(G)
@@ -102,7 +106,7 @@ class Inferer(object):
         return lines
 
 
-    def comp_trajectory(self, c, w, mu, z, proj_c, proj_z_M, no_loop=False):
+    def init_inference(self, c, w, mu, z, proj_c, proj_z_M, no_loop=False):
         self.c = c
         self.w = w     
         self.mu = mu             
@@ -195,13 +199,8 @@ class Inferer(object):
         dist_mu = pairwise_distances(self.mu.T)
         
         connected_comps = nx.node_connected_component(self.G, node)
-        subG = self.G.subgraph(connected_comps)
+        subG = nx.minimum_spanning_tree(self.G.subgraph(connected_comps))
         subG_mu = nx.from_numpy_array(dist_mu).subgraph(connected_comps)
-
-        # To do:
-        # prune and merge points if there are loops
-        if not self.no_loop and not nx.is_tree(subG):
-            pass
         
         # compute milestone network
         milestone_net = self.build_df_subgraph(subG,subG_mu,node)
