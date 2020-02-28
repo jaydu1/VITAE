@@ -51,7 +51,7 @@ def feature_select(x, gene_num = 2000):
     plt.hlines(np.log(threshold), 1, p)
     plt.show()
     
-    return x[:,index]
+    return x[:,index], index
     
 
 def label_encoding(grouping):
@@ -78,9 +78,12 @@ def preprocess(x, grouping = None, K = 1e4, gene_num = 2000):
     else:
         label, le = label_encoding(grouping)
         print('Number of cells in each class: ')
-        print(pd.value_counts(grouping))
-    x = feature_select(x, gene_num)
+        table = pd.value_counts(grouping)
+        table.index = pd.Series(le.transform(table.index).astype(str)) + ' <---> ' + table.index
+        print(table)
+
     x_normalized, scale_factor = normalization(x, K)
-    return x_normalized, x, scale_factor, label, le
+    x, index = feature_select(x, gene_num)
+    return x_normalized[:,index], x, scale_factor, label, le
 
 
