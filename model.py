@@ -221,8 +221,8 @@ class GMM(Layer):
                 # w         -   E(w|x)
                 w =  tf.reduce_sum(
                         tf.tile(self.w, (batch_size,1)) *
-                        tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
-                        tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
+                        tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1) -
+                            tf.expand_dims(log_p_z, -1)) /
                         tf.cast(self.M, tf.float32), axis=-1
                     )
                 
@@ -231,8 +231,8 @@ class GMM(Layer):
                             tf.square(
                                 tf.tile(self.w, (batch_size,1)) -
                                 tf.expand_dims(w, -1)) *
-                            tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1)) /
-                            tf.expand_dims(tf.exp(log_p_z)+1e-30, -1) /
+                            tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1) -
+                                tf.expand_dims(log_p_z, -1)) /
                             tf.cast(self.M, tf.float32), axis=-1
                         )
                 # w|c       -   E(w|x,c)
