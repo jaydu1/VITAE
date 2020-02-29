@@ -14,7 +14,7 @@ def normalization(x, K = 1e4):
     """
     scale_factor = np.sum(x,axis=1, keepdims=True)/K
     x_normalized = np.log(x/scale_factor + 1)
-    print('max normailized value: ' + str(np.min(x_normalized)))
+    print('min normailized value: ' + str(np.min(x_normalized)))
     print('max normailized value: ' + str(np.max(x_normalized)))
     return x_normalized, scale_factor
 
