@@ -61,7 +61,7 @@ class Inferer(object):
 
         if self.no_loop and not nx.is_tree(G):
             # prune and merge points if there are loops            
-            T = nx.minimum_spanning_tree(G)
+            T = nx.maximum_spanning_tree(G)
             del_edges = [self.C[i] for i in G.edges if i not in T.edges]
             for i in del_edges:
                 self.c[(self.c==i)&(self.w<0.5)] = self.A[i]
