@@ -124,7 +124,8 @@ class scTGMVAE():
         edges = [i for i in np.unique(c) if i not in cluster_center]
         proj_c, proj_z_M = self.vae.get_proj_z(edges)
         
-        self.inferer.init_inference(c, w, mu, z, proj_c, proj_z_M, no_loop=no_loop)
+        self.inferer.init_inference(c, w, mu, z, proj_c, proj_z_M,
+            metric=metric, no_loop=no_loop)
         
         
     def plot_trajectory(self, cutoff=None):
