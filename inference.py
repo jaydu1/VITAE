@@ -22,7 +22,8 @@ class Inferer(object):
     def get_edges_score(self, c):
         df_states = pd.value_counts(list(c))/len(c)
         # add null clusters
-        null_clusters = [[i,0] for i in self.CLUSTER_CENTER if i not in df_states.index]
+        null_clusters = pd.Series(0, index=[i for i in self.CLUSTER_CENTER
+            if i not in df_states.index])  
         df_states = df_states.append(null_clusters)
         # compute score of edges
         df_edges = df_states[~df_states.index.isin(self.CLUSTER_CENTER)].to_frame()
