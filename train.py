@@ -18,10 +18,7 @@ def clear_session():
 
 
 def warp_dataset(X, X_normalized, Scale_factor, BATCH_SIZE, data_type):
-    if data_type == 'UMI':
-        train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, Scale_factor))
-    else:
-        train_dataset = tf.data.Dataset.from_tensor_slices((np.exp(X_normalized)-1, X_normalized, np.ones_like(Scale_factor)))
+    train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, Scale_factor))
     train_dataset = train_dataset.shuffle(buffer_size = X.shape[0]).batch(BATCH_SIZE)
     return train_dataset
 
