@@ -258,7 +258,11 @@ class Inferer(object):
                          s=1, alpha=0.4)
 
         for idx,i in enumerate(self.CLUSTER_CENTER):
-            plt.scatter(*self.embed_mu[idx:idx+1,:].T, c=[cmap(norm(pseudotime_node[idx]))],
+            if pseudotime_node[idx]==-1:
+                c = 'gray'
+            else:
+                c = [cmap(norm(pseudotime_node[idx]))]
+            plt.scatter(*self.embed_mu[idx:idx+1,:].T, c=c,            
                         norm=norm, s=200, marker='*', label=str(idx))
         plt.setp(ax, xticks=[], yticks=[])
         box = ax.get_position()
