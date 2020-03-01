@@ -244,7 +244,7 @@ class Inferer(object):
                                                milestone_net[i,-1] + 
                                                np.sum(milestone_net[:i,-1]))
 
-        fig, ax = plt.subplots(1, figsize=(7, 5))
+        fig, ax = plt.subplots(1, figsize=(8, 5))
         norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))      
         cmap = matplotlib.cm.get_cmap('viridis')
 
