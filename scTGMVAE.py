@@ -129,7 +129,7 @@ class scTGMVAE():
         
         
     def plot_trajectory(self, cutoff=None):
-        self.inferer.plot_trajectory(cutoff=cutoff)
+        self.inferer.plot_trajectory(self.grouping, cutoff=cutoff)
         
         
     def plot_pseudotime(self, init_node):

@@ -144,7 +144,7 @@ class Inferer(object):
         self.lines = self.smooth_line(ind_edges, self.embed_mu, embed_edges, proj_c)
 
     
-    def plot_trajectory(self, cutoff=None):
+    def plot_trajectory(self, labels, cutoff=None):
         if cutoff is None:
             self.select_edges = self.df_edges.sort_values(
                 self.metric).iloc[-self.NUM_CLUSTER+1:]
@@ -152,17 +152,28 @@ class Inferer(object):
             self.select_edges = self.df_edges[self.df_edges[self.metric]>=cutoff]
         colors = [plt.cm.jet(float(i)/self.NUM_STATE) for i in range(self.NUM_STATE)]
         
-        fig, ax = plt.subplots(1, figsize=(7, 5))
-        plt.scatter(*self.embed_z.T, c=np.array([colors[i] for i in self.c]), s=1, alpha=0.1)
+        if labels is None:
+            fig, ax1 = plt.subplots(1, figsize=(7, 5))
+        else:
+            labels = np.array(labels)
+            fig, (ax1,ax2) = plt.subplots(1,2, figsize=(14, 5))
+            for i,x in enumerate(np.unique(labels)):
+                ax2.scatter(*self.embed_z[labels==x].T, c=[colors[self.CLUSTER_CENTER[i]]],
+                    s=1, alpha=0.5, label=str(x))
+            ax2.legend()
+            plt.setp(ax2, xticks=[], yticks=[])
+            
+        ax1.scatter(*self.embed_z.T, c=np.array([colors[i] for i in self.c]), s=1, alpha=0.3)
         for i in self.select_edges.index:
-            plt.plot(*self.lines[i].T, color="black", alpha=0.5)
+            ax1.plot(*self.lines[i].T, color="black", alpha=0.5)
 
         for idx,i in enumerate(self.CLUSTER_CENTER):
-            plt.scatter(*self.embed_mu[idx:idx+1,:].T, c=[colors[i]],
+            ax1.scatter(*self.embed_mu[idx:idx+1,:].T, c=[colors[i]],
                         s=100, marker='*', label=str(idx))
-        plt.setp(ax, xticks=[], yticks=[])
-        plt.legend()
-        plt.title('Trajectory')
+        plt.setp(ax1, xticks=[], yticks=[])
+        ax1.legend()
+        
+        plt.suptitle('Trajectory')
         plt.show()  
         
     def build_milestone_net(self, subgraph, subG_mu, init_node):
