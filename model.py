@@ -257,7 +257,7 @@ class GMM(Layer):
                             axis=-1
                         )
                 
-                c = tf.where(w>c1e-3, c,
+                c = tf.where(w>1e-3, c,
                             tf.gather(self.clusters_ind, tf.gather(self.A, c)))
                 c = tf.where(wc<1-1e-3, c,
                             tf.gather(self.clusters_ind, tf.gather(self.B, c)))
