@@ -160,7 +160,7 @@ class Inferer(object):
             labels = np.array(labels)
             fig, (ax1,ax2) = plt.subplots(1,2, figsize=(14, 5))
             for i,x in enumerate(np.unique(labels)):
-                ax2.scatter(*self.embed_z[labels==x].T, c=[colors[self.CLUSTER_CENTER[i]]],
+                ax2.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
                     s=2, alpha=0.5, label=str(x))
             ax2.legend()
             plt.setp(ax2, xticks=[], yticks=[])
