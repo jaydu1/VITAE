@@ -29,12 +29,15 @@ class Inferer(object):
         df_edges = df_states[~df_states.index.isin(self.CLUSTER_CENTER)].to_frame()
         df_edges.index.names = ['edge']
         df_edges.columns = ['count']
+        df_edges = df_edges.assign(**{'from': [self.A[i] for i in df_edges.index]})
+        df_edges = df_edges.assign(**{'to': [self.B[i] for i in df_edges.index]})
+        df_edges = df_edges.reindex(['from','to','count'], axis=1)
         if len(df_edges)==0:
             return None
         else:
             def max_relative_score(row):
                 i = row.name
-                score = row / (0.01+
+                score = row['count'] / (0.01+
                                np.min([df_states[self.CLUSTER_CENTER[self.A[i]]], 
                                        df_states[self.CLUSTER_CENTER[self.B[i]]]]))
                 return score
@@ -134,7 +137,7 @@ class Inferer(object):
         # Build graph
         self.G = self.build_graph(df_edges)
         ind_edges = np.array([self.C[e] for e in self.G.edges])
-        self.df_edges = df_edges[df_edges.index.isin(ind_edges)]
+        self.df_edges = df_edges[df_edges.index.isin(ind_edges)]        
         print(self.df_edges)
         
         # Umap
@@ -168,7 +171,9 @@ class Inferer(object):
             ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                       fancybox=True, shadow=True, markerscale=5,
                       ncol=np.min([5,50//np.max([len(i) for i in np.unique(labels)])]))
+            ax2.set_title('Ground Truth')
             plt.setp(ax2, xticks=[], yticks=[])
+            ax1.set_title('Prediction')
             
         colors = [plt.cm.jet(float(i)/self.NUM_STATE) for i in range(self.NUM_STATE)]
         ax1.scatter(*self.embed_z.T, c=np.array([colors[i] for i in self.c]), s=1, alpha=0.5)
