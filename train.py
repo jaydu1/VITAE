@@ -53,7 +53,6 @@ def pre_train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH_
         loss_metric.reset_states()
 
     print('Pretrain Done.')
-    vae.save_weights('pre_train.checkpoint')
     return vae
 
 
@@ -161,7 +160,7 @@ def trainTogether(train_dataset, vae, learning_rate, patience, tolerance, NUM_EP
             plt.scatter(um[:,0], um[:,1], c=cluster_center, s=100, marker='s')
             plt.savefig('%d.png'%epoch, dpi=300)
             plt.show()
-            vae.save_weights('train.checkpoint')
+
     print('Training Done!')
-    vae.save_weights('train.checkpoint')
+
     return vae

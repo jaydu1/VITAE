@@ -3,6 +3,7 @@ import preprocess
 import train
 import numpy as np
 from inference import Inferer
+import os
 
 class scTGMVAE():
     """
@@ -15,6 +16,7 @@ class scTGMVAE():
     def __init__(self):
         pass
 
+
 	# get data for model
     # X: 2-dimension np array, original counts data
     # grouping: a list of labels for cells
@@ -22,12 +24,14 @@ class scTGMVAE():
         self.X = X
         self.grouping = grouping        
 
+
     # data preprocessing, feature selection, log-normalization
     # K: the constant summing gene expression in each cell up to
     # gene_num: number of feature to select
     def preprocess_data(self, K = 1e4, gene_num = 2000):
         self.X_normalized, self.X, self.scale_factor, self.label, self.le = preprocess.preprocess(self.X, self.grouping, K, gene_num)
         self.dim_origin = self.X.shape[1]
+
 
     # get parameters, wrap up training dataset and initialize the Variational Auto Encoder model
     # n_clusters: number of Gaussian Mixtures, number of cell types
@@ -47,7 +51,9 @@ class scTGMVAE():
         BATCH_SIZE = 32,
         NUM_EPOCH_PRE = 300,
         NUM_STEP_PER_EPOCH = None,
-        NUM_EPOCH = 1000
+        NUM_EPOCH = 1000,
+        save_weights = False,
+        path_to_weights = ''
         ):
         self.n_clusters = n_clusters
         self.dimensions = dimensions
@@ -62,6 +68,8 @@ class scTGMVAE():
             self.NUM_STEP_PER_EPOCH = self.X.shape[0]//BATCH_SIZE+1
         else:
             self.NUM_STEP_PER_EPOCH = NUM_STEP_PER_EPOCH
+        self.save_weights = save_weights
+        self.path_to_weights = path_to_weights
 
         self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, self.BATCH_SIZE, self.data_type)
     
@@ -74,13 +82,18 @@ class scTGMVAE():
         
         self.inferer = Inferer(self.n_clusters)
         
+        
     # save and load trained model parameters
     # path: path of checkpoints files
-    def save_model(self, path):
-        self.vae.save_weights(path)
+    def save_model(self, path='', file_name='model.checkpoint'):
+        self.vae.save_weights(
+            os.path.join(path, file_name))
     
-    def load_model(self, path):
-        self.vae.load_weights(path)
+    
+    def load_model(self, path='', file_name):
+        self.vae.load_weights(
+            os.path.join(path, file_name))
+
 
     # pre train the model with specified learning rate
     def pre_train(self, learning_rate = 1e-4):
@@ -93,12 +106,16 @@ class scTGMVAE():
             self.EARLY_STOPPING_TOLERANCE, 
             self.NUM_EPOCH_PRE, 
             self.NUM_STEP_PER_EPOCH)
-
+        if self.save_weights:
+            save_model(self.path_to_weights, 'pre_train.checkpoint')
+          
+          
     # initialize parameters in GMM after pre train
     # plot the UMAP latent space after pre train
     def init_GMM_plot(self):
         self.vae = train.init_GMM(self.vae, self.X_normalized, self.n_clusters)
         train.plot_pre_train(self.vae, self.X_normalized, self.label)
+
 
     # train the model with specified learning rate
     def train_together(self, learning_rate = 1e-4):
@@ -112,12 +129,18 @@ class scTGMVAE():
             self.NUM_STEP_PER_EPOCH,
             self.label,
             self.X_normalized)
-
+        if self.save_weights:
+            save_model(self.path_to_weights, 'train.checkpoint')
+          
+          
     # train the model with specified learning rate
     def train(self, pre_train_learning_rate = 1e-4, train_learning_rate = 1e-4):
         self.pre_train(pre_train_learning_rate)
         self.init_GMM_plot()
         self.train_together(train_learning_rate)
+        if self.save_weights:
+            save_model(self.path_to_weights, 'train.checkpoint')
+
 
     # inference for trajectory
     def init_inference(self, metric='max_relative_score', no_loop=False):
