@@ -25,11 +25,11 @@ class scTGMVAE():
     # data preprocessing, feature selection, log-normalization
     # K: the constant summing gene expression in each cell up to
     # gene_num: number of feature to select
-    def data_preprocess(self, K = 1e4, gene_num = 2000):
+    def preprocess_data(self, K = 1e4, gene_num = 2000):
         self.X_normalized, self.X, self.scale_factor, self.label, self.le = preprocess.preprocess(self.X, self.grouping, K, gene_num)
         self.dim_origin = self.X.shape[1]
 
-    # get parameters for model and training
+    # get parameters, wrap up training dataset and initialize the Variational Auto Encoder model
     # n_clusters: number of Gaussian Mixtures, number of cell types
     # dimensions: a list of dimensions of layers of autoencoder between latent space and original space
     # dim_latent: dimension of latent space
@@ -37,7 +37,7 @@ class scTGMVAE():
     # NUM_EPOCH_PRE: number of epochs for pre training
     # NUM_EPOCH: number of epochs for training
     # NUM_STEP_PER_EPOCH: number of steps in each epoch, default is n/BATCH_SIZE+1
-    def get_params(self, 
+    def build_model(self,
         n_clusters = 3, 
         dimensions = [16], 
         dim_latent = 8, 
@@ -63,20 +63,23 @@ class scTGMVAE():
         else:
             self.NUM_STEP_PER_EPOCH = NUM_STEP_PER_EPOCH
 
-    # initialize the Variational Auto Encoder model and wrap up training dataset
-    def model_init(self):
+        self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, self.BATCH_SIZE, self.data_type)
+    
         self.vae = model.VariationalAutoEncoder(
             self.n_clusters, 
             self.dim_origin, 
             self.dimensions, 
             self.dim_latent,
             self.data_type)
-        self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, self.BATCH_SIZE, self.data_type)
+        
         self.inferer = Inferer(self.n_clusters)
         
-    # load trained model parameters
+    # save and load trained model parameters
     # path: path of checkpoints files
-    def model_load(self, path):
+    def save_model(self, path):
+        self.vae.save_weights(path)
+    
+    def load_model(self, path):
         self.vae.load_weights(path)
 
     # pre train the model with specified learning rate
