@@ -161,12 +161,17 @@ class Inferer(object):
             fig, (ax1,ax2) = plt.subplots(1,2, figsize=(14, 5))
             for i,x in enumerate(np.unique(labels)):
                 ax2.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                    s=2, alpha=0.5, label=str(x))
-            ax2.legend()
+                    s=3, alpha=0.8, label=str(x))
+            box = ax2.get_position()
+            ax2.set_position([box.x0, box.y0 + box.height * 0.1,
+                             box.width, box.height * 0.9])
+            ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                      fancybox=True, shadow=True, markerscale=5,
+                      ncol=np.min([5,50//np.max([len(i) for i in np.unique(labels)])]))
             plt.setp(ax2, xticks=[], yticks=[])
             
         colors = [plt.cm.jet(float(i)/self.NUM_STATE) for i in range(self.NUM_STATE)]
-        ax1.scatter(*self.embed_z.T, c=np.array([colors[i] for i in self.c]), s=1, alpha=0.3)
+        ax1.scatter(*self.embed_z.T, c=np.array([colors[i] for i in self.c]), s=1, alpha=0.5)
         for i in self.select_edges.index:
             ax1.plot(*self.lines[i].T, color="black", alpha=0.5)
 
@@ -174,7 +179,11 @@ class Inferer(object):
             ax1.scatter(*self.embed_mu[idx:idx+1,:].T, c=[colors[i]],
                         s=100, marker='*', label=str(idx))
         plt.setp(ax1, xticks=[], yticks=[])
-        ax1.legend()
+        box = ax1.get_position()
+        ax1.set_position([box.x0, box.y0 + box.height * 0.1,
+                         box.width, box.height * 0.9])
+        ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                  fancybox=True, shadow=True, ncol=5)
         
         plt.suptitle('Trajectory')
         plt.show()  
@@ -269,7 +278,7 @@ class Inferer(object):
         sc = plt.scatter(*self.embed_z[pseudotime>-1,:].T, 
                          norm=norm,
                          c=pseudotime[pseudotime>-1],
-                         s=1, alpha=0.4)
+                         s=2, alpha=0.5)
 
         for idx,i in enumerate(self.CLUSTER_CENTER):
             if pseudotime_node[idx]==-1:
