@@ -9,3 +9,11 @@ dentate-gyrus-neurogenesis\_hochgerner.pkl|3585|2182|5|UMI|line
 aging-hsc-old\_kowalczyk.pkl|873| 2815 |3|non-UMI|line
 neonatal-rib-cartilage_mca.pkl| 2221 | 2449 |5|non-UMI|bifurcate
 aging-hsc-old_kowalczyk.pkl| 355 | 3379 |7|non-UMI| bifurcate
+
+To load these data, try the following codes:
+
+```Python
+import pickle as pk
+with open(path_to_file+'b_cd14_cd56.pkl', 'rb') as f:
+	x, grouping, milestone_net = pk.load(f)
+```
