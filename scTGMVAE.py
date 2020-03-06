@@ -90,7 +90,7 @@ class scTGMVAE():
             os.path.join(path, file_name))
     
     
-    def load_model(self, path='', file_name):
+    def load_model(self, path='', file_name='model.checkpoint'):
         self.vae.load_weights(
             os.path.join(path, file_name))
 
