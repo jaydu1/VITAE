@@ -152,7 +152,7 @@ class scTGMVAE():
         
         self.inferer.init_inference(c, w, mu, z, proj_c, proj_z_M,
             metric=metric, no_loop=no_loop)
-        
+        return w, var_w, wc, var_wc
         
     def plot_trajectory(self, cutoff=None):
         self.inferer.plot_trajectory(self.grouping, cutoff=cutoff)
