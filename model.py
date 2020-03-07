@@ -219,10 +219,14 @@ class GMM(Layer):
                 c = tf.cast(c, 'int32')
 
                 # w         -   E(w|x)
+                p_w_x = tf.exp(
+                    tf.math.reduce_logsumexp(log_p_zc_w, axis=1) -
+                    tf.expand_dims(log_p_z, -1)
+                    )
+                    
                 w =  tf.reduce_sum(
                         tf.tile(self.w, (batch_size,1)) *
-                        tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1) -
-                            tf.expand_dims(log_p_z, -1)) /
+                        p_w_x /
                         tf.cast(self.M, tf.float32), axis=-1
                     )
                 
@@ -231,29 +235,30 @@ class GMM(Layer):
                             tf.square(
                                 tf.tile(self.w, (batch_size,1)) -
                                 tf.expand_dims(w, -1)) *
-                            tf.exp(tf.math.reduce_logsumexp(log_p_zc_w, axis=1) -
-                                tf.expand_dims(log_p_z, -1)) /
+                            p_w_x /
                             tf.cast(self.M, tf.float32), axis=-1
                         )
                 # w|c       -   E(w|x,c)
                 map_log_p_zc_w = tf.gather_nd(log_p_zc_w,
                                               list(zip(np.arange(batch_size),
                                                        c.numpy())))
+                p_w_xc = tf.exp(map_log_p_zc_w -
+                    tf.math.reduce_logsumexp(
+                        map_log_p_zc_w, axis=1, keepdims=True)
+                        )
+                    
                 wc = tf.reduce_sum(
                             tf.tile(self.w, (batch_size,1)) *
-                            tf.exp(map_log_p_zc_w -
-                                tf.math.reduce_logsumexp(
-                                    map_log_p_zc_w, axis=1, keepdims=True)),
+                            p_w_xc,
                             axis=-1
                         )
 
                 # var_w|c   -   Var(w|x,c)
                 var_wc = tf.reduce_sum(
-                            tf.square(tf.tile(self.w, (batch_size,1)) -
-                                      tf.expand_dims(wc, -1)) *
-                            tf.exp(map_log_p_zc_w -
-                               tf.math.reduce_logsumexp(
-                                   map_log_p_zc_w, axis=1, keepdims=True)),
+                            tf.square(
+                                tf.tile(self.w, (batch_size,1)) -
+                                tf.expand_dims(wc, -1)) *
+                            p_w_xc,
                             axis=-1
                         )
                 
