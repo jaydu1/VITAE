@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import localreg
 from sklearn import preprocessing
+import warnings
 
 def normalization(x, K = 1e4):
     """
@@ -71,7 +72,6 @@ def preprocess(x, grouping = None, K = 1e4, gene_num = 2000):
     grouping: true labels
     '''
     if grouping is None:
-        import warnings
         warnings.warn('No labels for cells!')
         label = np.ones(len(x))
         le = None
