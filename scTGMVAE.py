@@ -22,7 +22,7 @@ class scTGMVAE():
     # grouping: a list of labels for cells
     def get_data(self, X, grouping = None):
         self.raw_X = X
-        self.grouping = grouping        
+        self.grouping = np.array(grouping, dtype=str)
 
 
     # data preprocessing, feature selection, log-normalization
