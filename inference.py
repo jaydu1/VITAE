@@ -4,7 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from scipy.interpolate import splrep, splev
 from sklearn.metrics import pairwise_distances
-
+import warnings
 import networkx as nx
 import umap
 
@@ -203,7 +203,8 @@ class Inferer(object):
         '''
 
         if len(subgraph)==1:
-            raise Exception('Singular node.')
+            warnings.warn('Singular node.')
+            return []
         else:
             # Dijkstra's Algorithm
             unvisited = {node: {'parent':None,
@@ -277,13 +278,20 @@ class Inferer(object):
         norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))      
         cmap = matplotlib.cm.get_cmap('viridis')
 
+        if np.sum(pseudotime>-1)>0:
+            sc = plt.scatter(*self.embed_z[pseudotime>-1,:].T,
+                norm=norm,
+                c=pseudotime[pseudotime>-1],
+                s=2, alpha=0.5)
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                             box.width, box.height * 0.9])
+            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                fancybox=True, shadow=True, ncol=5)
+            plt.colorbar(sc)
         if np.sum(pseudotime==-1)>0:
             plt.scatter(*self.embed_z[pseudotime==-1,:].T, 
                         c='gray', s=1, alpha=0.4)
-        sc = plt.scatter(*self.embed_z[pseudotime>-1,:].T, 
-                         norm=norm,
-                         c=pseudotime[pseudotime>-1],
-                         s=2, alpha=0.5)
 
         for idx,i in enumerate(self.CLUSTER_CENTER):
             if pseudotime_node[idx]==-1:
@@ -292,12 +300,7 @@ class Inferer(object):
                 c = [cmap(norm(pseudotime_node[idx]))]
             plt.scatter(*self.embed_mu[idx:idx+1,:].T, c=c,            
                         norm=norm, s=200, marker='*', label=str(idx))
+                        
         plt.setp(ax, xticks=[], yticks=[])
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                         box.width, box.height * 0.9])
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                  fancybox=True, shadow=True, ncol=5)
         plt.title('Pseudotime')
-        plt.colorbar(sc)
         plt.show()
