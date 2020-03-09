@@ -71,7 +71,7 @@ class scTGMVAE():
         self.save_weights = save_weights
         self.path_to_weights = path_to_weights
 
-        self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, self.BATCH_SIZE, self.data_type)
+        self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, self.BATCH_SIZE)
     
         self.vae = model.VariationalAutoEncoder(
             self.n_clusters, 

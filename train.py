@@ -17,7 +17,7 @@ def clear_session():
     return None
 
 
-def warp_dataset(X, X_normalized, Scale_factor, BATCH_SIZE, data_type):
+def warp_dataset(X, X_normalized, Scale_factor, BATCH_SIZE):
     train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, Scale_factor))
     train_dataset = train_dataset.shuffle(buffer_size = X.shape[0]).batch(BATCH_SIZE)
     return train_dataset
