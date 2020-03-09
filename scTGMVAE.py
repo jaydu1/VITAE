@@ -21,7 +21,7 @@ class scTGMVAE():
     # X: 2-dimension np array, original counts data
     # grouping: a list of labels for cells
     def get_data(self, X, grouping = None):
-        self.X = X
+        self.raw_X = X
         self.grouping = grouping        
 
 
@@ -29,7 +29,7 @@ class scTGMVAE():
     # K: the constant summing gene expression in each cell up to
     # gene_num: number of feature to select
     def preprocess_data(self, K = 1e4, gene_num = 2000):
-        self.X_normalized, self.X, self.scale_factor, self.label, self.le = preprocess.preprocess(self.X, self.grouping, K, gene_num)
+        self.X_normalized, self.X, self.scale_factor, self.label, self.le = preprocess.preprocess(self.raw_X.copy(), self.grouping, K, gene_num)
         self.dim_origin = self.X.shape[1]
 
 
