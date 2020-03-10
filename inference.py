@@ -181,8 +181,9 @@ class Inferer(object):
             ax1.plot(*self.lines[i].T, color="black", alpha=0.5)
 
         for idx,i in enumerate(self.CLUSTER_CENTER):
-            ax1.scatter(*self.embed_mu[idx:idx+1,:].T, c=[colors[i]],
-                        s=100, marker='*', label=str(idx))
+            ax1.scatter(*self.embed_mu[idx:idx+1,:].T,
+                        c=[colors[i]], edgecolors='white',
+                        s=200, marker='*', label=str(idx))
         plt.setp(ax1, xticks=[], yticks=[])
         box = ax1.get_position()
         ax1.set_position([box.x0, box.y0 + box.height * 0.1,
@@ -275,10 +276,11 @@ class Inferer(object):
                                                np.sum(milestone_net[:i,-1]))
 
         fig, ax = plt.subplots(1, figsize=(8, 5))
-        norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))      
+             
         cmap = matplotlib.cm.get_cmap('viridis')
 
         if np.sum(pseudotime>-1)>0:
+            norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))
             sc = plt.scatter(*self.embed_z[pseudotime>-1,:].T,
                 norm=norm,
                 c=pseudotime[pseudotime>-1],
@@ -289,6 +291,9 @@ class Inferer(object):
             ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                 fancybox=True, shadow=True, ncol=5)
             plt.colorbar(sc)
+        else:
+            norm = None
+            
         if np.sum(pseudotime==-1)>0:
             plt.scatter(*self.embed_z[pseudotime==-1,:].T, 
                         c='gray', s=1, alpha=0.4)
@@ -298,8 +303,10 @@ class Inferer(object):
                 c = 'gray'
             else:
                 c = [cmap(norm(pseudotime_node[idx]))]
-            plt.scatter(*self.embed_mu[idx:idx+1,:].T, c=c,            
-                        norm=norm, s=200, marker='*', label=str(idx))
+            plt.scatter(*self.embed_mu[idx:idx+1,:].T, c=c,
+                        edgecolors='white', # linewidths=10,
+                        norm=norm,
+                        s=200, marker='*', label=str(idx))
                         
         plt.setp(ax, xticks=[], yticks=[])
         plt.title('Pseudotime')
