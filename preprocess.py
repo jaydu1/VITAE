@@ -79,7 +79,8 @@ def preprocess(x, grouping = None, K = 1e4, gene_num = 2000):
         label, le = label_encoding(grouping)
         print('Number of cells in each class: ')
         table = pd.value_counts(grouping)
-        table.index = pd.Series(le.transform(table.index)) + ' <---> ' + table.index
+        table.index = pd.Series(le.transform(table.index).astype(str)) \
+            + ' <---> ' + table.index
         print(table)
 
     x_normalized, scale_factor = normalization(x, K)
