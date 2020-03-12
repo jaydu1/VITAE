@@ -285,11 +285,6 @@ class Inferer(object):
                 norm=norm,
                 c=pseudotime[pseudotime>-1],
                 s=2, alpha=0.5)
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                             box.width, box.height * 0.9])
-            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                fancybox=True, shadow=True, ncol=5)
             plt.colorbar(sc)
         else:
             norm = None
@@ -308,6 +303,11 @@ class Inferer(object):
                         norm=norm,
                         s=200, marker='*', label=str(idx))
                         
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                         box.width, box.height * 0.9])
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+            fancybox=True, shadow=True, ncol=5)
         plt.setp(ax, xticks=[], yticks=[])
         plt.title('Pseudotime')
         plt.show()
