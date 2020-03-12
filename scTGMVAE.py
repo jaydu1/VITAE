@@ -53,7 +53,8 @@ class scTGMVAE():
         NUM_STEP_PER_EPOCH = None,
         NUM_EPOCH = 1000,
         save_weights = False,
-        path_to_weights = ''
+        path_to_weights_pretrain = 'pre_train.checkpoint',
+        path_to_weights_train = 'train.checkpoint'
         ):
         self.n_clusters = n_clusters
         self.dimensions = dimensions
@@ -69,7 +70,8 @@ class scTGMVAE():
         else:
             self.NUM_STEP_PER_EPOCH = NUM_STEP_PER_EPOCH
         self.save_weights = save_weights
-        self.path_to_weights = path_to_weights
+        self.path_to_weights_pretrain = path_to_weights_pretrain
+        self.path_to_weights_train = path_to_weights_train
 
         self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, self.BATCH_SIZE)
     
@@ -85,14 +87,12 @@ class scTGMVAE():
         
     # save and load trained model parameters
     # path: path of checkpoints files
-    def save_model(self, path='', file_name='model.checkpoint'):
-        self.vae.save_weights(
-            os.path.join(path, file_name))
+    def save_model(self, path_to_file='model.checkpoint'):
+        self.vae.save_weights(path_to_file)
     
     
-    def load_model(self, path='', file_name='model.checkpoint'):
-        self.vae.load_weights(
-            os.path.join(path, file_name))
+    def load_model(self, path_to_file='model.checkpoint'):
+        self.vae.load_weights(path_to_file)
 
 
     # pre train the model with specified learning rate
@@ -107,7 +107,7 @@ class scTGMVAE():
             self.NUM_EPOCH_PRE, 
             self.NUM_STEP_PER_EPOCH)
         if self.save_weights:
-            save_model(self.path_to_weights, 'pre_train.checkpoint')
+            self.save_model(self.path_to_weights_pretrain)
           
           
     # initialize parameters in GMM after pre train
@@ -130,7 +130,7 @@ class scTGMVAE():
             self.label,
             self.X_normalized)
         if self.save_weights:
-            save_model(self.path_to_weights, 'train.checkpoint')
+            self.save_model(self.path_to_weights_train)
           
           
     # train the model with specified learning rate
@@ -139,7 +139,7 @@ class scTGMVAE():
         self.init_GMM_plot()
         self.train_together(train_learning_rate)
         if self.save_weights:
-            save_model(self.path_to_weights, 'train.checkpoint')
+            self.save_model(self.path_to_weights_train)
 
 
     # inference for trajectory
