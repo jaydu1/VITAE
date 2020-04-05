@@ -12,9 +12,9 @@ class Early_Stopping():
         self.best_metric = 0
 
         if not self.is_minimize:
-            self.factor = -1
+            self.factor = -1.0
         else:
-            self.factor = 1
+            self.factor = 1.0
 
     def __call__(self, metric):
         if self.step == 0:

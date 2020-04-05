@@ -148,7 +148,10 @@ class scTGMVAE():
         
         cluster_center = [int((self.n_clusters+(1-i)/2)*i) for i in range(self.n_clusters)]
         edges = [i for i in np.unique(c) if i not in cluster_center]
-        proj_c, proj_z_M = self.vae.get_proj_z(edges)
+        if len(edges)==0:
+            proj_c, proj_z_M = c, None
+        else:
+            proj_c, proj_z_M = self.vae.get_proj_z(edges)
         
         self.inferer.init_inference(c, w, mu, z, proj_c, proj_z_M,
             metric=metric, no_loop=no_loop)
