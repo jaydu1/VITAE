@@ -75,12 +75,15 @@ class Inferer(object):
         return G
 
 
-    def get_umap(self, z, mu, proj_z_M):
+    def get_umap(self, z, mu, proj_z_M=None):
         concate_z = np.concatenate((z, mu.T), axis=0)
         mapper = umap.UMAP().fit(concate_z)
         embed_z = mapper.embedding_[:-self.NUM_CLUSTER,:].copy()    
         embed_mu = mapper.embedding_[-self.NUM_CLUSTER:,:].copy()
-        embed_edge = mapper.transform(proj_z_M)
+        if proj_z_M is None:
+            embed_edge = None
+        else:
+            embed_edge = mapper.transform(proj_z_M)
         return embed_z, embed_mu, embed_edge
 
 
@@ -132,8 +135,10 @@ class Inferer(object):
         df_edges = self.get_edges_score(c)        
         if df_edges is None:
             # only plot nodes
+            self.df_edges = None
+            self.embed_z, self.embed_mu, _ = self.get_umap(z, mu, proj_z_M)
             return None
-
+        
         # Build graph
         self.G = self.build_graph(df_edges)
         ind_edges = np.array([self.C[e] for e in self.G.edges])
@@ -148,12 +153,13 @@ class Inferer(object):
 
     
     def plot_trajectory(self, labels, cutoff=None):
-        if cutoff is None:
+        if self.df_edges is None:
+            self.select_edges = pd.DataFrame()
+        elif cutoff is None:
             self.select_edges = self.df_edges.sort_values(
                 self.metric).iloc[-self.NUM_CLUSTER+1:]
         else:
             self.select_edges = self.df_edges[self.df_edges[self.metric]>=cutoff]
-        
         
         if labels is None:
             fig, ax1 = plt.subplots(1, figsize=(7, 5))
@@ -240,40 +246,44 @@ class Inferer(object):
     def plot_pseudotime(self, node):
         dist_mu = pairwise_distances(self.mu.T)
         
-        G = self.build_graph(self.select_edges)
-        connected_comps = nx.node_connected_component(G, node)
-        subG = G.subgraph(connected_comps)
-        subG_mu = nx.from_numpy_array(dist_mu).subgraph(connected_comps)
-        
-        # compute milestone network
-        milestone_net = self.build_milestone_net(subG,subG_mu,node)
+        if self.df_edges is None:
+            pseudotime = - np.ones_like(self.c)
+            pseudotime_node = - np.ones_like(self.CLUSTER_CENTER)
+        else:
+            G = self.build_graph(self.select_edges)
+            connected_comps = nx.node_connected_component(G, node)
+            subG = G.subgraph(connected_comps)
+            subG_mu = nx.from_numpy_array(dist_mu).subgraph(connected_comps)
+            
+            # compute milestone network
+            milestone_net = self.build_milestone_net(subG,subG_mu,node)
 
-        # compute pseudotime
-        pseudotime = - np.ones_like(self.c) 
-        pseudotime_node = - np.ones_like(self.CLUSTER_CENTER) 
-        for i in range(len(milestone_net)):
-            _from, _to = milestone_net[i,:2]
-            _from, _to = int(_from), int(_to)
-            if i==0:
-                pseudotime[self.c==self.CLUSTER_CENTER[_from]] = \
-                    pseudotime_node[_from] = 0
-            pseudotime[self.c==self.CLUSTER_CENTER[_to]] = \
-                pseudotime_node[_to] = np.sum(milestone_net[:i+1,-1])
+            # compute pseudotime
+            pseudotime = - np.ones_like(self.c)
+            pseudotime_node = - np.ones_like(self.CLUSTER_CENTER)
+            for i in range(len(milestone_net)):
+                _from, _to = milestone_net[i,:2]
+                _from, _to = int(_from), int(_to)
+                if i==0:
+                    pseudotime[self.c==self.CLUSTER_CENTER[_from]] = \
+                        pseudotime_node[_from] = 0
+                pseudotime[self.c==self.CLUSTER_CENTER[_to]] = \
+                    pseudotime_node[_to] = np.sum(milestone_net[:i+1,-1])
 
-            flag = False
-            if _from>_to:
-                flag = True
-                _from,_to = _to,_from
-            state = self.C[_from,_to]
+                flag = False
+                if _from>_to:
+                    flag = True
+                    _from,_to = _to,_from
+                state = self.C[_from,_to]
 
-            if flag:
-                pseudotime[self.c == state] = ((1-self.w[self.c == state]) * 
-                                               milestone_net[i,-1] + 
-                                               np.sum(milestone_net[:i,-1]))
-            else:
-                pseudotime[self.c == state] = (self.w[self.c == state] * 
-                                               milestone_net[i,-1] + 
-                                               np.sum(milestone_net[:i,-1]))
+                if flag:
+                    pseudotime[self.c == state] = ((1-self.w[self.c == state]) *
+                                                   milestone_net[i,-1] +
+                                                   np.sum(milestone_net[:i,-1]))
+                else:
+                    pseudotime[self.c == state] = (self.w[self.c == state] *
+                                                   milestone_net[i,-1] +
+                                                   np.sum(milestone_net[:i,-1]))
 
         fig, ax = plt.subplots(1, figsize=(8, 5))
              
