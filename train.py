@@ -91,7 +91,7 @@ def plot_pre_train(vae, X_normalized, label):
     plt.show()
 
 
-def trainTogether(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, label, X_normalized):
+def train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, label, X_normalized):
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()

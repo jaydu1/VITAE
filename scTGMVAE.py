@@ -46,12 +46,6 @@ class scTGMVAE():
         dimensions = [16], 
         dim_latent = 8, 
         data_type = 'UMI',
-        EARLY_STOPPING_PATIENCE = 10,
-        EARLY_STOPPING_TOLERANCE = 1e-3,
-        BATCH_SIZE = 32,
-        NUM_EPOCH_PRE = 300,
-        NUM_STEP_PER_EPOCH = None,
-        NUM_EPOCH = 1000,
         save_weights = False,
         path_to_weights_pretrain = 'pre_train.checkpoint',
         path_to_weights_train = 'train.checkpoint'
@@ -60,20 +54,9 @@ class scTGMVAE():
         self.dimensions = dimensions
         self.dim_latent = dim_latent
         self.data_type = data_type
-        self.EARLY_STOPPING_PATIENCE = EARLY_STOPPING_PATIENCE
-        self.EARLY_STOPPING_TOLERANCE= EARLY_STOPPING_TOLERANCE
-        self.BATCH_SIZE = BATCH_SIZE
-        self.NUM_EPOCH_PRE = NUM_EPOCH_PRE
-        self.NUM_EPOCH = NUM_EPOCH
-        if NUM_STEP_PER_EPOCH is None:
-            self.NUM_STEP_PER_EPOCH = self.X.shape[0]//BATCH_SIZE+1
-        else:
-            self.NUM_STEP_PER_EPOCH = NUM_STEP_PER_EPOCH
         self.save_weights = save_weights
         self.path_to_weights_pretrain = path_to_weights_pretrain
         self.path_to_weights_train = path_to_weights_train
-
-        self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, self.BATCH_SIZE)
     
         self.vae = model.VariationalAutoEncoder(
             self.n_clusters, 
@@ -96,16 +79,23 @@ class scTGMVAE():
 
 
     # pre train the model with specified learning rate
-    def pre_train(self, learning_rate = 1e-4):
+    def pre_train(self, learning_rate = 1e-3, batch_size = 32,
+            num_epoch = 300, num_step_per_epoch = None,
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3):
+            
+        if num_step_per_epoch is None:
+            num_step_per_epoch = self.X.shape[0]//batch_size+1
+                
         train.clear_session()
+        self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, batch_size)
         self.vae = train.pre_train(
             self.train_dataset, 
             self.vae, 
             learning_rate, 
-            self.EARLY_STOPPING_PATIENCE, 
-            self.EARLY_STOPPING_TOLERANCE, 
-            self.NUM_EPOCH_PRE, 
-            self.NUM_STEP_PER_EPOCH)
+            early_stopping_patience,
+            early_stopping_tolerance,
+            num_epoch,
+            num_step_per_epoch)
         if self.save_weights:
             self.save_model(self.path_to_weights_pretrain)
           
@@ -118,15 +108,22 @@ class scTGMVAE():
 
 
     # train the model with specified learning rate
-    def train_together(self, learning_rate = 1e-4):
-        self.vae = train.trainTogether(
+    def train(self, learning_rate = 1e-3, batch_size = 32,
+            num_epoch = 300, num_step_per_epoch = None,
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3):
+        
+        if num_step_per_epoch is None:
+            num_step_per_epoch = self.X.shape[0]//batch_size+1
+            
+        self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, batch_size)
+        self.vae = train.train(
             self.train_dataset, 
             self.vae, 
-            learning_rate, 
-            self.EARLY_STOPPING_PATIENCE, 
-            self.EARLY_STOPPING_TOLERANCE, 
-            self.NUM_EPOCH, 
-            self.NUM_STEP_PER_EPOCH,
+            learning_rate,
+            early_stopping_patience,
+            early_stopping_tolerance,
+            num_epoch,
+            num_step_per_epoch,
             self.label,
             self.X_normalized)
         if self.save_weights:
@@ -134,12 +131,26 @@ class scTGMVAE():
           
           
     # train the model with specified learning rate
-    def train(self, pre_train_learning_rate = 1e-4, train_learning_rate = 1e-4):
-        self.pre_train(pre_train_learning_rate)
+    def train_all(self, learning_rate = 1e-3, batch_size = 32,
+            num_epoch = 300, num_step_per_epoch = None,
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3):
+        '''
+        To pretrain and train the model by using same parameters for pre_train() and train().
+        '''
+        train.clear_session()
+        self.pre_train(learning_rate,
+            batch_size,
+            num_epoch,
+            num_step_per_epoch,
+            early_stopping_patience,
+            early_stopping_tolerance)
         self.init_GMM_plot()
-        self.train_together(train_learning_rate)
-        if self.save_weights:
-            self.save_model(self.path_to_weights_train)
+        self.train(learning_rate,
+            batch_size,
+            num_epoch,
+            num_step_per_epoch,
+            early_stopping_patience,
+            early_stopping_tolerance)
 
 
     # inference for trajectory
