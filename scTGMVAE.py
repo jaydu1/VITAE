@@ -44,7 +44,8 @@ class scTGMVAE():
     def build_model(self,
         n_clusters = 3, 
         dimensions = [16], 
-        dim_latent = 8, 
+        dim_latent = 8,
+        L = 5,
         data_type = 'UMI',
         save_weights = False,
         path_to_weights_pretrain = 'pre_train.checkpoint',
@@ -53,6 +54,7 @@ class scTGMVAE():
         self.n_clusters = n_clusters
         self.dimensions = dimensions
         self.dim_latent = dim_latent
+        self.L = L
         self.data_type = data_type
         self.save_weights = save_weights
         self.path_to_weights_pretrain = path_to_weights_pretrain
@@ -63,6 +65,7 @@ class scTGMVAE():
             self.dim_origin, 
             self.dimensions, 
             self.dim_latent,
+            self.L,
             self.data_type)
         
         self.inferer = Inferer(self.n_clusters)
