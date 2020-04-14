@@ -205,32 +205,35 @@ class GMM(Layer):
             # [batch_size, L, n_states, M]
             temp_pi = tf.tile(tf.expand_dims(
                             tf.expand_dims(tf.nn.softmax(self.pi), -1), 1),
-                            (batch_size, L, 1, self.M))
+                            (batch_size,L,1,self.M))
             log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(2 * math.pi) + \
                             tf.math.log(temp_pi+1e-30) - \
-                            tf.reduce_sum(tf.math.square(temp_Z - temp_mu)/2, 2)
+                            tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2
             # [batch_size, L]
-            log_p_z =   tf.math.reduce_logsumexp(log_p_zc_w, axis=[2,3]) \
+            log_p_z_L = tf.math.reduce_logsumexp(log_p_zc_w, axis=[2,3]) \
                             - tf.math.log(tf.cast(self.M, tf.float32))
+            # [1, ]
+            log_p_z = tf.reduce_mean(log_p_z_L)
                                 
             if inference:
                 # log_p_c_x     -   predicted probability distribution
                 # [batch_size, n_states]
-                log_p_c_x = tf.reduce_mean(
-                                tf.math.reduce_logsumexp(log_p_zc_w,
-                                axis=-1), axis=1)
+                log_p_c_x = tf.reduce_mean(tf.exp(
+                                tf.math.reduce_logsumexp(
+                                    log_p_zc_w, axis=-1) -
+                                tf.math.log(tf.cast(self.M, tf.float32)) -
+                                tf.expand_dims(log_p_z_L, -1)),
+                            axis=1)
 
                 # c         -   predicted clusters
-                c = tf.math.argmax(
-                        tf.reduce_mean(tf.exp(tf.math.reduce_logsumexp(
-                            log_p_zc_w, axis=-1)), axis=1), axis=-1)
+                c = tf.math.argmax(log_p_c_x, axis=-1)
                 c = tf.cast(c, 'int32')
 
                 # w         -   E(w|x)
                 # [batch_size, M]
                 p_w_x = tf.reduce_mean(tf.exp(
                             tf.math.reduce_logsumexp(log_p_zc_w, axis=2) -
-                            tf.expand_dims(log_p_z, -1)
+                            tf.expand_dims(log_p_z_L, -1)
                             ), axis=1)
                     
                 w =  tf.reduce_mean(
@@ -252,16 +255,14 @@ class GMM(Layer):
                                             tf.tile(tf.range(L), [batch_size]),
                                             tf.repeat(c, L)], 1), [batch_size, L, -1]))
                 # [batch_size, M]
-                p_w_xc = tf.exp(
-                    tf.reduce_mean(
+                p_w_xc = tf.reduce_mean(tf.exp(
                         map_log_p_zc_w -
-                        tf.math.reduce_logsumexp(
-                            map_log_p_zc_w, axis=-1, keepdims=True), axis=1
-                            ) -
-                        tf.expand_dims(tf.gather_nd(log_p_c_x,
+                        tf.expand_dims(log_p_z_L, -1) -
+                        tf.expand_dims(tf.expand_dims(
+                            tf.gather_nd(log_p_c_x,
                                         list(zip(np.arange(batch_size),
-                                                c.numpy()))), -1)
-                        )
+                                                c.numpy()))), -1), -1)
+                        ), axis=1)
                     
                 wc = tf.reduce_sum(
                             tf.tile(self.w, (batch_size,1)) *
@@ -343,7 +344,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         z_mean, z_log_var, z = self.encoder(x_normalized, self.L)
         
         if inference:
-            pi_norm, mu, log_p_z, c, w, var_w, wc, var_wc, proj_z = self.GMM(z, inference=inference)
+            pi_norm, mu, _, c, w, var_w, wc, var_wc, proj_z = self.GMM(z, inference=inference)
             return pi_norm, mu, c, w, var_w, wc, var_wc, z_mean, proj_z
         else:
             if self.data_type == 'UMI':
@@ -384,8 +385,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             pi_norm, mu, log_p_z = self.GMM(z, inference=False)
 
             # - E_q[log p(z)]
-            neg_E_pz = tf.reduce_mean(- log_p_z)
-            self.add_loss(neg_E_pz)
+            self.add_loss(- log_p_z)
 
             # - Eq[log q(z|x)]
             E_qzx = - tf.reduce_mean(
