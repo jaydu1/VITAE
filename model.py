@@ -153,9 +153,8 @@ class GMM(Layer):
 
     def initialize(self, mu, Sigma, pi):
         # Initialize mu and sigma computed by GMM
-        self.pi.assign(pi)
+        # self.pi.assign(pi)
         self.mu.assign(mu)
-
         # self.Sigma.assign(Sigma)
 
     def call(self, z, cluster=False, inference=False):
@@ -264,14 +263,14 @@ class GMM(Layer):
                                                 c.numpy()))), -1), -1)
                         ), axis=1)
                     
-                wc = tf.reduce_sum(
+                wc = tf.reduce_mean(
                             tf.tile(self.w, (batch_size,1)) *
                             p_w_xc,
                             axis=-1
                         )
 
                 # var_w|c   -   Var(w|x,c)
-                var_wc = tf.reduce_sum(
+                var_wc = tf.reduce_mean(
                             tf.square(
                                 tf.tile(self.w, (batch_size,1)) -
                                 tf.expand_dims(wc, -1)) *
@@ -279,18 +278,18 @@ class GMM(Layer):
                             axis=-1
                         )
                 
-                c = tf.where(w>1e-3, c,
-                            tf.gather(self.clusters_ind, tf.gather(self.A, c)))
-                c = tf.where(wc<1-1e-3, c,
+                c = tf.where(wc>1e-3, c,
                             tf.gather(self.clusters_ind, tf.gather(self.B, c)))
+                c = tf.where(wc<1-1e-3, c,
+                            tf.gather(self.clusters_ind, tf.gather(self.A, c)))
                       
                 # proj_z    -   projection of z to the segment of two clusters
                 #               in the latent space
                 proj_z = tf.transpose(
                     tf.gather(self.mu, tf.gather(self.A, c), axis=1) *
-                    tf.expand_dims(w, 0) +
+                    tf.expand_dims(wc, 0) +
                     tf.gather(self.mu, tf.gather(self.B, c), axis=1) *
-                    (1-tf.expand_dims(w, 0)))
+                    (1-tf.expand_dims(wc, 0)))
                 return (tf.nn.softmax(self.pi).numpy(), self.mu.numpy(), 
                         log_p_z.numpy(), c.numpy(), w.numpy(), var_w.numpy(), 
                         wc.numpy(), var_wc.numpy(), proj_z.numpy())
