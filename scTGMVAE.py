@@ -84,7 +84,7 @@ class scTGMVAE():
     # pre train the model with specified learning rate
     def pre_train(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3):
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, L=None):
             
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
@@ -98,7 +98,8 @@ class scTGMVAE():
             early_stopping_patience,
             early_stopping_tolerance,
             num_epoch,
-            num_step_per_epoch)
+            num_step_per_epoch,
+            L)
         if self.save_weights:
             self.save_model(self.path_to_weights_pretrain)
           
@@ -113,7 +114,7 @@ class scTGMVAE():
     # train the model with specified learning rate
     def train(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3):
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, L=None):
         
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
@@ -127,8 +128,10 @@ class scTGMVAE():
             early_stopping_tolerance,
             num_epoch,
             num_step_per_epoch,
+            L,
             self.label,
-            self.X_normalized)
+            self.X_normalized
+            )
         if self.save_weights:
             self.save_model(self.path_to_weights_train)
           

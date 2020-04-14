@@ -23,7 +23,7 @@ def warp_dataset(X, X_normalized, Scale_factor, BATCH_SIZE):
     return train_dataset
 
 
-def pre_train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH_PRE, NUM_STEP_PER_EPOCH):
+def pre_train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH_PRE, NUM_STEP_PER_EPOCH, L):
     optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
     loss_metric = tf.keras.metrics.Mean()
     early_stopping = Early_Stopping(patience = patience, tolerance = tolerance)
@@ -35,7 +35,7 @@ def pre_train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH_
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, x_scale_factor) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
-                _ = vae(x_norm_batch, x_batch, x_scale_factor, pre_train=True)
+                _ = vae(x_norm_batch, x_batch, x_scale_factor, pre_train=True, L=L)
                 # Compute reconstruction loss
                 loss = tf.reduce_sum(vae.losses[0]) 
                 
@@ -91,7 +91,7 @@ def plot_pre_train(vae, X_normalized, label):
     plt.show()
 
 
-def train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, label, X_normalized):
+def train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, L, label, X_normalized):
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()
@@ -105,7 +105,7 @@ def train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH, NUM
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, x_scale_factor) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
-                _ = vae(x_norm_batch, x_batch, x_scale_factor)
+                _ = vae(x_norm_batch, x_batch, x_scale_factor, L=L)
                 loss = tf.reduce_sum(vae.losses)  
 
             grads = tape.gradient(loss, vae.trainable_weights,

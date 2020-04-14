@@ -153,7 +153,7 @@ class GMM(Layer):
 
     def initialize(self, mu, Sigma, pi):
         # Initialize mu and sigma computed by GMM
-        # self.pi.assign(pi)
+        self.pi.assign(pi)
         self.mu.assign(mu)
         # self.Sigma.assign(Sigma)
 
@@ -338,9 +338,11 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.decoder = Decoder(dimensions[::-1], dim_origin, data_type)
 
     def call(self, x_normalized, x = None, scale_factor = 1,
-             pre_train = False, cluster = False, inference = False):
+             pre_train = False, cluster = False, inference = False, L=None):
         # Feed forward through encoder, GMM layer and decoder.
-        z_mean, z_log_var, z = self.encoder(x_normalized, self.L)
+        if L is None:
+            L=self.L
+        z_mean, z_log_var, z = self.encoder(x_normalized, L)
         
         if inference:
             pi_norm, mu, _, c, w, var_w, wc, var_wc, proj_z = self.GMM(z, inference=inference)
@@ -357,7 +359,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             return None
 
         x_hat = x_hat*tf.expand_dims(tf.expand_dims(scale_factor, 1), 1)
-        x = tf.tile(tf.expand_dims(x, 1), (1,self.L,1))
+        x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
         # Negative Log-Likelihood Loss function
 
         # Ref for NB & ZINB loss functions:
