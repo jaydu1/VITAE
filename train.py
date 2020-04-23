@@ -118,7 +118,7 @@ def train(train_dataset, vae,
             grads = tape.gradient(loss, vae.trainable_weights,
                                   unconnected_gradients=tf.UnconnectedGradients.ZERO)
             optimizer.apply_gradients(zip(grads, vae.trainable_weights))
-            vae.GMM.normalize()
+#            vae.GMM.normalize()
             loss_total(loss)
             loss_neg_E_nb(vae.losses[0])
             loss_neg_E_pz(vae.losses[1])
