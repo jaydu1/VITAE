@@ -42,7 +42,6 @@ class scTGMVAE():
     # NUM_EPOCH: number of epochs for training
     # NUM_STEP_PER_EPOCH: number of steps in each epoch, default is n/BATCH_SIZE+1
     def build_model(self,
-        n_clusters = 3, 
         dimensions = [16], 
         dim_latent = 8,
         L = 5,
@@ -51,7 +50,6 @@ class scTGMVAE():
         path_to_weights_pretrain = 'pre_train.checkpoint',
         path_to_weights_train = 'train.checkpoint'
         ):
-        self.n_clusters = n_clusters
         self.dimensions = dimensions
         self.dim_latent = dim_latent
         self.L = L
@@ -61,14 +59,11 @@ class scTGMVAE():
         self.path_to_weights_train = path_to_weights_train
     
         self.vae = model.VariationalAutoEncoder(
-            self.n_clusters, 
             self.dim_origin, 
             self.dimensions, 
             self.dim_latent,
             self.L,
             self.data_type)
-        
-        self.inferer = Inferer(self.n_clusters)
         
         
     # save and load trained model parameters
@@ -106,15 +101,24 @@ class scTGMVAE():
           
     # initialize parameters in GMM after pre train
     # plot the UMAP latent space after pre train
-    def init_GMM_plot(self):
-        self.vae = train.init_GMM(self.vae, self.X_normalized, self.n_clusters)
-        train.plot_pre_train(self.vae, self.X_normalized, self.label)
+#    def init_GMM_plot(self):
+#        self.vae = train.init_GMM(self.vae, self.X_normalized, self.n_clusters)
+#        train.plot_pre_train(self.vae, self.X_normalized, self.label)
+
+    def get_latent_z(self):
+        return self.vae.get_z(self.X_normalized)
+
+
+    def init_GMM(self, n_clusters, mu, Sigma=None, pi=None):
+        self.n_clusters = n_clusters
+        self.vae.init_GMM(n_clusters, mu, Sigma, pi)
+        self.inferer = Inferer(self.n_clusters)
 
 
     # train the model with specified learning rate
     def train(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, L=None):
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, L=None, weight=None):
         
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
@@ -130,7 +134,8 @@ class scTGMVAE():
             num_step_per_epoch,
             L,
             self.label,
-            self.X_normalized
+            self.X_normalized,
+            weight
             )
         if self.save_weights:
             self.save_model(self.path_to_weights_train)

@@ -56,22 +56,22 @@ def pre_train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH_
     return vae
 
 
-def init_GMM(vae, X_normalized, NUM_CLUSTER):
-    z_mean, _,_ = vae.encoder(X_normalized)
-    gmm = GaussianMixture(n_components=NUM_CLUSTER, covariance_type='diag')
-    gmm.fit(z_mean)
-    means_0 = gmm.means_
-    covs_0 = gmm.covariances_
-    pred_c = gmm.predict(z_mean)
-    n_states = int((NUM_CLUSTER+1)*NUM_CLUSTER/2)
-    pi = np.zeros((1,n_states))
-    cluster_center = [int((NUM_CLUSTER+(1-i)/2)*i) for i in range(NUM_CLUSTER)]
-    for i in range(NUM_CLUSTER):
-        pi[0, cluster_center[i]] = np.sum(pred_c == i)
-    pi = pi / np.sum(pi)
-    vae.GMM.initialize(means_0.T, covs_0, pi)
-    print('GMM Initialization Done.')
-    return vae
+#def init_GMM(vae, X_normalized, NUM_CLUSTER):
+#    z_mean, _,_ = vae.encoder(X_normalized)
+#    gmm = GaussianMixture(n_components=NUM_CLUSTER, covariance_type='diag')
+#    gmm.fit(z_mean)
+#    means_0 = gmm.means_
+#    covs_0 = gmm.covariances_
+#    pred_c = gmm.predict(z_mean)
+#    n_states = int((NUM_CLUSTER+1)*NUM_CLUSTER/2)
+#    pi = np.zeros((1,n_states))
+#    cluster_center = [int((NUM_CLUSTER+(1-i)/2)*i) for i in range(NUM_CLUSTER)]
+#    for i in range(NUM_CLUSTER):
+#        pi[0, cluster_center[i]] = np.sum(pred_c == i)
+#    pi = pi / np.sum(pi)
+#    vae.GMM.initialize(means_0.T, covs_0, pi)
+#    print('GMM Initialization Done.')
+#    return vae
 
 
 def plot_pre_train(vae, X_normalized, label):
@@ -91,13 +91,20 @@ def plot_pre_train(vae, X_normalized, label):
     plt.show()
 
 
-def train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, L, label, X_normalized):
+def train(train_dataset, vae,
+        learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, L,
+        label, X_normalized, weight):
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()
     loss_neg_E_pz = tf.keras.metrics.Mean()
     loss_E_qzx = tf.keras.metrics.Mean()
     early_stopping = Early_Stopping(patience = patience, tolerance = tolerance)
+    if weight is None:
+        weight = np.ones(3, dtype=np.float32)
+    else:
+        weight = np.array(weight, dtype=np.float32)
+        
     for epoch in range(NUM_EPOCH):
         print('Start of epoch %d' % (epoch,))
         progbar = Progbar(NUM_STEP_PER_EPOCH)
@@ -106,12 +113,12 @@ def train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH, NUM
         for step, (x_batch, x_norm_batch, x_scale_factor) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
                 _ = vae(x_norm_batch, x_batch, x_scale_factor, L=L)
-                loss = tf.reduce_sum(vae.losses)  
-
+                loss = tf.reduce_sum(vae.losses*weight)  
+        
             grads = tape.gradient(loss, vae.trainable_weights,
                                   unconnected_gradients=tf.UnconnectedGradients.ZERO)
             optimizer.apply_gradients(zip(grads, vae.trainable_weights))
-            #vae.GMM.normalize()
+            vae.GMM.normalize()
             loss_total(loss)
             loss_neg_E_nb(vae.losses[0])
             loss_neg_E_pz(vae.losses[1])

@@ -144,7 +144,7 @@ class GMM(Layer):
         # [mu_1, ... , mu_K] in R^(dim_latent * n_clusters)
         self.mu = tf.Variable(tf.random.uniform([self.dim_latent, self.n_clusters],
                                                 minval = -1, maxval = 1),
-                                name = "mu")
+                                name = 'mu')
                 
         # [diag(Sigma_1), ... , diag(Sigma_K)] in R^(dim_latent * n_clusters)
         # self.Sigma = tf.Variable(tf.ones([self.dim_latent, self.n_clusters]),
@@ -152,10 +152,16 @@ class GMM(Layer):
         #                          name="Sigma")
 
     def initialize(self, mu, Sigma, pi):
-        # Initialize mu and sigma computed by GMM
-        self.pi.assign(pi)
+        # Initialize parameters of GMM
         self.mu.assign(mu)
-        # self.Sigma.assign(Sigma)
+        if pi is not None:
+            self.pi.assign(pi)
+        if Sigma is not None:
+            raise NotImplementedError('Not implemented for different variances.')
+            self.Sigma.assign(Sigma)
+
+    def normalize(self):
+        self.pi = tf.nn.softmax(self.pi)
 
     def call(self, z, cluster=False, inference=False):
         '''
@@ -291,7 +297,7 @@ class GMM(Layer):
                     tf.gather(self.mu, tf.gather(self.B, c), axis=1) *
                     (1-tf.expand_dims(wc, 0)))
                 return (tf.nn.softmax(self.pi).numpy(), self.mu.numpy(), 
-                        log_p_z.numpy(), c.numpy(), w.numpy(), var_w.numpy(), 
+                        c.numpy(), w.numpy(), var_w.numpy(),
                         wc.numpy(), var_wc.numpy(), proj_z.numpy())
             else:
                 return tf.nn.softmax(self.pi), self.mu, log_p_z
@@ -314,7 +320,7 @@ class VariationalAutoEncoder(tf.keras.Model):
     """
     Combines the encoder, decoder and GMM into an end-to-end model for training.
     """
-    def __init__(self, n_clusters, dim_origin, dimensions, dim_latent, L,
+    def __init__(self, dim_origin, dimensions, dim_latent, L,
                  data_type = 'UMI', name = 'autoencoder', **kwargs):
         '''
         Args:
@@ -331,21 +337,28 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.data_type = data_type
         self.dim_origin = dim_origin
         self.dim_latent = dim_latent
-        self.n_clusters = n_clusters
         self.L = L
         self.encoder = Encoder(dimensions, dim_latent)
-        self.GMM = GMM(n_clusters, dim_latent)
         self.decoder = Decoder(dimensions[::-1], dim_origin, data_type)
+
+    def init_GMM(self, n_clusters, mu, Sigma=None, pi=None):
+        self.n_clusters = n_clusters
+        self.GMM = GMM(self.n_clusters, self.dim_latent)
+        self.GMM.initialize(mu, Sigma, pi)
 
     def call(self, x_normalized, x = None, scale_factor = 1,
              pre_train = False, cluster = False, inference = False, L=None):
         # Feed forward through encoder, GMM layer and decoder.
+        if not pre_train and self.GMM is None:
+            raise ReferenceError('Have not initialized GMM.')
+        
         if L is None:
             L=self.L
+            
         z_mean, z_log_var, z = self.encoder(x_normalized, L)
         
         if inference:
-            pi_norm, mu, _, c, w, var_w, wc, var_wc, proj_z = self.GMM(z, inference=inference)
+            pi_norm, mu, c, w, var_w, wc, var_wc, proj_z = self.GMM(z, inference=inference)
             return pi_norm, mu, c, w, var_w, wc, var_wc, z_mean, proj_z
         else:
             if self.data_type == 'UMI':
@@ -396,6 +409,10 @@ class VariationalAutoEncoder(tf.keras.Model):
                             )
             self.add_loss(E_qzx)
             return None
+    
+    def get_z(self, x_normalized):
+        z_mean, _, _ = self.encoder(x_normalized, 1)
+        return z_mean.numpy()
     
     def get_proj_z(self, c):
         '''
