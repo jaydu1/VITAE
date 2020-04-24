@@ -104,7 +104,8 @@ def train(train_dataset, vae,
         weight = np.ones(3, dtype=np.float32)
     else:
         weight = np.array(weight, dtype=np.float32)
-        
+    weight = tf.convert_to_tensor(weight)
+    
     for epoch in range(NUM_EPOCH):
         print('Start of epoch %d' % (epoch,))
         progbar = Progbar(NUM_STEP_PER_EPOCH)
