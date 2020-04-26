@@ -36,7 +36,7 @@ class Encoder(Layer):
         self.latent_log_var = Dense(dim_latent, name = 'latent_log_var')
         self.sampling = Sampling()
 
-    def call(self, x, L=1):
+    def call(self, x, L=1, is_training=True):
         '''
         Input :
             x           - input                     [batch_size, dim_origin]
@@ -47,7 +47,7 @@ class Encoder(Layer):
         '''
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             x = dense(x)
-            x = bn(x)
+            x = bn(x, training=is_training)
         z_mean = self.latent_mean(x)
         z_log_var = self.latent_log_var(x)
         _z_mean = tf.tile(tf.expand_dims(z_mean, 1), (1,L,1))
@@ -85,7 +85,7 @@ class Decoder(Layer):
         if self.data_type == 'non-UMI':
             self.phi = Dense(dim_origin, activation = 'sigmoid', name = "phi")
             
-    def call(self, z):
+    def call(self, z, is_training=True):
         '''
         Input :
             z           - latent variables  [batch_size, L, dim_origin]
@@ -96,7 +96,7 @@ class Decoder(Layer):
         '''
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             z = dense(z)
-            z = bn(z)
+            z = bn(z, training=is_training)
         lambda_z = tf.math.exp(self.log_lambda_z(z))
         r = tf.exp(self.log_r)
         if self.data_type=='UMI':
@@ -355,7 +355,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         if L is None:
             L=self.L
             
-        z_mean, z_log_var, z = self.encoder(x_normalized, L)
+        z_mean, z_log_var, z = self.encoder(x_normalized, L, not inference)
         
         if inference:
             pi_norm, mu, c, w, var_w, wc, var_wc, proj_z = self.GMM(z, inference=inference)
@@ -411,7 +411,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             return None
     
     def get_z(self, x_normalized):
-        z_mean, _, _ = self.encoder(x_normalized, 1)
+        z_mean, _, _ = self.encoder(x_normalized, 1, False)
         return z_mean.numpy()
     
     def get_proj_z(self, c):
