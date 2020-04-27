@@ -72,7 +72,17 @@ class scTGMVAE():
         self.vae.save_weights(path_to_file)
     
     
-    def load_model(self, path_to_file='model.checkpoint'):
+    def load_model(self, path_to_file='model.checkpoint', n_clusters=None):
+        '''
+        Params:
+            path_to_file - path to weight files of pre trained or
+                           trained model
+            n_clusters   - when loading weights of trained model, need
+                           to specify num of clusters, so that the GMM
+                           layer can be initialized
+        '''
+        if n_clusters is not None:
+            self.init_GMM(n_clusters)
         self.vae.load_weights(path_to_file)
 
 
@@ -109,7 +119,7 @@ class scTGMVAE():
         return self.vae.get_z(self.X_normalized)
 
 
-    def init_GMM(self, n_clusters, mu, Sigma=None, pi=None):
+    def init_GMM(self, n_clusters, mu=None, Sigma=None, pi=None):
         self.n_clusters = n_clusters
         self.vae.init_GMM(n_clusters, mu, Sigma, pi)
         self.inferer = Inferer(self.n_clusters)
@@ -175,9 +185,9 @@ class scTGMVAE():
         else:
             proj_c, proj_z_M = self.vae.get_proj_z(edges)
         
-        self.inferer.init_inference(c, w, mu, z, proj_c, proj_z_M,
-            metric=metric, no_loop=no_loop)
-        return w, var_w, wc, var_wc
+        c = self.inferer.init_inference(c, w, mu, z, proj_c, proj_z_M,
+                metric=metric, no_loop=no_loop)
+        return c, w, var_w, wc, var_wc
         
     def plot_trajectory(self, cutoff=None):
         self.inferer.plot_trajectory(self.grouping, cutoff=cutoff)

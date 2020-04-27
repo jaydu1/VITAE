@@ -153,7 +153,8 @@ class GMM(Layer):
 
     def initialize(self, mu, Sigma, pi):
         # Initialize parameters of GMM
-        self.mu.assign(mu)
+        if mu is not None:
+            self.mu.assign(mu)
         if pi is not None:
             self.pi.assign(pi)
         if Sigma is not None:
