@@ -151,6 +151,13 @@ class Inferer(object):
         # Smooth lines
         self.lines = self.smooth_line(ind_edges, self.embed_mu, embed_edges, proj_c)
 
+        # If no_loop=True, relabel points that in extra
+        # edges to the nearest cluster.
+        if no_loop:
+            extra_inds = [i for i,x in enumerate(c) if x not in np.r_[self.df_edges.index,self.CLUSTER_CENTER]]
+            self.c[extra_inds] = np.argmin(np.mean((np.expand_dims(z[extra_inds,:],-1) - mu)**2, axis=(1)), axis=-1)
+        
+        return c
     
     def plot_trajectory(self, labels, cutoff=None):
         if self.df_edges is None:

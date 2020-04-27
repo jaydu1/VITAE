@@ -359,7 +359,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         
         if inference:
             pi_norm, mu, c, w, var_w, wc, var_wc, proj_z = self.GMM(z, inference=inference)
-            return pi_norm, mu, c, w, var_w, wc, var_wc, z_mean, proj_z
+            return pi_norm, mu, c, w, var_w, wc, var_wc, z_mean.numpy(), proj_z
         else:
             if self.data_type == 'UMI':
                 x_hat, r = self.decoder(z)
