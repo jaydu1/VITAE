@@ -93,7 +93,7 @@ def plot_pre_train(vae, X_normalized, label):
 
 def train(train_dataset, vae,
         learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, L,
-        label, X_normalized, weight):
+        label, X_normalized, weight, is_plot=False):
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()
@@ -145,29 +145,30 @@ def train(train_dataset, vae,
         loss_neg_E_pz.reset_states()
         loss_E_qzx.reset_states()
 
-        if epoch%10==0 or epoch==NUM_EPOCH-1:        
-            pi,mu,c,w,var_w,wc,var_wc,z_mean,proj_z = vae(X_normalized, inference=True)
+        if is_plot:
+            if epoch%10==0 or epoch==NUM_EPOCH-1:
+                pi,mu,c,w,var_w,wc,var_wc,z_mean,proj_z = vae(X_normalized, inference=True)
 
-            fit = umap.UMAP()
-            u = fit.fit_transform(tf.concat((z_mean,tf.transpose(mu)),axis=0))
-            uz = u[:len(label),:]
-            um = u[len(label):,:]
+                fit = umap.UMAP()
+                u = fit.fit_transform(tf.concat((z_mean,tf.transpose(mu)),axis=0))
+                uz = u[:len(label),:]
+                um = u[len(label):,:]
 
-            plt.figure(figsize=(16,6))
-            ax = plt.subplot(121)
-            plt.scatter(uz[:,0], uz[:,1], c = label, s = 2)
-            ax.set_title('Ground Truth')
+                plt.figure(figsize=(16,6))
+                ax = plt.subplot(121)
+                plt.scatter(uz[:,0], uz[:,1], c = label, s = 2)
+                ax.set_title('Ground Truth')
 
-            ax = plt.subplot(122)
-            plt.scatter(uz[:,0], uz[:,1], c = c, s = 2, alpha = 0.5)
-            ax.set_title('Prediction')        
-            # legend1 = ax.legend(*scatter.legend_elements(),
-            #                     loc="lower left", title="Classes")
-            # ax.add_artist(legend1)
-            cluster_center = [(len(um)+(1-i)/2)*i for i in range(len(um))]        
-            plt.scatter(um[:,0], um[:,1], c=cluster_center, s=100, marker='s')
-            plt.savefig('%d.png'%epoch, dpi=300)
-            plt.show()
+                ax = plt.subplot(122)
+                plt.scatter(uz[:,0], uz[:,1], c = c, s = 2, alpha = 0.5)
+                ax.set_title('Prediction')
+                # legend1 = ax.legend(*scatter.legend_elements(),
+                #                     loc="lower left", title="Classes")
+                # ax.add_artist(legend1)
+                cluster_center = [(len(um)+(1-i)/2)*i for i in range(len(um))]
+                plt.scatter(um[:,0], um[:,1], c=cluster_center, s=100, marker='s')
+                plt.savefig('%d.png'%epoch, dpi=300)
+                plt.show()
 
     print('Training Done!')
 

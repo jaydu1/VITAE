@@ -22,7 +22,10 @@ class scTGMVAE():
     # grouping: a list of labels for cells
     def get_data(self, X, grouping = None):
         self.raw_X = X
-        self.grouping = np.array(grouping, dtype=str)
+        if grouping is not None:
+            self.grouping = np.array(grouping, dtype=str)
+        else:
+            self.grouping = None
 
 
     # data preprocessing, feature selection, log-normalization
@@ -128,7 +131,7 @@ class scTGMVAE():
     # train the model with specified learning rate
     def train(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, L=None, weight=None):
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, L=None, weight=None, is_plot=False):
         
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
@@ -145,7 +148,8 @@ class scTGMVAE():
             L,
             self.label,
             self.X_normalized,
-            weight
+            weight,
+            is_plot
             )
         if self.save_weights:
             self.save_model(self.path_to_weights_train)
@@ -154,7 +158,8 @@ class scTGMVAE():
     # train the model with specified learning rate
     def train_all(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3):
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3,
+            L=None, weight=None, is_plot=False):
         '''
         To pretrain and train the model by using same parameters for pre_train() and train().
         '''
@@ -164,19 +169,23 @@ class scTGMVAE():
             num_epoch,
             num_step_per_epoch,
             early_stopping_patience,
-            early_stopping_tolerance)
+            early_stopping_tolerance,
+            L)
         self.init_GMM_plot()
         self.train(learning_rate,
             batch_size,
             num_epoch,
             num_step_per_epoch,
             early_stopping_patience,
-            early_stopping_tolerance)
+            early_stopping_tolerance,
+            L,
+            weight,
+            is_plot)
 
 
     # inference for trajectory
-    def init_inference(self, metric='max_relative_score', no_loop=False):
-        pi,mu,c,w,var_w,wc,var_wc,z,proj_z = self.vae(self.X_normalized, inference=True)
+    def init_inference(self, metric='max_relative_score', no_loop=False, L=5):
+        pi,mu,c,w,var_w,wc,var_wc,z,proj_z = self.vae(self.X_normalized, inference=True, L=L)
         
         cluster_center = [int((self.n_clusters+(1-i)/2)*i) for i in range(self.n_clusters)]
         edges = [i for i in np.unique(c) if i not in cluster_center]
