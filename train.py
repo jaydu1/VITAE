@@ -16,11 +16,15 @@ def clear_session():
     tf.keras.backend.clear_session()
     return None
 
-
-def warp_dataset(X, X_normalized, Scale_factor, BATCH_SIZE):
-    train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, Scale_factor))
-    train_dataset = train_dataset.shuffle(buffer_size = X.shape[0]).batch(BATCH_SIZE)
-    return train_dataset
+    
+def warp_dataset(X_normalized, BATCH_SIZE, X=None, Scale_factor=None):
+    if X is not None:
+        train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, Scale_factor))
+        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0], reshuffle_each_iteration=True).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
+        return train_dataset
+    else:
+        test_dataset = tf.data.Dataset.from_tensor_slices(X_normalized).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
+        return test_dataset
 
 
 def pre_train(train_dataset, vae, learning_rate, patience, tolerance, NUM_EPOCH_PRE, NUM_STEP_PER_EPOCH, L):
@@ -91,9 +95,9 @@ def plot_pre_train(vae, X_normalized, label):
     plt.show()
 
 
-def train(train_dataset, vae,
+def train(train_dataset, test_dataset, vae,
         learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, L,
-        label, X_normalized, weight, is_plot=False):
+        label, weight, plot_every_num_epoch=None):
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()
@@ -145,30 +149,27 @@ def train(train_dataset, vae,
         loss_neg_E_pz.reset_states()
         loss_E_qzx.reset_states()
 
-        if is_plot:
-            if epoch%10==0 or epoch==NUM_EPOCH-1:
-                pi,mu,c,w,var_w,wc,var_wc,z_mean,proj_z = vae(X_normalized, inference=True)
+        if plot_every_num_epoch is not None and (epoch%plot_every_num_epoch==0 or epoch==NUM_EPOCH-1):
+            pi,mu,c,w,var_w,wc,var_wc,z_mean = vae.inference(test_dataset)
 
-                fit = umap.UMAP()
-                u = fit.fit_transform(tf.concat((z_mean,tf.transpose(mu)),axis=0))
-                uz = u[:len(label),:]
-                um = u[len(label):,:]
-
-                plt.figure(figsize=(16,6))
-                ax = plt.subplot(121)
-                plt.scatter(uz[:,0], uz[:,1], c = label, s = 2)
-                ax.set_title('Ground Truth')
-
-                ax = plt.subplot(122)
-                plt.scatter(uz[:,0], uz[:,1], c = c, s = 2, alpha = 0.5)
-                ax.set_title('Prediction')
-                # legend1 = ax.legend(*scatter.legend_elements(),
-                #                     loc="lower left", title="Classes")
-                # ax.add_artist(legend1)
-                cluster_center = [(len(um)+(1-i)/2)*i for i in range(len(um))]
-                plt.scatter(um[:,0], um[:,1], c=cluster_center, s=100, marker='s')
-                plt.savefig('%d.png'%epoch, dpi=300)
-                plt.show()
+            fit = umap.UMAP()
+            u = fit.fit_transform(tf.concat((z_mean,tf.transpose(mu)),axis=0))
+            uz = u[:len(z_mean),:]
+            um = u[len(z_mean):,:]
+            
+            if labels is None:
+                fig, ax1 = plt.subplots(1, figsize=(7, 6))
+            else:
+                fig, (ax1,ax2) = plt.subplots(1,2, figsize=(16, 6))
+            
+                ax2.scatter(uz[:,0], uz[:,1], c = label, s = 2)
+                ax2.set_title('Ground Truth')
+            
+            ax1.scatter(uz[:,0], uz[:,1], c = c, s = 2, alpha = 0.5)
+            ax1.set_title('Prediction')
+            cluster_center = [(len(um)+(1-i)/2)*i for i in range(len(um))]
+            ax1.scatter(um[:,0], um[:,1], c=cluster_center, s=100, marker='s')
+            plt.show()
 
     print('Training Done!')
 

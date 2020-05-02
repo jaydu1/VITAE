@@ -86,12 +86,17 @@ def preprocess(x, grouping, cell_names, gene_names, K = 1e4, gene_num = 2000):
     grouping = grouping[expressed]
     gene_names_active = gene_names[index]
     
-    label, le = label_encoding(grouping)
-    print('Number of cells in each class: ')
-    table = pd.value_counts(grouping)
-    table.index = pd.Series(le.transform(table.index).astype(str)) \
-        + ' <---> ' + table.index
-    print(table)
+    if grouping is None:
+        warnings.warn('No labels for cells!')
+        label = np.ones(len(x))
+        le = None
+    else:
+        label, le = label_encoding(grouping)
+        print('Number of cells in each class: ')
+        table = pd.value_counts(grouping)
+        table.index = pd.Series(le.transform(table.index).astype(str)) \
+            + ' <---> ' + table.index
+        print(table)
 
     return x_normalized, x, cell_names_active, gene_names_active, scale_factor, label, le
 

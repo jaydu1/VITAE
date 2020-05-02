@@ -23,20 +23,10 @@ class scTGMVAE():
     # cell_names: a list of cell names
     # gene_names: a list of gene names
     def get_data(self, X, grouping = None, cell_names = None, gene_names = None):
-        self.raw_X = X
-        if grouping == None:
-            warnings.warn('No labels for cells!')
-            self.grouping = np.array(['1']*X.shape[0], dtype = str)
-        else:
-            self.grouping = np.array(grouping, dtype = str)
-        if cell_names == None:
-            self.cell_names = np.array(range(X.shape[0]), dtype = str)
-        else:
-            self.cell_names = np.array(cell_names, dtype = str)
-        if gene_names == None:
-            self.gene_names = np.array(range(X.shape[1]), dtype = str)
-        else:
-            self.gene_names = np.array(gene_names, dtype = str)
+        self.raw_X = X            
+        self.grouping = None if grouping is None else np.array(['1']*X.shape[0], dtype = str)
+        self.cell_names = np.array(range(X.shape[0]), dtype = str) if cell_names is None else np.array(cell_names, dtype = str)
+        self.gene_names = np.array(range(X.shape[1]), dtype = str) if gene_names is None else np.array(gene_names, dtype = str)
 
 
     # data preprocessing, feature selection, log-normalization
@@ -116,7 +106,7 @@ class scTGMVAE():
             num_step_per_epoch = self.X.shape[0]//batch_size+1
                 
         train.clear_session()
-        self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, batch_size)
+        self.train_dataset = train.warp_dataset(self.X_normalized, batch_size, self.X, self.scale_factor)
         self.vae = train.pre_train(
             self.train_dataset, 
             self.vae, 
@@ -149,14 +139,17 @@ class scTGMVAE():
     # train the model with specified learning rate
     def train(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, L=None, weight=None, is_plot=False):
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3,
+            L=None, weight=None, plot_every_num_epoch=None):
         
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
             
-        self.train_dataset = train.warp_dataset(self.X, self.X_normalized, self.scale_factor, batch_size)
+        self.train_dataset = train.warp_dataset(self.X_normalized, batch_size, self.X, self.scale_factor)
+        self.test_dataset = train.warp_dataset(self.X_normalized, batch_size)
         self.vae = train.train(
-            self.train_dataset, 
+            self.train_dataset,
+            self.test_dataset,
             self.vae, 
             learning_rate,
             early_stopping_patience,
@@ -165,9 +158,8 @@ class scTGMVAE():
             num_step_per_epoch,
             L,
             self.label,
-            self.X_normalized,
             weight,
-            is_plot
+            plot_every_num_epoch
             )
         if self.save_weights:
             self.save_model(self.path_to_weights_train)
@@ -177,7 +169,7 @@ class scTGMVAE():
     def train_all(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
             early_stopping_patience = 10, early_stopping_tolerance = 1e-3,
-            L=None, weight=None, is_plot=False):
+            L=None, weight=None, plot_every_num_epoch=None):
         '''
         To pretrain and train the model by using same parameters for pre_train() and train().
         '''
@@ -202,19 +194,23 @@ class scTGMVAE():
 
 
     # inference for trajectory
-    def init_inference(self, metric='max_relative_score', no_loop=False, L=5):
-        pi,mu,c,w,var_w,wc,var_wc,z,proj_z = self.vae(self.X_normalized, inference=True, L=L)
+    def init_inference(self, batch_size=32, L=5):
+        self.test_dataset = train.warp_dataset(self.X_normalized, batch_size)
+        _, self.mu,self.c,self.w,self.var_w,self.wc,self.var_wc,self.z = self.vae.inference(self.test_dataset, L=L)
         
+        
+    def comp_inference_score(self, metric='max_relative_score', no_loop=False):
         cluster_center = [int((self.n_clusters+(1-i)/2)*i) for i in range(self.n_clusters)]
-        edges = [i for i in np.unique(c) if i not in cluster_center]
+        edges = [i for i in np.unique(self.c) if i not in cluster_center]
         if len(edges)==0:
-            proj_c, proj_z_M = c, None
+            proj_c, proj_z_M = self.c, None
         else:
             proj_c, proj_z_M = self.vae.get_proj_z(edges)
         
-        c = self.inferer.init_inference(c, w, mu, z, proj_c, proj_z_M,
+        c = self.inferer.init_inference(self.c, self.w, self.mu, self.z, proj_c, proj_z_M,
                 metric=metric, no_loop=no_loop)
-        return c, w, var_w, wc, var_wc
+        return c, self.w, self.var_w, self.wc, self.var_wc
+        
         
     def plot_trajectory(self, cutoff=None):
         self.inferer.plot_trajectory(self.grouping, cutoff=cutoff)

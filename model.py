@@ -284,16 +284,7 @@ class GMM(Layer):
                 c = tf.where(wc<1-1e-3, c,
                             tf.gather(self.clusters_ind, tf.gather(self.A, c)))
                       
-                # proj_z    -   projection of z to the segment of two clusters
-                #               in the latent space
-                proj_z = tf.transpose(
-                    tf.gather(self.mu, tf.gather(self.A, c), axis=1) *
-                    tf.expand_dims(wc, 0) +
-                    tf.gather(self.mu, tf.gather(self.B, c), axis=1) *
-                    (1-tf.expand_dims(wc, 0)))
-                return (tf.nn.softmax(self.pi).numpy(), self.mu.numpy(), 
-                        c.numpy(), w.numpy(), var_w.numpy(),
-                        wc.numpy(), var_wc.numpy(), proj_z.numpy())
+                return c.numpy(), w.numpy(), var_w.numpy(), wc.numpy(), var_wc.numpy()
             else:
                 return tf.nn.softmax(self.pi), self.mu, log_p_z
 
@@ -310,6 +301,7 @@ class GMM(Layer):
                         (1-tf.tile(self.w, (1,len(c))))
                     )
         return proj_c, proj_z_M.numpy()
+            
             
 class VariationalAutoEncoder(tf.keras.Model):
     """
@@ -342,7 +334,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.GMM.initialize(mu, Sigma, pi)
 
     def call(self, x_normalized, x = None, scale_factor = 1,
-             pre_train = False, cluster = False, inference = False, L=None):
+             pre_train = False, cluster = False, L=None):
         # Feed forward through encoder, GMM layer and decoder.
         if not pre_train and self.GMM is None:
             raise ReferenceError('Have not initialized GMM.')
@@ -350,16 +342,12 @@ class VariationalAutoEncoder(tf.keras.Model):
         if L is None:
             L=self.L
             
-        z_mean, z_log_var, z = self.encoder(x_normalized, L, not inference)
+        z_mean, z_log_var, z = self.encoder(x_normalized, L)
         
-        if inference:
-            pi_norm, mu, c, w, var_w, wc, var_wc, proj_z = self.GMM(z, inference=inference)
-            return pi_norm, mu, c, w, var_w, wc, var_wc, z_mean.numpy(), proj_z
+        if self.data_type == 'UMI':
+            x_hat, r = self.decoder(z)
         else:
-            if self.data_type == 'UMI':
-                x_hat, r = self.decoder(z)
-            else:
-                x_hat, r, phi = self.decoder(z)
+            x_hat, r, phi = self.decoder(z)
 
         if cluster:
             mu, c, cluster_loss = self.GMM(z, cluster=True)
@@ -415,3 +403,25 @@ class VariationalAutoEncoder(tf.keras.Model):
             c - List of indexes of edges
         '''
         return self.GMM.get_proj_z(c)
+
+    def inference(self, test_dataset, L):
+        if self.GMM is None:
+            raise ReferenceError('Have not initialized GMM.')
+            
+        if L is None:
+            L=self.L
+            
+        pi_norm = tf.nn.softmax(self.GMM.pi).numpy()
+        mu = self.GMM.mu.numpy()
+        z_mean = []
+        res = []
+        
+        for x in test_dataset:
+            _z_mean, _, z = self.encoder(x, L, False)
+            res.append(np.c_[self.GMM(z, inference=True)])
+            z_mean.append(_z_mean.numpy())
+        
+        c, w, var_w, wc, var_wc = np.hsplit(np.concatenate(res), 5)
+        z_mean = np.concatenate(z_mean)
+        
+        return pi_norm, mu, c[:,0].astype(np.int32), w[:,0], var_w[:,0], wc[:,0], var_wc[:,0], z_mean
