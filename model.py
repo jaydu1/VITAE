@@ -263,26 +263,20 @@ class GMM(Layer):
                 # [batch_size, M]
                 p_w_xc = tf.exp(tf.reduce_logsumexp(
                         map_log_p_zc_w -
-                        tf.expand_dims(log_p_z_L, -1) -
-                        tf.expand_dims(tf.expand_dims(
-                            tf.gather_nd(tf.math.log(p_c_x),
-                                        list(zip(np.arange(batch_size),
-                                                c.numpy()))), -1), -1),
-                        axis=1))/tf.cast(L, tf.float32)
+                        tf.expand_dims(log_p_z_L, -1), axis=1) -
+                        tf.expand_dims(tf.gather_nd(tf.math.log(p_c_x),
+                                    list(zip(np.arange(batch_size),
+                                            c.numpy()))), -1)) / tf.cast(L, tf.float32)
                     
                 wc = tf.reduce_mean(
-                            tf.tile(self.w, (batch_size,1)) *
-                            p_w_xc,
-                            axis=-1
+                            tf.tile(self.w, (batch_size,1)) * p_w_xc, axis=-1
                         )
 
                 # var_w|c   -   Var(w|x,c)
                 var_wc = tf.reduce_mean(
                             tf.square(
                                 tf.tile(self.w, (batch_size,1)) -
-                                tf.expand_dims(wc, -1)) *
-                            p_w_xc,
-                            axis=-1
+                                tf.expand_dims(wc, -1)) * p_w_xc, axis=-1
                         )
                 
                 c = tf.where(wc>1e-3, c,
