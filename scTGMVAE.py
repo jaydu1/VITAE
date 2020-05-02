@@ -4,6 +4,7 @@ import train
 import numpy as np
 from inference import Inferer
 import os
+import warnings
 
 class scTGMVAE():
     """
@@ -16,23 +17,40 @@ class scTGMVAE():
     def __init__(self):
         pass
 
-
-	# get data for model
+    # get data for model
     # X: 2-dimension np array, original counts data
     # grouping: a list of labels for cells
-    def get_data(self, X, grouping = None):
+    # cell_names: a list of cell names
+    # gene_names: a list of gene names
+    def get_data(self, X, grouping = None, cell_names = None, gene_names = None):
         self.raw_X = X
-        if grouping is not None:
-            self.grouping = np.array(grouping, dtype=str)
+        if grouping == None:
+            warnings.warn('No labels for cells!')
+            self.grouping = np.array(['1']*X.shape[0], dtype = str)
         else:
-            self.grouping = None
+            self.grouping = np.array(grouping, dtype = str)
+        if cell_names == None:
+            self.cell_names = np.array(range(X.shape[0]), dtype = str)
+        else:
+            self.cell_names = np.array(cell_names, dtype = str)
+        if gene_names == None:
+            self.gene_names = np.array(range(X.shape[1]), dtype = str)
+        else:
+            self.gene_names = np.array(gene_names, dtype = str)
 
 
     # data preprocessing, feature selection, log-normalization
     # K: the constant summing gene expression in each cell up to
     # gene_num: number of feature to select
     def preprocess_data(self, K = 1e4, gene_num = 2000):
-        self.X_normalized, self.X, self.scale_factor, self.label, self.le = preprocess.preprocess(self.raw_X.copy(), self.grouping, K, gene_num)
+        self.X_normalized, self.X, self.cell_names_active, self.gene_names_active \
+        , self.scale_factor, self.label, self.le = preprocess.preprocess(
+            self.raw_X.copy(),
+            self.grouping,
+            self.cell_names,
+            self.gene_names,
+            K,
+            gene_num)
         self.dim_origin = self.X.shape[1]
 
 
