@@ -5,7 +5,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import localreg
 from sklearn import preprocessing
-import warnings
 
 def normalization(x, K = 1e4):
     """
@@ -23,6 +22,10 @@ def normalization(x, K = 1e4):
 def feature_select(x, gene_num = 2000):
     # https://www.biorxiv.org/content/biorxiv/early/2018/11/02/460147.full.pdf
     # Page 12-13: Data preprocessing - Feature selection for individual datasets
+
+    # no expression cell
+    expressed = np.where(np.sum(x,axis=1) != 0)[0]
+    x = x[expressed,:]
 
     # mean and variance of each gene of the unnormalized data
     mean, var = np.mean(x, axis=0), np.var(x, axis=0)
@@ -52,7 +55,7 @@ def feature_select(x, gene_num = 2000):
     plt.hlines(np.log(threshold), 1, p)
     plt.show()
     
-    return x[:,index], index
+    return x[:, index], index, expressed
     
 
 def label_encoding(grouping):
@@ -63,28 +66,33 @@ def label_encoding(grouping):
     return y, le
 
 
-def preprocess(x, grouping = None, K = 1e4, gene_num = 2000):
+def preprocess(x, grouping, cell_names, gene_names, K = 1e4, gene_num = 2000):
     '''
     input 
     x: raw count matrix
+    cell_names: names of cells
+    gene_names: names of genes
     K: sum number related to scale_factor
     gene_num: total number of genes to select
     grouping: true labels
     '''
-    if grouping is None:
-        warnings.warn('No labels for cells!')
-        label = np.ones(len(x))
-        le = None
-    else:
-        label, le = label_encoding(grouping)
-        print('Number of cells in each class: ')
-        table = pd.value_counts(grouping)
-        table.index = pd.Series(le.transform(table.index).astype(str)) \
-            + ' <---> ' + table.index
-        print(table)
 
     x_normalized, scale_factor = normalization(x, K)
-    x, index = feature_select(x, gene_num)
-    return x_normalized[:,index], x, scale_factor, label, le
+    x, index, expressed = feature_select(x, gene_num)
+    x_normalized = x_normalized[expressed, :]
+    x_normalized = x_normalized[:, index]
+    scale_factor = scale_factor[expressed, :]
+    cell_names_active = cell_names[expressed]
+    grouping = grouping[expressed]
+    gene_names_active = gene_names[index]
+    
+    label, le = label_encoding(grouping)
+    print('Number of cells in each class: ')
+    table = pd.value_counts(grouping)
+    table.index = pd.Series(le.transform(table.index).astype(str)) \
+        + ' <---> ' + table.index
+    print(table)
+
+    return x_normalized, x, cell_names_active, gene_names_active, scale_factor, label, le
 
 
