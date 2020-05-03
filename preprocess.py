@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import localreg
 from sklearn import preprocessing
+import warnings
 
 def normalization(x, K = 1e4):
     """
