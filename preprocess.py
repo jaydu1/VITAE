@@ -59,15 +59,15 @@ def feature_select(x, gene_num = 2000):
     return x[:, index], index, expressed
     
 
-def label_encoding(grouping):
+def label_encoding(labels):
     # encode the class label by number (order of character)
     le = preprocessing.LabelEncoder()
-    le.fit(np.unique(grouping))
-    y = le.transform(grouping)
+    le.fit(np.unique(labels))
+    y = le.transform(labels)
     return y, le
 
 
-def preprocess(x, grouping, cell_names, gene_names, K = 1e4, gene_num = 2000):
+def preprocess(x, raw_labels, raw_cell_names, raw_gene_names, K = 1e4, gene_num = 2000):
     '''
     input 
     x: raw count matrix
@@ -84,22 +84,22 @@ def preprocess(x, grouping, cell_names, gene_names, K = 1e4, gene_num = 2000):
     x_normalized = x_normalized[:, index]
     scale_factor = scale_factor[expressed, :]
     
-    if grouping is None:
+    if raw_labels is None:
         warnings.warn('No labels for cells!')
-        label = None
+        labels = None
         le = None
     else:
-        grouping = grouping[expressed]
-        label, le = label_encoding(grouping)
+        grouping = raw_labels[expressed]
+        labels, le = label_encoding(grouping)
         print('Number of cells in each class: ')
         table = pd.value_counts(grouping)
         table.index = pd.Series(le.transform(table.index).astype(str)) \
             + ' <---> ' + table.index
         print(table)
         
-    cell_names_active = None if cell_names is None else cell_names[expressed]
-    gene_names_active = None if gene_names is None else gene_names[index]
+    cell_names = None if raw_cell_names is None else raw_cell_names[expressed]
+    gene_names = None if raw_gene_names is None else raw_gene_names[index]
 
-    return x_normalized, x, cell_names_active, gene_names_active, scale_factor, label, le
+    return x_normalized, x, cell_names, gene_names, scale_factor, labels, le
 
 
