@@ -24,7 +24,7 @@ class scTGMVAE():
     # gene_names: a list of gene names
     def get_data(self, X, grouping = None, cell_names = None, gene_names = None):
         self.raw_X = X            
-        self.grouping = None if grouping is None else np.array(['1']*X.shape[0], dtype = str)
+        self.grouping = None if grouping is None else np.array(grouping, dtype = str)
         self.cell_names = np.array(range(X.shape[0]), dtype = str) if cell_names is None else np.array(cell_names, dtype = str)
         self.gene_names = np.array(range(X.shape[1]), dtype = str) if gene_names is None else np.array(gene_names, dtype = str)
 

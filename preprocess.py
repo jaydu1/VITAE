@@ -86,7 +86,7 @@ def preprocess(x, grouping, cell_names, gene_names, K = 1e4, gene_num = 2000):
     
     if grouping is None:
         warnings.warn('No labels for cells!')
-        label = np.ones(len(x))
+        label = None
         le = None
     else:
         grouping = grouping[expressed]
