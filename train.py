@@ -97,7 +97,7 @@ def plot_pre_train(vae, X_normalized, label):
 
 def train(train_dataset, test_dataset, vae,
         learning_rate, patience, tolerance, NUM_EPOCH, NUM_STEP_PER_EPOCH, L,
-        label, weight, plot_every_num_epoch=None):
+        labels, weight, plot_every_num_epoch=None):
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()
@@ -162,7 +162,7 @@ def train(train_dataset, test_dataset, vae,
             else:
                 fig, (ax1,ax2) = plt.subplots(1,2, figsize=(16, 6))
             
-                ax2.scatter(uz[:,0], uz[:,1], c = label, s = 2)
+                ax2.scatter(uz[:,0], uz[:,1], c = labels, s = 2)
                 ax2.set_title('Ground Truth')
             
             ax1.scatter(uz[:,0], uz[:,1], c = c, s = 2, alpha = 0.5)
