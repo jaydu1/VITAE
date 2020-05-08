@@ -67,7 +67,7 @@ def label_encoding(labels):
     return y, le
 
 
-def preprocess(x, raw_labels, raw_cell_names, raw_gene_names, K = 1e4, gene_num = 2000):
+def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4, gene_num = 2000):
     '''
     input 
     x: raw count matrix
@@ -80,19 +80,18 @@ def preprocess(x, raw_labels, raw_cell_names, raw_gene_names, K = 1e4, gene_num 
 
     x_normalized, scale_factor = normalization(x, K)
     x, index, expressed = feature_select(x, gene_num)
-    x_normalized = x_normalized[expressed, :]
-    x_normalized = x_normalized[:, index]
+    x_normalized = x_normalized[expressed, :][:, index]
     scale_factor = scale_factor[expressed, :]
     
-    if raw_labels is None:
+    if label_names is None:
         warnings.warn('No labels for cells!')
         labels = None
         le = None
     else:
-        grouping = raw_labels[expressed]
-        labels, le = label_encoding(grouping)
+        label_names = label_names[expressed]
+        labels, le = label_encoding(label_names)
         print('Number of cells in each class: ')
-        table = pd.value_counts(grouping)
+        table = pd.value_counts(label_names)
         table.index = pd.Series(le.transform(table.index).astype(str)) \
             + ' <---> ' + table.index
         print(table)
@@ -100,6 +99,6 @@ def preprocess(x, raw_labels, raw_cell_names, raw_gene_names, K = 1e4, gene_num 
     cell_names = None if raw_cell_names is None else raw_cell_names[expressed]
     gene_names = None if raw_gene_names is None else raw_gene_names[index]
 
-    return x_normalized, x, cell_names, gene_names, scale_factor, labels, le
+    return x_normalized, x, cell_names, gene_names, scale_factor, labels, label_names, le
 
 

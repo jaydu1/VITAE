@@ -23,8 +23,8 @@ class scTGMVAE():
     # cell_names: a list of cell names
     # gene_names: a list of gene names
     def get_data(self, X, labels = None, cell_names = None, gene_names = None):
-        self.raw_X = X            
-        self.raw_labels = None if labels is None else np.array(labels, dtype = str)
+        self.X = X
+        self.label_names = None if labels is None else np.array(labels, dtype = str)
         self.raw_cell_names = None if cell_names is None else np.array(cell_names, dtype = str)
         self.raw_gene_names = None if gene_names is None else np.array(gene_names, dtype = str)
 
@@ -34,9 +34,9 @@ class scTGMVAE():
     # gene_num: number of feature to select
     def preprocess_data(self, K = 1e4, gene_num = 2000):
         self.X_normalized, self.X, self.cell_names, self.gene_names, \
-        self.scale_factor, self.labels, self.le = preprocess.preprocess(
-            self.raw_X.copy(),
-            self.raw_labels,
+        self.scale_factor, self.labels, self.label_names, self.le = preprocess.preprocess(
+            self.X.copy(),
+            self.label_names,
             self.raw_cell_names,
             self.raw_gene_names,
             K,
@@ -213,7 +213,7 @@ class scTGMVAE():
         
         
     def plot_trajectory(self, cutoff=None):
-        self.inferer.plot_trajectory(self.labels, cutoff=cutoff)
+        self.inferer.plot_trajectory(self.label_names, cutoff=cutoff)
         
         
     def plot_pseudotime(self, init_node):
