@@ -216,29 +216,29 @@ class GMM(Layer):
                             tf.math.log(temp_pi+1e-30) - \
                             tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2
             # [batch_size, L]
-            log_p_z_L = tf.math.reduce_logsumexp(log_p_zc_w, axis=[2,3]) \
+            log_p_z_L = tf.reduce_logsumexp(log_p_zc_w, axis=[2,3]) \
                             - tf.math.log(tf.cast(self.M, tf.float32))
             # [1, ]
             log_p_z = tf.reduce_mean(log_p_z_L)
                                 
             if inference:
-                # p_c_x     -   predicted probability distribution
+                # log_p_c_x     -   predicted probability distribution
                 # [batch_size, n_states]
-                p_c_x = tf.reduce_mean(tf.exp(
-                                tf.math.reduce_logsumexp(
+                log_p_c_x = tf.reduce_logsumexp(
+                                tf.reduce_logsumexp(
                                     log_p_zc_w, axis=-1) -
                                 tf.math.log(tf.cast(self.M, tf.float32)) -
-                                tf.expand_dims(log_p_z_L, -1)),
-                            axis=1)
+                                tf.expand_dims(log_p_z_L, -1),
+                            axis=1) - tf.math.log(tf.cast(L, tf.float32))
 
                 # c         -   predicted clusters
-                c = tf.math.argmax(p_c_x, axis=-1)
+                c = tf.math.argmax(log_p_c_x, axis=-1)
                 c = tf.cast(c, 'int32')
 
                 # w         -   E(w|x)
                 # [batch_size, M]
                 p_w_x = tf.reduce_mean(tf.exp(
-                            tf.math.reduce_logsumexp(log_p_zc_w, axis=2) -
+                            tf.reduce_logsumexp(log_p_zc_w, axis=2) -
                             tf.expand_dims(log_p_z_L, -1)
                             ), axis=1)
                     
@@ -264,7 +264,7 @@ class GMM(Layer):
                 p_w_xc = tf.exp(tf.reduce_logsumexp(
                         map_log_p_zc_w -
                         tf.expand_dims(log_p_z_L, -1), axis=1) -
-                        tf.expand_dims(tf.gather_nd(tf.math.log(p_c_x),
+                        tf.expand_dims(tf.gather_nd(log_p_c_x,
                                     list(zip(np.arange(batch_size),
                                             c.numpy()))), -1)) / tf.cast(L, tf.float32)
                     
