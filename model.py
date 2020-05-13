@@ -224,15 +224,15 @@ class GMM(Layer):
             if inference:
                 # p_c_x     -   predicted probability distribution
                 # [batch_size, n_states]
-                p_c_x = tf.reduce_mean(tf.exp(
+                log_p_c_x = tf.reduce_logsumexp(
                                 tf.math.reduce_logsumexp(
                                     log_p_zc_w, axis=-1) -
                                 tf.math.log(tf.cast(self.M, tf.float32)) -
-                                tf.expand_dims(log_p_z_L, -1)),
-                            axis=1)
+                                tf.expand_dims(log_p_z_L, -1),
+                            axis=1) / tf.cast(self.L, tf.float32)
 
                 # c         -   predicted clusters
-                c = tf.math.argmax(p_c_x, axis=-1)
+                c = tf.math.argmax(log_p_c_x, axis=-1)
                 c = tf.cast(c, 'int32')
 
                 # w         -   E(w|x)
@@ -264,7 +264,7 @@ class GMM(Layer):
                 p_w_xc = tf.exp(tf.reduce_logsumexp(
                         map_log_p_zc_w -
                         tf.expand_dims(log_p_z_L, -1), axis=1) -
-                        tf.expand_dims(tf.gather_nd(tf.math.log(p_c_x),
+                        tf.expand_dims(tf.gather_nd(log_p_c_x,
                                     list(zip(np.arange(batch_size),
                                             c.numpy()))), -1)) / tf.cast(L, tf.float32)
                     
