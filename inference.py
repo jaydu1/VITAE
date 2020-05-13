@@ -125,9 +125,9 @@ class Inferer(object):
 
     def init_inference(self, c, w, mu, z, proj_c, proj_z_M, 
                        metric='max_relative_score', no_loop=False):
-        self.c = c
-        self.w = w     
-        self.mu = mu             
+        self.c = c.copy()
+        self.w = w.copy()
+        self.mu = mu.copy()
         self.no_loop = no_loop
         self.metric = metric
         
