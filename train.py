@@ -150,7 +150,7 @@ def train(train_dataset, test_dataset, vae,
         loss_E_qzx.reset_states()
 
         if plot_every_num_epoch is not None and (epoch%plot_every_num_epoch==0 or epoch==NUM_EPOCH-1):
-            pi,mu,c,w,var_w,wc,var_wc,z_mean = vae.inference(test_dataset, 1)
+            pi,mu,c,w,var_w,wc,var_wc,_,_,z_mean = vae.inference(test_dataset, 1)
 
             fit = umap.UMAP()
             u = fit.fit_transform(tf.concat((z_mean,tf.transpose(mu)),axis=0))
