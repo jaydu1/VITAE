@@ -30,8 +30,9 @@ class Encoder(Layer):
         self.dense_layers = [Dense(dim, activation = 'relu',
                                           name = 'encoder_%i'%(i+1)) \
                              for (i, dim) in enumerate(dimensions)]
-        self.batch_norm_layers = [BatchNormalization() \
+        self.batch_norm_layers = [BatchNormalization(center=False,scale=False) \
                                     for _ in range(len((dimensions)))]
+        self.batch_norm_layers.append(BatchNormalization(scale=False))
         self.latent_mean = Dense(dim_latent, name = 'latent_mean')
         self.latent_log_var = Dense(dim_latent, name = 'latent_log_var')
         self.sampling = Sampling()
@@ -48,7 +49,7 @@ class Encoder(Layer):
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             x = dense(x)
             x = bn(x, training=is_training)
-        z_mean = self.latent_mean(x)
+        z_mean = self.batch_norm_layers[-1](self.latent_mean(x), training=is_training)
         z_log_var = self.latent_log_var(x)
         _z_mean = tf.tile(tf.expand_dims(z_mean, 1), (1,L,1))
         _z_log_var = tf.tile(tf.expand_dims(z_log_var, 1), (1,L,1))
@@ -73,7 +74,7 @@ class Decoder(Layer):
         self.dense_layers = [Dense(dim, activation = 'relu',
                                           name = 'decoder_%i'%(i+1)) \
                              for (i,dim) in enumerate(dimensions)]
-        self.batch_norm_layers = [BatchNormalization() \
+        self.batch_norm_layers = [BatchNormalization(center=False,scale=False) \
                                     for _ in range(len((dimensions)))]
         self.log_lambda_z = Dense(dim_origin, name = 'log_lambda_z')
                 
