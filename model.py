@@ -27,12 +27,12 @@ class Encoder(Layer):
           dim_latent  - dimension of latent layer.
         '''
         super(Encoder, self).__init__(name = name, **kwargs)
-        self.dense_layers = [Dense(dim, activation = 'relu',
+        self.dense_layers = [Dense(dim, activation = tf.nn.leaky_relu,
                                           name = 'encoder_%i'%(i+1)) \
                              for (i, dim) in enumerate(dimensions)]
-        self.batch_norm_layers = [BatchNormalization(center=False,scale=False) \
+        self.batch_norm_layers = [BatchNormalization(center=False) \
                                     for _ in range(len((dimensions)))]
-        self.batch_norm_layers.append(BatchNormalization(scale=False))
+        self.batch_norm_layers.append(BatchNormalization(center=False))
         self.latent_mean = Dense(dim_latent, name = 'latent_mean')
         self.latent_log_var = Dense(dim_latent, name = 'latent_log_var')
         self.sampling = Sampling()
@@ -71,10 +71,10 @@ class Decoder(Layer):
         '''
         super(Decoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
-        self.dense_layers = [Dense(dim, activation = 'relu',
+        self.dense_layers = [Dense(dim, activation = tf.nn.leaky_relu,
                                           name = 'decoder_%i'%(i+1)) \
                              for (i,dim) in enumerate(dimensions)]
-        self.batch_norm_layers = [BatchNormalization(center=False,scale=False) \
+        self.batch_norm_layers = [BatchNormalization(center=False) \
                                     for _ in range(len((dimensions)))]
         self.log_lambda_z = Dense(dim_origin, name = 'log_lambda_z')
                 
