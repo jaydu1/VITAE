@@ -284,7 +284,25 @@ class GMM(Layer):
                 c = tf.where(wc<1-1e-3, c,
                             tf.gather(self.clusters_ind, tf.gather(self.A, c)))
                       
-                return c.numpy(), w.numpy(), var_w.numpy(), wc.numpy(), var_wc.numpy()
+                # [batch_size, n_states, M]
+                p_wc_x = tf.exp(tf.reduce_logsumexp(
+                            log_p_zc_w -
+                            tf.expand_dims(tf.expand_dims(log_p_z_L, -1), -1),
+                            1) - tf.math.log(tf.cast(L, tf.float32)))
+                # [batch_size, n_clusters]
+                w_tilde = tf.reduce_sum(
+                    tf.tile(tf.expand_dims(
+                        tf.tile(tf.expand_dims(
+                            tf.one_hot(self.A, self.n_clusters),
+                            -1), (1,1,self.M)) * self.w +
+                        tf.tile(tf.expand_dims(
+                            tf.one_hot(self.B, self.n_clusters),
+                            -1), (1,1,self.M)) * (1-self.w), 0), (batch_size,1,1,1) * \
+                    tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
+                    (1,3)) / tf.cast(self.M, tf.float32)
+                
+                    
+                return c.numpy(), w.numpy(), var_w.numpy(), wc.numpy(), var_wc.numpy(), w_tilde.numpy()
             else:
                 return tf.nn.softmax(self.pi), self.mu, log_p_z
 
@@ -421,7 +439,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             res.append(np.c_[self.GMM(z, inference=True)])
             z_mean.append(_z_mean.numpy())
         
-        c, w, var_w, wc, var_wc = np.hsplit(np.concatenate(res), 5)
+        c, w, var_w, wc, var_wc, w_tilde = np.hsplit(np.concatenate(res), 6)
         z_mean = np.concatenate(z_mean)
         
-        return pi_norm, mu, c[:,0].astype(np.int32), w[:,0], var_w[:,0], wc[:,0], var_wc[:,0], z_mean
+        return pi_norm, mu, c[:,0].astype(np.int32), w[:,0], var_w[:,0], wc[:,0], var_wc[:,0], w_tilde[:,0], z_mean
