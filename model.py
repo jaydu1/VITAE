@@ -250,9 +250,9 @@ class GMM(Layer):
                 # var_w     -   Var(w|x)
                 var_w =  tf.reduce_mean(
                             tf.square(
-                                tf.tile(self.w, (batch_size,1)) -
-                                tf.expand_dims(w, -1)) * p_w_x, axis=-1
-                            )
+                                tf.tile(self.w, (batch_size,1))
+                                ) * p_w_x, axis=-1
+                            ) - tf.square(w)
                             
                 # w|c       -   E(w|x,c)
                 # [batch_size, L, M]
@@ -277,8 +277,8 @@ class GMM(Layer):
                 var_wc = tf.reduce_mean(
                             tf.square(
                                 tf.tile(self.w, (batch_size,1)) -
-                                tf.expand_dims(wc, -1)) * p_w_xc, axis=-1
-                        )
+                                ) * p_w_xc, axis=-1
+                            ) - tf.square(wc)
                 
                 c = tf.where(wc>1e-3, c,
                             tf.gather(self.clusters_ind, tf.gather(self.B, c)))
@@ -307,9 +307,9 @@ class GMM(Layer):
                     (1,3)) / tf.cast(self.M, tf.float32)
                     
                 var_w_tilde = tf.reduce_sum(
-                    tf.math.square(_w - tf.expand_dims(tf.expand_dims(w_tilde, 1), -1))  *
+                    tf.math.square(_w)  *
                     tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-                    (1,3)) / tf.cast(self.M, tf.float32)
+                    (1,3)) / tf.cast(self.M, tf.float32) - tf.square(w_tilde)
                     
                 return c.numpy(), w.numpy(), var_w.numpy(), wc.numpy(), var_wc.numpy(), w_tilde.numpy(), var_w_tilde.numpy()
             else:
