@@ -276,7 +276,7 @@ class GMM(Layer):
                 # var_w|c   -   Var(w|x,c)
                 var_wc = tf.reduce_mean(
                             tf.square(
-                                tf.tile(self.w, (batch_size,1)) -
+                                tf.tile(self.w, (batch_size,1))
                                 ) * p_w_xc, axis=-1
                             ) - tf.square(wc)
                 
