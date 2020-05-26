@@ -78,7 +78,7 @@ class Inferer(object):
     def get_umap(self, z, mu, proj_z_M=None):
         concate_z = np.concatenate((z, mu.T), axis=0)
         mapper = umap.UMAP().fit(concate_z)
-        embed_z = mapper.embedding_[:-self.NUM_CLUSTER,:].copy()    
+        embed_z = mapper.embedding_[:-self.NUM_CLUSTER,:].copy()
         embed_mu = mapper.embedding_[-self.NUM_CLUSTER:,:].copy()
         if proj_z_M is None:
             embed_edge = None
@@ -132,7 +132,7 @@ class Inferer(object):
         self.metric = metric
         
         # Score edges
-        df_edges = self.get_edges_score(c)        
+        df_edges = self.get_edges_score(self.c)
         if df_edges is None:
             # only plot nodes
             self.df_edges = None
@@ -155,9 +155,9 @@ class Inferer(object):
         # edges to the nearest cluster.
         if no_loop:
             extra_inds = [i for i,x in enumerate(c) if x not in np.r_[self.df_edges.index,self.CLUSTER_CENTER]]
-            self.c[extra_inds] = np.argmin(np.mean((np.expand_dims(z[extra_inds,:],-1) - mu)**2, axis=(1)), axis=-1)
+            self.c[extra_inds] = self.CLUSTER_CENTER[np.argmin(np.mean((np.expand_dims(z[extra_inds,:],-1) - mu)**2, axis=(1)), axis=-1)]
         
-        return c
+        return self.c
     
     def plot_trajectory(self, labels, cutoff=None):
         if self.df_edges is None:
