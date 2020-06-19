@@ -19,60 +19,36 @@ class Inferer(object):
         self.C = self.C.astype(int)
         
         
-    def get_edges_score(self, c):
-        df_states = pd.value_counts(list(c))/len(c)
-        # add null clusters
-        null_clusters = pd.Series(0, index=[i for i in self.CLUSTER_CENTER
-            if i not in df_states.index])  
-        df_states = df_states.append(null_clusters)
-        # compute score of edges
-        df_edges = df_states[~df_states.index.isin(self.CLUSTER_CENTER)].to_frame()
-        df_edges.index.names = ['edge']
-        df_edges.columns = ['count']
-        df_edges = df_edges.assign(**{'from': [self.A[i] for i in df_edges.index]})
-        df_edges = df_edges.assign(**{'to': [self.B[i] for i in df_edges.index]})
-        df_edges = df_edges.reindex(['from','to','count'], axis=1)
-        if len(df_edges)==0:
-            return None
-        else:
-            def max_relative_score(row):
-                i = row.name
-                score = row['count'] / (0.01+
-                               np.min([df_states[self.CLUSTER_CENTER[self.A[i]]], 
-                                       df_states[self.CLUSTER_CENTER[self.B[i]]]]))
-                return score
-            def mean_relative_score(row):
-                i = row.name
-                
-                score = row['count'] / (0.01+df_states[self.CLUSTER_CENTER[self.A[i]]]+
-                                         df_states[self.CLUSTER_CENTER[self.B[i]]])
-                return score
-            df_edges['max_relative_score'] = df_edges.apply(max_relative_score, axis=1)
-            df_edges['mean_relative_score'] = df_edges.apply(mean_relative_score, axis=1)
-            df_edges = df_edges.sort_values(self.metric, ascending=False)
-            return df_edges
-
-
-    def build_graph(self, df_edges):
-        edges = list(df_edges.index)  
+    def build_graphs(self, pc_x, thres=0.5, method='mean'):
         graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER))
-        graph[self.A[edges], self.B[edges]] = np.array(df_edges[self.metric])
+        if method=='mean':
+            for i in range(self.NUM_CLUSTER-1):
+                for j in range(i+1,self.NUM_CLUSTER):
+                    idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)>thres
+                    if np.sum(idx)>0:
+                        graph[i,j] = np.sum(pc_x[idx,self.C[i,j]])/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]])
+        elif method=='map':
+            pass
+        else:
+            raise ValueError("Invalid method, must be either 'mean' or 'map'.")
+                    
         G = nx.from_numpy_array(graph)
-
-    #     if names:        
-    #         mapping = {i:names[i] for i in cluster_center}
-    #         G = nx.relabel_nodes(G, mapping)
-
+        
         if self.no_loop and not nx.is_tree(G):
-            # prune and merge points if there are loops            
-            T = nx.maximum_spanning_tree(G)
-            del_edges = [self.C[i] for i in G.edges if i not in T.edges]
-            for i in del_edges:
-                self.c[(self.c==i)&(self.w<0.5)] = self.A[i]
-                self.c[(self.c==i)&(self.w>=0.5)] = self.B[i]    
-            G = T
+            # prune and merge points if there are loops
+            G = nx.maximum_spanning_tree(G)
             
         return G
+
+
+    def modify_wtilde(self, w_tilde, edges):
+        w = np.zeros_like(w_tilde)
+        idc = np.tile(np.arange(w.shape[0]), (2,1)).T
+        ide = edges[np.argmax(np.sum(w_tilde[:,edges], axis=-1)**2 -
+                              4*np.prod(w_tilde[:,edges], axis=-1) +
+                              2*np.sum(w_tilde[:,edges], axis=-1), axis=-1)]
+        w[idc, ide] = w_tilde[idc, ide] + (1-np.sum(w_tilde[idc, ide], axis=-1, keepdims=True))/2
+        return w
 
 
     def get_umap(self, z, mu, proj_z_M=None):
@@ -123,91 +99,29 @@ class Inferer(object):
         return lines
 
 
-    def init_inference(self, c, w, mu, z, proj_c, proj_z_M, 
-                       metric='max_relative_score', no_loop=False):
-        self.c = c.copy()
-        self.w = w.copy()
-        self.mu = mu.copy()
+    def init_inference(self, w_tilde, pc_x, thres=0.5, method='mean', no_loop=False):
         self.no_loop = no_loop
-        self.metric = metric
-        
-        # Score edges
-        df_edges = self.get_edges_score(self.c)
-        if df_edges is None:
-            # only plot nodes
-            self.df_edges = None
-            self.embed_z, self.embed_mu, _ = self.get_umap(z, mu, proj_z_M)
-            return None
+        self.w_tilde = w_tilde
         
         # Build graph
-        self.G = self.build_graph(df_edges)
-        ind_edges = np.array([self.C[e] for e in self.G.edges])
-        self.df_edges = df_edges[df_edges.index.isin(ind_edges)]        
-        print(self.df_edges)
+        self.G = self.build_graphs(pc_x, thres=thres, method=method)
+        edges = np.array(self.G.edges)
+        self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
+
+        return self.G, self.edges
         
+    
+    def init_embedding(self, z, mu, proj_c, proj_z_M):
+        self.mu = mu.copy()
         # Umap
         self.embed_z, self.embed_mu, embed_edges = self.get_umap(z, mu, proj_z_M)
 
         # Smooth lines
-        self.lines = self.smooth_line(ind_edges, self.embed_mu, embed_edges, proj_c)
-
-        # If no_loop=True, relabel points that in extra
-        # edges to the nearest cluster.
-        if no_loop:
-            extra_inds = [i for i,x in enumerate(c) if x not in np.r_[self.df_edges.index,self.CLUSTER_CENTER]]
-            self.c[extra_inds] = self.CLUSTER_CENTER[np.argmin(np.mean((np.expand_dims(z[extra_inds,:],-1) - mu)**2, axis=(1)), axis=-1)]
+        self.lines = self.smooth_line(self.edges, self.embed_mu, embed_edges, proj_c)
+        return None
         
-        return self.c
-    
-    def plot_trajectory(self, labels, cutoff=None):
-        if self.df_edges is None:
-            self.select_edges = pd.DataFrame()
-        elif cutoff is None:
-            self.select_edges = self.df_edges.sort_values(
-                self.metric).iloc[-self.NUM_CLUSTER+1:]
-        else:
-            self.select_edges = self.df_edges[self.df_edges[self.metric]>=cutoff]
         
-        if labels is None:
-            fig, ax1 = plt.subplots(1, figsize=(7, 5))
-        else:
-            n_labels = len(np.unique(labels))
-            colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
-            labels = np.array(labels)
-            fig, (ax1,ax2) = plt.subplots(1,2, figsize=(14, 5))
-            for i,x in enumerate(np.unique(labels)):
-                ax2.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                    s=3, alpha=0.8, label=str(x))
-            box = ax2.get_position()
-            ax2.set_position([box.x0, box.y0 + box.height * 0.1,
-                             box.width, box.height * 0.9])
-            ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                      fancybox=True, shadow=True, markerscale=5,
-                      ncol=np.min([5,50//np.max([len(i) for i in np.unique(labels)])]))
-            ax2.set_title('Ground Truth')
-            plt.setp(ax2, xticks=[], yticks=[])
-            ax1.set_title('Prediction')
-            
-        colors = [plt.cm.jet(float(i)/self.NUM_STATE) for i in range(self.NUM_STATE)]
-        ax1.scatter(*self.embed_z.T, c=np.array([colors[i] for i in self.c]), s=1, alpha=0.5)
-        for i in self.select_edges.index:
-            ax1.plot(*self.lines[i].T, color="black", alpha=0.5)
-
-        for idx,i in enumerate(self.CLUSTER_CENTER):
-            ax1.scatter(*self.embed_mu[idx:idx+1,:].T,
-                        c=[colors[i]], edgecolors='white',
-                        s=200, marker='*', label=str(idx))
-        plt.setp(ax1, xticks=[], yticks=[])
-        box = ax1.get_position()
-        ax1.set_position([box.x0, box.y0 + box.height * 0.1,
-                         box.width, box.height * 0.9])
-        ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                  fancybox=True, shadow=True, ncol=5)
-        
-        plt.suptitle('Trajectory')
-        plt.show()  
-        
-    def build_milestone_net(self, subgraph, subG_mu, init_node):
+    def build_milestone_net(self, subgraph, init_node):
         '''
         Args:
             subgraph     - a connected component of the graph, csr_matrix
@@ -237,7 +151,7 @@ class Inferer(object):
                     if unvisited[neighbour]['score'] > newScore:
                         unvisited[neighbour]['score'] = newScore
                         unvisited[neighbour]['parent'] = current
-                        unvisited[neighbour]['distance'] = subG_mu[current][neighbour]['weight']
+                        unvisited[neighbour]['distance'] = currentDistance+1
 
                 if len(unvisited)<len(subgraph):
                     milestone_net.append([unvisited[current]['parent'],
@@ -246,85 +160,96 @@ class Inferer(object):
                 del unvisited[current]
                 if not unvisited: break
                 current, currentScore, currentDistance = \
-                    sorted([(i[0],i[1]['score'],i[1]['distance']) for i in unvisited.items()], 
-                           key = lambda x: x[1])[0]
+                    sorted([(i[0],i[1]['score'],i[1]['distance']) for i in unvisited.items()],
+                            key = lambda x: x[1])[0]
             return np.array(milestone_net)
     
-    def plot_pseudotime(self, node):
-        dist_mu = pairwise_distances(self.mu.T)
-        
-        if self.df_edges is None:
-            pseudotime = - np.ones_like(self.c)
-            pseudotime_node = - np.ones_like(self.CLUSTER_CENTER)
-        else:
-            G = self.build_graph(self.select_edges)
-            connected_comps = nx.node_connected_component(G, node)
-            subG = G.subgraph(connected_comps)
-            subG_mu = nx.from_numpy_array(dist_mu).subgraph(connected_comps)
+    
+    def comp_pseudotime(self, node, w):
+        connected_comps = nx.node_connected_component(self.G, node)
+        subG = self.G.subgraph(connected_comps)
+        milestone_net = self.build_milestone_net(subG,node)
+
+        # compute pseudotime
+        pseudotime = - np.ones(w.shape[0])
+        for i in range(len(milestone_net)):
+            _from, _to = milestone_net[i,:2]
+            _from, _to = int(_from), int(_to)
             
-            # compute milestone network
-            milestone_net = self.build_milestone_net(subG,subG_mu,node)
+            idc = (w[:,_from]>0)&(w[:,_to]>0)
+            pseudotime[idc] = w[idc,_to] + milestone_net[i,-1] - 1
+        
+        return pseudotime
 
-            # compute pseudotime
-            pseudotime = - np.ones_like(self.c)
-            pseudotime_node = - np.ones_like(self.CLUSTER_CENTER)
-            for i in range(len(milestone_net)):
-                _from, _to = milestone_net[i,:2]
-                _from, _to = int(_from), int(_to)
-                if i==0:
-                    pseudotime[self.c==self.CLUSTER_CENTER[_from]] = \
-                        pseudotime_node[_from] = 0
-                pseudotime[self.c==self.CLUSTER_CENTER[_to]] = \
-                    pseudotime_node[_to] = np.sum(milestone_net[:i+1,-1])
 
-                flag = False
-                if _from>_to:
-                    flag = True
-                    _from,_to = _to,_from
-                state = self.C[_from,_to]
+    def plot_trajectory(self, node, labels=None, cutoff=None):
+        # select edges
+        if len(self.edges)==0:
+            select_edges = select_ind_edges = []
+        else:
+            if cutoff is None:
+                G = nx.maximum_spanning_tree(self.G)
+            else:
+                graph = nx.to_numpy_matrix(self.G)
+                G = nx.from_numpy_array(graph[graph>cutoff])
+            select_edges = np.array(G.edges)
+            select_ind_edges = [self.C[select_edges[i,0], select_edges[i,1]] for i in range(len(select_edges))]
+        
+        # modify w_tilde
+        w = self.modify_wtilde(self.w_tilde, select_edges)
+        
+        # compute pseudotime
+        pseudotime = self.comp_pseudotime(node, w)
+        
+        fig, ax1 = plt.subplots(1, figsize=(7, 5))
 
-                if flag:
-                    pseudotime[self.c == state] = ((1-self.w[self.c == state]) *
-                                                   milestone_net[i,-1] +
-                                                   np.sum(milestone_net[:i,-1]))
-                else:
-                    pseudotime[self.c == state] = (self.w[self.c == state] *
-                                                   milestone_net[i,-1] +
-                                                   np.sum(milestone_net[:i,-1]))
-
-        fig, ax = plt.subplots(1, figsize=(8, 5))
-             
+#        n_labels = len(np.unique(labels))
+#        colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
+#        labels = np.array(labels)
+#        fig, (ax1,ax2) = plt.subplots(1,2, figsize=(14, 5))
+#        for i,x in enumerate(np.unique(labels)):
+#            ax2.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
+#                s=3, alpha=0.8, label=str(x))
+#        box = ax2.get_position()
+#        ax2.set_position([box.x0, box.y0 + box.height * 0.1,
+#                         box.width, box.height * 0.9])
+#        ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+#                  fancybox=True, shadow=True, markerscale=5,
+#                  ncol=np.min([5,50//np.max([len(i) for i in np.unique(labels)])]))
+#        ax2.set_title('Ground Truth')
+#        plt.setp(ax2, xticks=[], yticks=[])
+#        ax1.set_title('Prediction')
+            
         cmap = matplotlib.cm.get_cmap('viridis')
-
+        colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
         if np.sum(pseudotime>-1)>0:
             norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))
-            sc = plt.scatter(*self.embed_z[pseudotime>-1,:].T,
+            sc = ax1.scatter(*self.embed_z[pseudotime>-1,:].T,
                 norm=norm,
                 c=pseudotime[pseudotime>-1],
                 s=2, alpha=0.5)
-            plt.colorbar(sc)
+            plt.colorbar(sc, ax=[ax1], location='left')
         else:
             norm = None
             
         if np.sum(pseudotime==-1)>0:
-            plt.scatter(*self.embed_z[pseudotime==-1,:].T, 
+            ax1.scatter(*self.embed_z[pseudotime==-1,:].T,
                         c='gray', s=1, alpha=0.4)
-
-        for idx,i in enumerate(self.CLUSTER_CENTER):
-            if pseudotime_node[idx]==-1:
-                c = 'gray'
-            else:
-                c = [cmap(norm(pseudotime_node[idx]))]
-            plt.scatter(*self.embed_mu[idx:idx+1,:].T, c=c,
+        
+        for i in select_ind_edges:
+            ax1.plot(*self.lines[i].T, color="black", alpha=0.5)
+        
+        for i in range(len(self.CLUSTER_CENTER)):
+            ax1.scatter(*embed_mu[i:i+1,:].T, c=[colors[i]],
                         edgecolors='white', # linewidths=10,
                         norm=norm,
-                        s=200, marker='*', label=str(idx))
-                        
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                         box.width, box.height * 0.9])
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                        s=200, marker='*', label=str(i))
+        plt.setp(ax1, xticks=[], yticks=[])
+        box = ax1.get_position()
+        ax1.set_position([box.x0, box.y0 + box.height * 0.1,
+                            box.width, box.height * 0.9])
+        ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
             fancybox=True, shadow=True, ncol=5)
-        plt.setp(ax, xticks=[], yticks=[])
-        plt.title('Pseudotime')
+        
+        plt.suptitle('Trajectory')
         plt.show()

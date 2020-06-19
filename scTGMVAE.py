@@ -199,22 +199,17 @@ class scTGMVAE():
         _, self.mu,self.c,self.w,self.var_w,self.wc,self.var_wc,self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
         
         
-    def comp_inference_score(self, metric='max_relative_score', no_loop=False):
-        cluster_center = [int((self.n_clusters+(1-i)/2)*i) for i in range(self.n_clusters)]
-        edges = [i for i in np.unique(self.c) if i not in cluster_center]
+    def comp_inference_score(self, thres=0.5, method='mean', no_loop=False):
+        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
+
         if len(edges)==0:
             proj_c, proj_z_M = self.c, None
         else:
             proj_c, proj_z_M = self.vae.get_proj_z(edges)
         
-        c = self.inferer.init_inference(self.c, self.w, self.mu, self.z, proj_c, proj_z_M,
-                metric=metric, no_loop=no_loop)
-        return c, self.w, self.var_w, self.wc, self.var_wc
+        self.inferer.init_embedding(self.z, self.mu, proj_c, proj_z_M)
+        return G
         
         
-    def plot_trajectory(self, cutoff=None):
-        self.inferer.plot_trajectory(self.label_names, cutoff=cutoff)
-        
-        
-    def plot_pseudotime(self, init_node):
-        self.inferer.plot_pseudotime(init_node)
+    def plot_trajectory(self, init_node, cutoff=None):
+        self.inferer.plot_trajectory(init_node, self.label_names, cutoff)
