@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy.interpolate import splrep, splev
-from sklearn.metrics import pairwise_distances
 import warnings
 import networkx as nx
 import umap
