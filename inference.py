@@ -27,7 +27,11 @@ class Inferer(object):
                     if np.sum(idx)>0:
                         graph[i,j] = np.sum(pc_x[idx,self.C[i,j]])/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]])
         elif method=='map':
-            pass
+            c = np.argmax(pc_x, axis=-1)
+            for i in range(self.NUM_CLUSTER-1):
+                for j in range(i+1,self.NUM_CLUSTER):
+                    if np.sum(c==self.C[i,j])>0:
+                        graph[i,j] = np.sum(c==self.C[i,j])/np.sum((c==self.C[i,j])|(c==self.C[i,i])|(c==self.C[j,j]))
         else:
             raise ValueError("Invalid method, must be either 'mean' or 'map'.")
                     
@@ -42,11 +46,21 @@ class Inferer(object):
 
     def modify_wtilde(self, w_tilde, edges):
         w = np.zeros_like(w_tilde)
+        
+        # projection on edges
         idc = np.tile(np.arange(w.shape[0]), (2,1)).T
         ide = edges[np.argmax(np.sum(w_tilde[:,edges], axis=-1)**2 -
-                              4*np.prod(w_tilde[:,edges], axis=-1) +
+                              4 * np.prod(w_tilde[:,edges], axis=-1) +
                               2*np.sum(w_tilde[:,edges], axis=-1), axis=-1)]
         w[idc, ide] = w_tilde[idc, ide] + (1-np.sum(w_tilde[idc, ide], axis=-1, keepdims=True))/2
+        best_proj_err_edge = np.sum(w_tilde**2, axis=-1) - np.sum(w_tilde[idc, ide]**2, axis=-1) + (1-np.sum(w_tilde[idc, ide], axis=-1))**2/2
+
+        # projection on nodes
+        best_proj_err_node = np.sum(w_tilde**2, axis=-1) - 2*np.max(w_tilde, axis=-1) +1
+        best_proj_err_node_ind = np.argmax(w_tilde, axis=-1)
+
+        idc = (best_proj_err_node<best_proj_err_edge)
+        w[idc,:] = np.eye(w_tilde.shape[-1])[best_proj_err_node_ind[idc]]
         return w
 
 
@@ -200,7 +214,7 @@ class Inferer(object):
         # compute pseudotime
         pseudotime = self.comp_pseudotime(node, w)
         
-        fig, ax1 = plt.subplots(1, figsize=(7, 5))
+        fig, ax1 = plt.subplots(1, figsize=(10, 5))
 
 #        n_labels = len(np.unique(labels))
 #        colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
