@@ -241,7 +241,7 @@ class Inferer(object):
                 norm=norm,
                 c=pseudotime[pseudotime>-1],
                 s=2, alpha=0.5)
-            plt.colorbar(sc, ax=[ax1], location='left')
+            plt.colorbar(sc, ax=[ax1], location='right')
         else:
             norm = None
             
@@ -253,10 +253,10 @@ class Inferer(object):
             ax1.plot(*self.lines[i].T, color="black", alpha=0.5)
         
         for i in range(len(self.CLUSTER_CENTER)):
-            ax1.scatter(*embed_mu[i:i+1,:].T, c=[colors[i]],
+            ax1.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
                         edgecolors='white', # linewidths=10,
                         norm=norm,
-                        s=200, marker='*', label=str(i))
+                        s=250, marker='*', label=str(i))
         plt.setp(ax1, xticks=[], yticks=[])
         box = ax1.get_position()
         ax1.set_position([box.x0, box.y0 + box.height * 0.1,
