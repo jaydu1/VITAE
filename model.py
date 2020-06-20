@@ -311,7 +311,7 @@ class GMM(Layer):
                     tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
                     (1,3)) / tf.cast(self.M, tf.float32) - tf.square(w_tilde)
                     
-                return c.numpy(), w.numpy(), var_w.numpy(), wc.numpy(), var_wc.numpy(), w_tilde.numpy(), var_w_tilde.numpy()
+                return c.numpy(), tf.exp(log_p_c_x).numpy(), w.numpy(), var_w.numpy(), wc.numpy(), var_wc.numpy(), w_tilde.numpy(), var_w_tilde.numpy()
             else:
                 return tf.nn.softmax(self.pi), self.mu, log_p_z
 
@@ -442,19 +442,22 @@ class VariationalAutoEncoder(tf.keras.Model):
         mu = self.GMM.mu.numpy()
         z_mean = []
         res = []
+        pc_x = []
         w_tilde = []
         var_w_tilde = []
         for x in test_dataset:
             _z_mean, _, z = self.encoder(x, L, False)
-            _c, _w, _var_w, _wc, _var_wc, _w_tilde, _var_w_tilde = self.GMM(z, inference=True)
+            _c, _pc_x, _w, _var_w, _wc, _var_wc, _w_tilde, _var_w_tilde = self.GMM(z, inference=True)
             res.append(np.c_[_c, _w, _var_w, _wc, _var_wc])
+            pc_x.append(_pc_x)
             z_mean.append(_z_mean.numpy())
             w_tilde.append(_w_tilde)
             var_w_tilde.append(_var_w_tilde)
         
         c, w, var_w, wc, var_wc = np.hsplit(np.concatenate(res), 5)
         z_mean = np.concatenate(z_mean)
+        pc_x = np.concatenate(pc_x)
         w_tilde = np.concatenate(w_tilde)
         var_w_tilde = np.concatenate(var_w_tilde)
         
-        return pi_norm, mu, c[:,0].astype(np.int32), w[:,0], var_w[:,0], wc[:,0], var_wc[:,0], w_tilde, var_w_tilde, z_mean
+        return pi_norm, mu, c[:,0].astype(np.int32), pc_x, w[:,0], var_w[:,0], wc[:,0], var_wc[:,0], w_tilde, var_w_tilde, z_mean
