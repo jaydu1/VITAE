@@ -134,6 +134,28 @@ class Inferer(object):
         return None
         
         
+    def plot_clusters(self, labels):
+        if labels is None:
+            print('No clustering labels available!')            
+        else:
+            n_labels = len(np.unique(labels))
+            colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
+            
+            fig, ax = plt.subplots(1,1, figsize=(10, 5))
+            for i,x in enumerate(np.unique(labels)):
+                ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
+                    s=3, alpha=0.8, label=str(x))
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                             box.width, box.height * 0.9])
+            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                      fancybox=True, shadow=True, markerscale=5,
+                      ncol=5)
+            ax.set_title('Cluster Membership')
+            plt.setp(ax, xticks=[], yticks=[])
+            plt.show()
+        return None
+        
     def build_milestone_net(self, subgraph, init_node):
         '''
         Args:
@@ -214,55 +236,38 @@ class Inferer(object):
         # compute pseudotime
         pseudotime = self.comp_pseudotime(node, w)
         
-        fig, ax1 = plt.subplots(1, figsize=(10, 5))
-
-#        n_labels = len(np.unique(labels))
-#        colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
-#        labels = np.array(labels)
-#        fig, (ax1,ax2) = plt.subplots(1,2, figsize=(14, 5))
-#        for i,x in enumerate(np.unique(labels)):
-#            ax2.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-#                s=3, alpha=0.8, label=str(x))
-#        box = ax2.get_position()
-#        ax2.set_position([box.x0, box.y0 + box.height * 0.1,
-#                         box.width, box.height * 0.9])
-#        ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-#                  fancybox=True, shadow=True, markerscale=5,
-#                  ncol=np.min([5,50//np.max([len(i) for i in np.unique(labels)])]))
-#        ax2.set_title('Ground Truth')
-#        plt.setp(ax2, xticks=[], yticks=[])
-#        ax1.set_title('Prediction')
+        fig, ax = plt.subplots(1,1, figsize=(10, 5))
             
         cmap = matplotlib.cm.get_cmap('viridis')
         colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
         if np.sum(pseudotime>-1)>0:
             norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))
-            sc = ax1.scatter(*self.embed_z[pseudotime>-1,:].T,
+            sc = ax.scatter(*self.embed_z[pseudotime>-1,:].T,
                 norm=norm,
                 c=pseudotime[pseudotime>-1],
                 s=2, alpha=0.5)
-            plt.colorbar(sc, ax=[ax1], location='right')
+            plt.colorbar(sc, ax=[ax], location='right')
         else:
             norm = None
             
         if np.sum(pseudotime==-1)>0:
-            ax1.scatter(*self.embed_z[pseudotime==-1,:].T,
+            ax.scatter(*self.embed_z[pseudotime==-1,:].T,
                         c='gray', s=1, alpha=0.4)
         
         for i in select_ind_edges:
-            ax1.plot(*self.lines[i].T, color="black", alpha=0.5)
+            ax.plot(*self.lines[i].T, color="black", alpha=0.5)
         
         for i in range(len(self.CLUSTER_CENTER)):
-            ax1.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
+            ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
                         edgecolors='white', # linewidths=10,
                         norm=norm,
                         s=250, marker='*', label=str(i))
-        plt.setp(ax1, xticks=[], yticks=[])
-        box = ax1.get_position()
-        ax1.set_position([box.x0, box.y0 + box.height * 0.1,
+        plt.setp(ax, xticks=[], yticks=[])
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.1,
                             box.width, box.height * 0.9])
-        ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
             fancybox=True, shadow=True, ncol=5)
         
-        plt.suptitle('Trajectory')
+        ax.set_title('Trajectory')
         plt.show()
