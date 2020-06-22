@@ -5,6 +5,7 @@ import numpy as np
 from inference import Inferer
 import os
 import warnings
+from utils import get_igraph, louvain_igraph, plot_clusters
 
 class scTGMVAE():
     """
@@ -88,13 +89,14 @@ class scTGMVAE():
         Params:
             path_to_file - path to weight files of pre trained or
                            trained model
-            n_clusters   - when loading weights of trained model, need
-                           to specify num of clusters, so that the GMM
-                           layer can be initialized
+            n_clusters   - if n_cluster is provided, then the GMM layer
+                           will be initialized or re-initialized. For loading
+                           a trained model when the GMM layer is not
+                           initialized, n_cluster is required.                           
         '''
         if n_clusters is not None:
             self.init_GMM(n_clusters)
-        self.vae.load_weights(path_to_file)
+        self.vae.load_weights(path_to_file)        
 
 
     # pre train the model with specified learning rate
@@ -119,20 +121,15 @@ class scTGMVAE():
         if self.save_weights:
             self.save_model(self.path_to_weights_pretrain)
           
-          
-    # initialize parameters in GMM after pre train
-    # plot the UMAP latent space after pre train
-#    def init_GMM_plot(self):
-#        self.vae = train.init_GMM(self.vae, self.X_normalized, self.n_clusters)
-#        train.plot_pre_train(self.vae, self.X_normalized, self.labels)
 
     def get_latent_z(self):
         return self.vae.get_z(self.X_normalized)
 
 
-    def init_GMM(self, n_clusters, mu=None, Sigma=None, pi=None):
+    def init_GMM(self, n_clusters, cluster_labels=None, mu=None, pi=None):
         self.n_clusters = n_clusters
-        self.vae.init_GMM(n_clusters, mu, Sigma, pi)
+        self.cluster_labels = np.array(cluster_labels)
+        self.vae.init_GMM(n_clusters, mu, pi)
         self.inferer = Inferer(self.n_clusters)
 
 
@@ -208,6 +205,7 @@ class scTGMVAE():
             proj_c, proj_z_M = self.vae.get_proj_z(edges)
         
         self.inferer.init_embedding(self.z, self.mu, proj_c, proj_z_M)
+        self.inferer.plot_clusters(self.cluster_labels)
         return G
         
         

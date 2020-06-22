@@ -146,21 +146,13 @@ class GMM(Layer):
         self.mu = tf.Variable(tf.random.uniform([self.dim_latent, self.n_clusters],
                                                 minval = -1, maxval = 1),
                                 name = 'mu')
-                
-        # [diag(Sigma_1), ... , diag(Sigma_K)] in R^(dim_latent * n_clusters)
-        # self.Sigma = tf.Variable(tf.ones([self.dim_latent, self.n_clusters]),
-        #                          constraint=lambda x: tf.clip_by_value(x, 1e-30, np.infty),
-        #                          name="Sigma")
 
-    def initialize(self, mu, Sigma, pi):
+    def initialize(self, mu, pi):
         # Initialize parameters of GMM
         if mu is not None:
             self.mu.assign(mu)
         if pi is not None:
             self.pi.assign(pi)
-        if Sigma is not None:
-            raise NotImplementedError('Not implemented for different variances.')
-            self.Sigma.assign(Sigma)
 
     def normalize(self):
         self.pi = tf.nn.softmax(self.pi)
@@ -358,7 +350,7 @@ class VariationalAutoEncoder(tf.keras.Model):
     def init_GMM(self, n_clusters, mu, Sigma=None, pi=None):
         self.n_clusters = n_clusters
         self.GMM = GMM(self.n_clusters, self.dim_latent)
-        self.GMM.initialize(mu, Sigma, pi)
+        self.GMM.initialize(mu, pi)
 
     def call(self, x_normalized, x = None, scale_factor = 1,
              pre_train = False, cluster = False, L=None):
