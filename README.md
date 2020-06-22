@@ -15,18 +15,19 @@
 
 
 # Dependency
-Package|Version|Remark
----|---|---
-tensorflow | 2.2.0 |
-localreg | 0.2.1 |
-numpy | 1.18.5 |
-pandas | 1.0.4 |
-matplotlib | 3.2.1 |
-umap | 0.4.4 | 
+Package|Version
+---|---
+matplotlib | 3.2.1 
+scipy | 1.4.1  
+numpy | 1.18.5 
+pandas | 1.0.4 
+tensorflow | 2.2.0 
+localreg | 0.2.1 
 networkx | 2.4
-sklearn | 0.22.2 | optional
-scipy | 1.4.1 | optional
-louvain | 0.7.0 | optional
-python-igraph | 0.8.2 | optional
+python-igraph | 0.8.2 
+sklearn | 0.22.2 
+louvain | 0.7.0 
+umap | 0.4.4 
+
 
 
