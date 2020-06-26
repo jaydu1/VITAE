@@ -2,6 +2,7 @@ import model
 import preprocess
 import train
 import numpy as np
+import scipy as sp
 from inference import Inferer
 import os
 import warnings
@@ -10,10 +11,6 @@ from utils import get_igraph, louvain_igraph, plot_clusters
 class scTGMVAE():
     """
     class for Gaussian Mixture Model for trajectory analysis
-    step of analysis:
-    get_data ---> data_preprocess ---> get_params ---> 
-    model_init ---> pre_train ---> init_GMM_plot ---> train_together ---> 
-    inference
     """
     def __init__(self):
         pass
@@ -25,6 +22,8 @@ class scTGMVAE():
     # gene_names: a list of gene names
     def get_data(self, X, labels = None, cell_names = None, gene_names = None):
         self.X = X.astype(np.float32)
+        if sp.sparse.issparse(self.X):
+            self.X = self.X.toarray()
         self.label_names = None if labels is None else np.array(labels, dtype = str)
         self.raw_cell_names = None if cell_names is None else np.array(cell_names, dtype = str)
         self.raw_gene_names = None if gene_names is None else np.array(gene_names, dtype = str)
@@ -188,13 +187,15 @@ class scTGMVAE():
             L,
             weight,
             is_plot)
-
+        return None
+        
 
     # inference for trajectory
     def init_inference(self, batch_size=32, L=5):
         self.test_dataset = train.warp_dataset(self.X_normalized, batch_size)
         _, self.mu,self.c,self.pc_x,self.w,self.var_w,self.wc,self.var_wc,self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
         self.inferer.init_embedding(self.z, self.mu)
+        return None
         
         
     def comp_inference_score(self, thres=0.5, method='mean', no_loop=False):
@@ -203,5 +204,14 @@ class scTGMVAE():
         return G
         
         
-    def plot_trajectory(self, init_node, cutoff=None):
+    def plot_trajectory(self, init_node: int, cutoff=None):
         self.inferer.plot_trajectory(init_node, self.label_names, cutoff)
+        return None
+
+    
+    def plot_marker_gene(self, gene_name: str):
+        if gene_name not in self.gene_names:
+            raise ValueError("Gene name '{}' not in selected genes!".format(gene_name))
+        expression = self.X_normalized[:,self.gene_names==gene_name].flatten()
+        self.inferer.plot_marker_gene(expression, gene_name)
+        return None
