@@ -105,10 +105,16 @@ def plot_clusters(embed_z, labels):
     n_labels = len(np.unique(labels))
     colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
     
-    plt.figure(figsize=(10,5))
+    fig, ax = plt.subplots(1,1, figsize=(10, 5))
     for i,l in enumerate(np.unique(labels)):
-        plt.scatter(*embed_z[labels==l].T,
+        ax.scatter(*embed_z[labels==l].T,
                     c=[colors[i]], label=str(l),
                     s=1, alpha=0.6)
-    plt.title('Louvain Clustering')
+    plt.setp(ax, xticks=[], yticks=[])
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                        box.width, box.height * 0.9])
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+        fancybox=True, shadow=True, ncol=5)
+    ax.set_title('Clustering')
     plt.plot()
