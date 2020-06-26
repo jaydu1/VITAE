@@ -1,6 +1,6 @@
 # Datasets
 
-To access data more conviniently, we store the R data files into Python pickle files. The following pickle files contain a list of `x`, `grouping`, and `milestone_net`.
+To access data more conviniently, we store the R data files into Python pickle files. The following pickle files contain a list of `x`, `grouping`, `gene_names` and `milestone_net`.
 
 File Name | Number of Cells | Number of Genes | Number of Clusters | Type | Trajectory
 ---|---|---|---|---|---
@@ -15,5 +15,6 @@ To load these data, try the following codes:
 ```Python
 import pickle as pk
 with open(path_to_file+'b_cd14_cd56.pkl', 'rb') as f:
-	x, grouping, milestone_net = pk.load(f)
+	x, grouping, gene_names , milestone_net = pk.load(f)
+# x is a sparse matrix with dtype uint16 for UMI data and uint32 for nonUMI data.
 ```
