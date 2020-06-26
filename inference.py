@@ -64,54 +64,6 @@ class Inferer(object):
         return w
 
 
-    def get_umap(self, z, mu, proj_z_M=None):
-        concate_z = np.concatenate((z, mu.T), axis=0)
-        mapper = umap.UMAP().fit(concate_z)
-        embed_z = mapper.embedding_[:-self.NUM_CLUSTER,:].copy()
-        embed_mu = mapper.embedding_[-self.NUM_CLUSTER:,:].copy()
-        if proj_z_M is None:
-            embed_edge = None
-        else:
-            embed_edge = mapper.transform(proj_z_M)
-        return embed_z, embed_mu, embed_edge
-
-
-    def smooth_line(self, ind_edges, embed_mu, embed_edges, proj_c):
-        lines = {}
-        for i in ind_edges:
-            data = np.concatenate((embed_mu[self.A[i]:self.A[i]+1,:], 
-                                   embed_edges[proj_c==i,:], 
-                                   embed_mu[self.B[i]:self.B[i]+1,:]), axis=0)
-            x_range = np.sort(embed_mu[[self.A[i],self.B[i]],0])
-            y_range = np.sort(embed_mu[[self.A[i],self.B[i]],1])
-            data[data[:,0]<x_range[0],0] = x_range[0]
-            data[data[:,0]>x_range[1],0] = x_range[1]
-            data[data[:,1]<y_range[0],1] = y_range[0]
-            data[data[:,1]>y_range[1],1] = y_range[1]
-
-            w = np.ones(len(data))*0.01
-            w[0] = w[-1] = 1
-
-            if data.shape[0]==2:
-                lines[i] = data
-
-            else:
-                if np.sum(np.abs(embed_mu[self.A[i],:]-embed_mu[self.B[i],:])*[1,-1])<0:
-                    w = w[np.argsort(data[:,1])]
-                    data = data[np.argsort(data[:,1]), :]
-                    x,y = data[:,0], data[:,1]        
-                    bspl = splrep(y, x, w, s=5)        
-                    x = splev(y, bspl)
-                else:
-                    w = w[np.argsort(data[:,0])]
-                    data = data[np.argsort(data[:,0]), :]
-                    x,y = data[:,0], data[:,1]        
-                    bspl = splrep(x, y, w, s=5)        
-                    y = splev(x,bspl)
-                lines[i] = np.c_[x,y]
-        return lines
-
-
     def init_inference(self, w_tilde, pc_x, thres=0.5, method='mean', no_loop=False):
         self.no_loop = no_loop
         self.w_tilde = w_tilde
@@ -124,13 +76,14 @@ class Inferer(object):
         return self.G, self.edges
         
     
-    def init_embedding(self, z, mu, proj_c, proj_z_M):
+    def init_embedding(self, z, mu):
         self.mu = mu.copy()
+        
         # Umap
-        self.embed_z, self.embed_mu, embed_edges = self.get_umap(z, mu, proj_z_M)
-
-        # Smooth lines
-        self.lines = self.smooth_line(self.edges, self.embed_mu, embed_edges, proj_c)
+        concate_z = np.concatenate((z, mu.T), axis=0)
+        mapper = umap.UMAP().fit(concate_z)
+        self.embed_z = mapper.embedding_[:-self.NUM_CLUSTER,:].copy()
+        self.embed_mu = mapper.embedding_[-self.NUM_CLUSTER:,:].copy()
         return None
         
         
@@ -220,7 +173,7 @@ class Inferer(object):
     def plot_trajectory(self, node, labels=None, cutoff=None):
         # select edges
         if len(self.edges)==0:
-            select_edges = select_ind_edges = []
+            select_edges = []
         else:
             if cutoff is None:
                 G = nx.maximum_spanning_tree(self.G)
@@ -228,7 +181,6 @@ class Inferer(object):
                 graph = nx.to_numpy_matrix(self.G)
                 G = nx.from_numpy_array(graph[graph>cutoff])
             select_edges = np.array(G.edges)
-            select_ind_edges = [self.C[select_edges[i,0], select_edges[i,1]] for i in range(len(select_edges))]
         
         # modify w_tilde
         w = self.modify_wtilde(self.w_tilde, select_edges)
@@ -254,8 +206,9 @@ class Inferer(object):
             ax.scatter(*self.embed_z[pseudotime==-1,:].T,
                         c='gray', s=1, alpha=0.4)
         
-        for i in select_ind_edges:
-            ax.plot(*self.lines[i].T, color="black", alpha=0.5)
+        for i in range(len(select_edges)):
+            ax.plot(self.embed_mu[select_edges[i,:], 0],
+                    self.embed_mu[select_edges[i,:], 1], '-', color="black", alpha=0.5)
         
         for i in range(len(self.CLUSTER_CENTER)):
             ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],

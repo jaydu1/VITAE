@@ -24,7 +24,7 @@ class scTGMVAE():
     # cell_names: a list of cell names
     # gene_names: a list of gene names
     def get_data(self, X, labels = None, cell_names = None, gene_names = None):
-        self.X = X
+        self.X = X.astype(np.float32)
         self.label_names = None if labels is None else np.array(labels, dtype = str)
         self.raw_cell_names = None if cell_names is None else np.array(cell_names, dtype = str)
         self.raw_gene_names = None if gene_names is None else np.array(gene_names, dtype = str)
@@ -128,7 +128,7 @@ class scTGMVAE():
 
     def init_GMM(self, n_clusters, cluster_labels=None, mu=None, pi=None):
         self.n_clusters = n_clusters
-        self.cluster_labels = np.array(cluster_labels)
+        self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
         self.vae.init_GMM(n_clusters, mu, pi)
         self.inferer = Inferer(self.n_clusters)
 
@@ -194,17 +194,11 @@ class scTGMVAE():
     def init_inference(self, batch_size=32, L=5):
         self.test_dataset = train.warp_dataset(self.X_normalized, batch_size)
         _, self.mu,self.c,self.pc_x,self.w,self.var_w,self.wc,self.var_wc,self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
+        self.inferer.init_embedding(self.z, self.mu)
         
         
     def comp_inference_score(self, thres=0.5, method='mean', no_loop=False):
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
-
-        if len(edges)==0:
-            proj_c, proj_z_M = self.c, None
-        else:
-            proj_c, proj_z_M = self.vae.get_proj_z(edges)
-        
-        self.inferer.init_embedding(self.z, self.mu, proj_c, proj_z_M)
         self.inferer.plot_clusters(self.cluster_labels)
         return G
         
