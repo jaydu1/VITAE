@@ -7,7 +7,7 @@ import localreg
 from sklearn import preprocessing
 import warnings
 
-def normalization(x, K = 1e4):
+def log_norm(x, K = 1e4):
     """
     Normalize the gene expression counts for each cell by the total expression counts, 
     divide this by a size scale factor, which is determined by total counts and a constant K
@@ -62,8 +62,7 @@ def feature_select(x, gene_num = 2000):
 def label_encoding(labels):
     # encode the class label by number (order of character)
     le = preprocessing.LabelEncoder()
-    le.fit(np.unique(labels))
-    y = le.transform(labels)
+    y = le.fit_transform(labels)
     return y, le
 
 
@@ -77,11 +76,17 @@ def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4, gene_num
     gene_num: total number of genes to select
     grouping: true labels
     '''
-
-    x_normalized, scale_factor = normalization(x, K)
+    # log-normalization
+    x_normalized, scale_factor = log_norm(x, K)
+    
+    # feature selection
     x, index, expressed = feature_select(x, gene_num)
     x_normalized = x_normalized[expressed, :][:, index]
     scale_factor = scale_factor[expressed, :]
+    
+    # per-gene standardization
+    gene_scalar = preprocessing.StandardScaler()
+    x_normalized = gene_scalar.fit_transform(x_normalized)
     
     if label_names is None:
         warnings.warn('No labels for cells!')
@@ -89,16 +94,18 @@ def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4, gene_num
         le = None
     else:
         label_names = label_names[expressed]
-        labels, le = label_encoding(label_names)
+        le = preprocessing.LabelEncoder()
+        labels = le.fit_transform(label_names)
         print('Number of cells in each class: ')
         table = pd.value_counts(label_names)
         table.index = pd.Series(le.transform(table.index).astype(str)) \
             + ' <---> ' + table.index
+        table = table.sort_index()
         print(table)
         
     cell_names = None if raw_cell_names is None else raw_cell_names[expressed]
     gene_names = None if raw_gene_names is None else raw_gene_names[index]
 
-    return x_normalized, x, cell_names, gene_names, scale_factor, labels, label_names, le
+    return x_normalized, x, cell_names, gene_names, scale_factor, labels, label_names, le, gene_scalar
 
 

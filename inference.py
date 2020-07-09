@@ -102,8 +102,7 @@ class Inferer(object):
             ax.set_position([box.x0, box.y0 + box.height * 0.1,
                              box.width, box.height * 0.9])
             ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                      fancybox=True, shadow=True, markerscale=5,
-                      ncol=5)
+                      fancybox=True, shadow=True, markerscale=5, ncol=5)
             ax.set_title('Cluster Membership')
             plt.setp(ax, xticks=[], yticks=[])
             plt.show()

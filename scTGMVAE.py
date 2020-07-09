@@ -34,7 +34,8 @@ class scTGMVAE():
     # gene_num: number of feature to select
     def preprocess_data(self, K = 1e4, gene_num = 2000):
         self.X_normalized, self.X, self.cell_names, self.gene_names, \
-        self.scale_factor, self.labels, self.label_names, self.le = preprocess.preprocess(
+        self.scale_factor, self.labels, self.label_names, \
+        self.le, self.gene_scalar = preprocess.preprocess(
             self.X.copy(),
             self.label_names,
             self.raw_cell_names,
@@ -74,7 +75,8 @@ class scTGMVAE():
             self.dimensions, 
             self.dim_latent,
             self.L,
-            self.data_type)
+            self.data_type
+            )
         
         
     # save and load trained model parameters
