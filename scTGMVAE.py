@@ -207,8 +207,8 @@ class scTGMVAE():
         
         
     def plot_trajectory(self, init_node: int, cutoff=None):
-        self.inferer.plot_trajectory(init_node, self.label_names, cutoff)
-        return None
+        pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff)
+        return pseudotime
 
     
     def plot_marker_gene(self, gene_name: str):
