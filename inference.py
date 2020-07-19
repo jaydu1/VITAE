@@ -223,7 +223,7 @@ class Inferer(object):
         
         ax.set_title('Trajectory')
         plt.show()
-        return None
+        return w, pseudotime
         
         
     def plot_marker_gene(self, expression, gene_name):
