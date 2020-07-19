@@ -1,12 +1,16 @@
+import numpy as np
+import scipy as sp
+import pandas as pd
+import networkx as nx
+import warnings
+import os
+
 import model
 import preprocess
 import train
-import numpy as np
-import scipy as sp
 from inference import Inferer
-import os
-import warnings
 from utils import get_igraph, louvain_igraph, plot_clusters
+from metric import topology, compute_F1_score
 
 class scTGMVAE():
     """
@@ -217,3 +221,54 @@ class scTGMVAE():
         expression = self.X_normalized[:,self.gene_names==gene_name].flatten()
         self.inferer.plot_marker_gene(expression, gene_name)
         return None
+
+
+    def evaluate(self, milestone_net, method='mean', path=''):
+        begin_node = int(np.argmin(np.mean((
+            self.z[(milestone_net['from']==0)&(milestone_net['to']==0),:,np.newaxis] -
+            self.mu[np.newaxis,:,:])**2, axis=(0,1))))
+
+        G = self.comp_inference_score(thres=0.5, method=method, no_loop=False, path=path)
+        w, pseudotime = self.plot_trajectory(init_node=begin_node, cutoff=None, path=path)
+        
+        # 1. Topology
+        G_pred = nx.Graph()
+        G_pred.add_edges_from(G.edges)
+        nx.set_node_attributes(G_pred, False, 'is_init')
+        G_pred.nodes[begin_node]['is_init'] = True
+
+        G_true = nx.Graph()
+        G_true.add_edges_from(list(
+            milestone_net[~pd.isna(milestone_net['w'])].groupby(['from', 'to']).count().index))
+        nx.set_node_attributes(G_true, False, 'is_init')
+        G_true.nodes[0]['is_init'] = True
+        res = topology(G_true, G_pred)
+            
+        # 2. Milestones assignment
+        milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
+        milestones_true = milestone_net['from'].values.copy()
+        milestones_true[(milestone_net['from']!=milestone_net['to'])
+                       &(milestone_net['w']<0.5)] = milestone_net[(milestone_net['from']!=milestone_net['to'])
+                                                                  &(milestone_net['w']<0.5)]['to'].values
+        milestones_true = milestones_true[pseudotime!=-1]
+        res['score_F1_milestones'] = compute_F1_score(milestones_true, milestones_pred)
+        
+        # 3. Correlation between geodesic distances / Pseudotime
+        pseudotime_ture = milestone_net['from'].values + 1 - milestone_net['w'].values
+        pseudotime_ture[np.isnan(pseudotime_ture)] = milestone_net[pd.isna(milestone_net['w'])]['from'].values
+        pseudotime_ture = pseudotime_ture[pseudotime>-1]
+        pseudotime_pred = pseudotime[pseudotime>-1]
+        res['score_cor'] = np.corrcoef(pseudotime_ture,pseudotime_pred)[0,1]
+        
+        # 4. Shape
+        score_cos_theta = 0
+        for (_from,_to) in G.edges:
+            _z = self.z[(w[:,_from]>0) & (w[:,_to]>0),:]
+            v_1 = _z - self.mu[:,_from]
+            v_2 = _z - self.mu[:,_to]
+            cos_theta = np.sum(v_1*v_2, -1)/(np.linalg.norm(v_1,axis=-1)*np.linalg.norm(v_2,axis=-1)+1e-12)
+
+            score_cos_theta += np.sum((1-cos_theta)/2)
+
+        res['score_cos_theta'] = score_cos_theta/np.sum(np.sum(w>0, axis=-1)==2)
+        return res
