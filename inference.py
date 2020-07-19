@@ -152,9 +152,9 @@ class Inferer(object):
             return np.array(milestone_net)
     
     
-    def comp_pseudotime(self, node, w):
-        connected_comps = nx.node_connected_component(self.G, node)
-        subG = self.G.subgraph(connected_comps)
+    def comp_pseudotime(self, G, node, w):
+        connected_comps = nx.node_connected_component(G, node)
+        subG = G.subgraph(connected_comps)
         milestone_net = self.build_milestone_net(subG,node)
 
         # compute pseudotime
@@ -185,7 +185,7 @@ class Inferer(object):
         w = self.modify_wtilde(self.w_tilde, select_edges)
         
         # compute pseudotime
-        pseudotime = self.comp_pseudotime(node, w)
+        pseudotime = self.comp_pseudotime(G, node, w)
         
         fig, ax = plt.subplots(1,1, figsize=(10, 5))
             
