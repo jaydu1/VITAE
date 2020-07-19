@@ -178,7 +178,8 @@ class Inferer(object):
                 G = nx.maximum_spanning_tree(self.G)
             else:
                 graph = nx.to_numpy_matrix(self.G)
-                G = nx.from_numpy_array(graph[graph>cutoff])
+                graph[graph<=cutoff] = 0
+                G = nx.from_numpy_array(graph)
             select_edges = np.array(G.edges)
         
         # modify w_tilde
