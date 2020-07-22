@@ -223,13 +223,14 @@ class scTGMVAE():
         return None
 
 
-    def evaluate(self, milestone_net, method='mean', path=''):
+    def evaluate(self, milestone_net, method='mean', L=5):
         begin_node = int(np.argmin(np.mean((
             self.z[(milestone_net['from']==0)&(milestone_net['to']==0),:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
 
-        G = self.comp_inference_score(thres=0.5, method=method, no_loop=False, path=path)
-        w, pseudotime = self.plot_trajectory(init_node=begin_node, cutoff=None, path=path)
+        self.init_inference(batch_size=32, L=5):
+        G = self.comp_inference_score(thres=0.5, method=method, no_loop=False)
+        w, pseudotime = self.plot_trajectory(init_node=begin_node, cutoff=None, is_plot=False)
         
         # 1. Topology
         G_pred = nx.Graph()
