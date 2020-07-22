@@ -169,7 +169,7 @@ class Inferer(object):
         return pseudotime
 
 
-    def plot_trajectory(self, node, labels=None, cutoff=None):
+    def plot_trajectory(self, node, labels=None, cutoff=None, is_plot=True):
         # select edges
         if len(self.edges)==0:
             select_edges = []
@@ -188,42 +188,43 @@ class Inferer(object):
         # compute pseudotime
         pseudotime = self.comp_pseudotime(G, node, w)
         
-        fig, ax = plt.subplots(1,1, figsize=(10, 5))
+        if is_plot:
+            fig, ax = plt.subplots(1,1, figsize=(10, 5))
+                
+            cmap = matplotlib.cm.get_cmap('viridis')
+            colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
+            if np.sum(pseudotime>-1)>0:
+                norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))
+                sc = ax.scatter(*self.embed_z[pseudotime>-1,:].T,
+                    norm=norm,
+                    c=pseudotime[pseudotime>-1],
+                    s=2, alpha=0.5)
+                plt.colorbar(sc, ax=[ax], location='right')
+            else:
+                norm = None
+                
+            if np.sum(pseudotime==-1)>0:
+                ax.scatter(*self.embed_z[pseudotime==-1,:].T,
+                            c='gray', s=1, alpha=0.4)
             
-        cmap = matplotlib.cm.get_cmap('viridis')
-        colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
-        if np.sum(pseudotime>-1)>0:
-            norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))
-            sc = ax.scatter(*self.embed_z[pseudotime>-1,:].T,
-                norm=norm,
-                c=pseudotime[pseudotime>-1],
-                s=2, alpha=0.5)
-            plt.colorbar(sc, ax=[ax], location='right')
-        else:
-            norm = None
+            for i in range(len(select_edges)):
+                ax.plot(self.embed_mu[select_edges[i,:], 0],
+                        self.embed_mu[select_edges[i,:], 1], '-', color="black", alpha=0.5)
             
-        if np.sum(pseudotime==-1)>0:
-            ax.scatter(*self.embed_z[pseudotime==-1,:].T,
-                        c='gray', s=1, alpha=0.4)
-        
-        for i in range(len(select_edges)):
-            ax.plot(self.embed_mu[select_edges[i,:], 0],
-                    self.embed_mu[select_edges[i,:], 1], '-', color="black", alpha=0.5)
-        
-        for i in range(len(self.CLUSTER_CENTER)):
-            ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
-                        edgecolors='white', # linewidths=10,
-                        norm=norm,
-                        s=250, marker='*', label=str(i))
-        plt.setp(ax, xticks=[], yticks=[])
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                            box.width, box.height * 0.9])
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-            fancybox=True, shadow=True, ncol=5)
-        
-        ax.set_title('Trajectory')
-        plt.show()
+            for i in range(len(self.CLUSTER_CENTER)):
+                ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
+                            edgecolors='white', # linewidths=10,
+                            norm=norm,
+                            s=250, marker='*', label=str(i))
+            plt.setp(ax, xticks=[], yticks=[])
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                                box.width, box.height * 0.9])
+            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                fancybox=True, shadow=True, ncol=5)
+            
+            ax.set_title('Trajectory')
+            plt.show()
         return w, pseudotime
         
         
