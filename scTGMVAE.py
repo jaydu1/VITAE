@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 import networkx as nx
+from sklearn.metrics.cluster import adjusted_rand_score
 import warnings
 import os
 
@@ -250,8 +251,8 @@ class scTGMVAE():
         milestones_true[(milestone_net['from']!=milestone_net['to'])
                        &(milestone_net['w']<0.5)] = milestone_net[(milestone_net['from']!=milestone_net['to'])
                                                                   &(milestone_net['w']<0.5)]['to'].values
-        milestones_true = milestones_true[pseudotime!=-1]
-        res['score_F1_milestones'] = compute_F1_score(milestones_true, milestones_pred)
+        milestones_true = milestones_true[pseudotime!=-1]        
+        res['score_ARI'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
         
         # 3. Correlation between geodesic distances / Pseudotime
         pseudotime_ture = milestone_net['from'].values + 1 - milestone_net['w'].values

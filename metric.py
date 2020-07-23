@@ -24,29 +24,9 @@ def topology(G_true, G_pred):
         
     # 3. Hamming-Ipsen-Mikhailov distance
     if len(G_true)==len(G_pred):
-        dist = netrd.distance.HammingIpsenMikhailov()
-        score_HIM = 1-dist.dist(G_true, G_pred, combination_factor=0.1)
+        dist = netrd.distance.IpsenMikhailov()
+        score_HIM = 1-dist.dist(G_true, G_pred)
     else:
         score_HIM = 0
     res['score_HIM'] = score_HIM
     return res
-
-def compute_F1_score(true, pred):
-    '''
-    Params:
-        true - array of true labels
-        pred - array of predicted labels (no need to correspond to true labels)
-    Return:
-        F1 score
-    '''
-    milestones_df = pd.DataFrame({'group_true':true,'group_pred':pred})
-    intersect_df = milestones_df.groupby(['group_true','group_pred']).size().reset_index().rename(columns={0: "n_intersect"})
-    n_group_true_df = milestones_df.groupby(['group_true']).size().to_frame().rename(columns={0: "n_group_true"})
-    n_group_pred_df = milestones_df.groupby(['group_pred']).size().to_frame().rename(columns={0: "n_group_pred"})
-    intersect_df = intersect_df.join(n_group_true_df, on='group_true').join(n_group_pred_df, on='group_pred')
-    intersect_df['jaccards'] = intersect_df['n_intersect']/(
-        intersect_df['n_group_true']+intersect_df['n_group_pred']-intersect_df['n_intersect'])
-
-    recovery = intersect_df.groupby('group_true')['jaccards'].max().mean()
-    relevance = intersect_df.groupby('group_pred')['jaccards'].max().mean()
-    return 2/(1/(recovery+1e-12)+1/(relevance+1e-12))
