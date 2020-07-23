@@ -205,13 +205,13 @@ class scTGMVAE():
         return None
         
         
-    def comp_inference_score(self, thres=0.5, method='mean', no_loop=False, path=''):
+    def comp_inference_score(self, thres=0.5, method='mean', no_loop=False, path=None):
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
         self.inferer.plot_clusters(self.cluster_labels, path=path)
         return G
         
         
-    def plot_trajectory(self, init_node: int, cutoff=None, path=''):
+    def plot_trajectory(self, init_node: int, cutoff=None, path=None):
         w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, path=path)
         return w, pseudotime
 
@@ -224,7 +224,7 @@ class scTGMVAE():
         return None
 
 
-    def evaluate(self, milestone_net, method='mean', path=''):
+    def evaluate(self, milestone_net, method='mean', path=None):
         begin_node = int(np.argmin(np.mean((
             self.z[(milestone_net['from']==0)&(milestone_net['to']==0),:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))

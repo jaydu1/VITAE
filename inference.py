@@ -88,7 +88,7 @@ class Inferer(object):
         return None
         
         
-    def plot_clusters(self, labels, path=''):
+    def plot_clusters(self, labels, path=None):
         if labels is None:
             print('No clustering labels available!')            
         else:
@@ -106,7 +106,8 @@ class Inferer(object):
                       fancybox=True, shadow=True, markerscale=5, ncol=5)
             ax.set_title('Cluster Membership')
             plt.setp(ax, xticks=[], yticks=[])
-            plt.savefig(os.path.join(path, 'clusters_membership.png'), dpi=300)
+            if path is not None:
+                plt.savefig(path, dpi=300)
             plt.show()
         return None
         
@@ -171,7 +172,7 @@ class Inferer(object):
         return pseudotime
 
 
-    def plot_trajectory(self, node, labels=None, cutoff=None, is_plot=True, path=''):
+    def plot_trajectory(self, node, labels=None, cutoff=None, is_plot=True, path=None):
         # select edges
         if len(self.edges)==0:
             select_edges = []
@@ -226,7 +227,8 @@ class Inferer(object):
                 fancybox=True, shadow=True, ncol=5)
             
             ax.set_title('Trajectory')
-            plt.savefig(os.path.join(path,'trajectory.png'), dpi=300)
+            if path is not None:
+                plt.savefig(path, dpi=300)
             plt.show()
         return w, pseudotime
         
