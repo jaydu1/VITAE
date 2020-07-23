@@ -211,7 +211,7 @@ class scTGMVAE():
         
         
     def plot_trajectory(self, init_node: int, cutoff=None):
-        pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff)
+        w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff)
         return w, pseudotime
 
     
@@ -227,10 +227,9 @@ class scTGMVAE():
         begin_node = int(np.argmin(np.mean((
             self.z[(milestone_net['from']==0)&(milestone_net['to']==0),:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
-
-        self.init_inference(batch_size=32, L=5):
-        G = self.comp_inference_score(thres=0.5, method=method, no_loop=False)
-        w, pseudotime = self.plot_trajectory(init_node=begin_node, cutoff=None, is_plot=False)
+        
+        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, 0.5, method, True)
+        w, pseudotime = self.inferer.plot_trajectory(begin_node, self.label_names, cutoff=None, is_plot=False)
         
         # 1. Topology
         G_pred = nx.Graph()
