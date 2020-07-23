@@ -101,7 +101,7 @@ def louvain_igraph(g, res):
     return labels
     
 
-def plot_clusters(embed_z, labels):
+def plot_clusters(embed_z, labels, path=''):
     n_labels = len(np.unique(labels))
     colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
     
@@ -117,4 +117,5 @@ def plot_clusters(embed_z, labels):
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
         fancybox=True, shadow=True, markerscale=5, ncol=5)
     ax.set_title('Clustering')
+    plt.savefig(os.path.join(path,'cluster.png'), dpi=300)
     plt.plot()

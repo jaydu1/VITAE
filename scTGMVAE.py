@@ -204,14 +204,14 @@ class scTGMVAE():
         return None
         
         
-    def comp_inference_score(self, thres=0.5, method='mean', no_loop=False):
+    def comp_inference_score(self, thres=0.5, method='mean', no_loop=False, path=''):
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
-        self.inferer.plot_clusters(self.cluster_labels)
+        self.inferer.plot_clusters(self.cluster_labels, path=path)
         return G
         
         
-    def plot_trajectory(self, init_node: int, cutoff=None):
-        w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff)
+    def plot_trajectory(self, init_node: int, cutoff=None, path=''):
+        w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, path=path)
         return w, pseudotime
 
     
@@ -223,13 +223,13 @@ class scTGMVAE():
         return None
 
 
-    def evaluate(self, milestone_net, method='mean', L=5):
+    def evaluate(self, milestone_net, method='mean', path=''):
         begin_node = int(np.argmin(np.mean((
             self.z[(milestone_net['from']==0)&(milestone_net['to']==0),:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
         
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, 0.5, method, True)
-        w, pseudotime = self.inferer.plot_trajectory(begin_node, self.label_names, cutoff=None, is_plot=False)
+        w, pseudotime = self.inferer.plot_trajectory(begin_node, self.label_names, cutoff=None, path=path, is_plot=False)
         
         # 1. Topology
         G_pred = nx.Graph()
