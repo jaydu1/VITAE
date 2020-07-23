@@ -27,7 +27,7 @@ networkx | 2.4
 python-igraph | 0.8.2 
 sklearn | 0.22.2 
 louvain | 0.7.0 
-umap | 0.4.4 
+umap-learn | 0.4.4 
 netrd | 
 
 
