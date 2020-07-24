@@ -11,7 +11,7 @@ import preprocess
 import train
 from inference import Inferer
 from utils import get_igraph, louvain_igraph, plot_clusters
-from metric import topology, compute_F1_score
+from metric import topology
 
 class scTGMVAE():
     """
