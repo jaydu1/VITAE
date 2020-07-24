@@ -169,37 +169,6 @@ class scTGMVAE():
         if self.save_weights:
             self.save_model(self.path_to_weights_train)
           
-          
-    # train the model with specified learning rate
-    def train_all(self, learning_rate = 1e-3, batch_size = 32,
-            num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup=0,
-            L=None, weight=None, plot_every_num_epoch=None):
-        '''
-        To pretrain and train the model by using same parameters for pre_train() and train().
-        '''
-        train.clear_session()
-        self.pre_train(learning_rate,
-            batch_size,
-            num_epoch,
-            num_step_per_epoch,
-            early_stopping_patience,
-            early_stopping_tolerance,
-            early_stopping_warmup,
-            L)
-        self.init_GMM_plot()
-        self.train(learning_rate,
-            batch_size,
-            num_epoch,
-            num_step_per_epoch,
-            early_stopping_patience,
-            early_stopping_tolerance,
-            early_stopping_warmup,
-            L,
-            weight,
-            is_plot)
-        return None
-        
 
     # inference for trajectory
     def init_inference(self, batch_size=32, L=5):
@@ -220,11 +189,11 @@ class scTGMVAE():
         return w, pseudotime
 
     
-    def plot_marker_gene(self, gene_name: str):
+    def plot_marker_gene(self, gene_name: str, path=None):
         if gene_name not in self.gene_names:
             raise ValueError("Gene name '{}' not in selected genes!".format(gene_name))
         expression = self.X_normalized[:,self.gene_names==gene_name].flatten()
-        self.inferer.plot_marker_gene(expression, gene_name)
+        self.inferer.plot_marker_gene(expression, gene_name, path)
         return None
 
 

@@ -233,11 +233,13 @@ class Inferer(object):
         return w, pseudotime
         
         
-    def plot_marker_gene(self, expression, gene_name):
+    def plot_marker_gene(self, expression, gene_name, path=None):
         fig, ax = plt.subplots(1,1, figsize=(10, 5))
         cmap = matplotlib.cm.get_cmap('Reds')
         sc = ax.scatter(*self.embed_z.T, cmap=cmap, c=expression, s=1)
         plt.colorbar(sc, ax=[ax], location='right')
         ax.set_title('Normalized expression of {}'.format(gene_name))
+        if path is not None:
+            plt.savefig(path, dpi=300)
         plt.show()
         return None
