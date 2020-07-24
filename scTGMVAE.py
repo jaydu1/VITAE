@@ -59,7 +59,7 @@ class scTGMVAE():
     # NUM_EPOCH: number of epochs for training
     # NUM_STEP_PER_EPOCH: number of steps in each epoch, default is n/BATCH_SIZE+1
     def build_model(self,
-        dimensions = [16], 
+        dimensions = [16],
         dim_latent = 8,
         L = 5,
         data_type = 'UMI',
@@ -76,8 +76,8 @@ class scTGMVAE():
         self.path_to_weights_train = path_to_weights_train
     
         self.vae = model.VariationalAutoEncoder(
-            self.dim_origin, 
-            self.dimensions, 
+            self.dim_origin,
+            self.dimensions,
             self.dim_latent,
             self.L,
             self.data_type
@@ -98,17 +98,17 @@ class scTGMVAE():
             n_clusters   - if n_cluster is provided, then the GMM layer
                            will be initialized or re-initialized. For loading
                            a trained model when the GMM layer is not
-                           initialized, n_cluster is required.                           
+                           initialized, n_cluster is required.
         '''
         if n_clusters is not None:
             self.init_GMM(n_clusters)
-        self.vae.load_weights(path_to_file)        
+        self.vae.load_weights(path_to_file)
 
 
     # pre train the model with specified learning rate
     def pre_train(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, L=None):
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup=0, L=None):
             
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
@@ -116,11 +116,12 @@ class scTGMVAE():
         train.clear_session()
         self.train_dataset = train.warp_dataset(self.X_normalized, batch_size, self.X, self.scale_factor)
         self.vae = train.pre_train(
-            self.train_dataset, 
-            self.vae, 
-            learning_rate, 
+            self.train_dataset,
+            self.vae,
+            learning_rate,
             early_stopping_patience,
             early_stopping_tolerance,
+            early_stopping_warmup,
             num_epoch,
             num_step_per_epoch,
             L)
@@ -142,7 +143,7 @@ class scTGMVAE():
     # train the model with specified learning rate
     def train(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3,
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup=0,
             L=None, weight=None, plot_every_num_epoch=None):
         
         if num_step_per_epoch is None:
@@ -153,10 +154,11 @@ class scTGMVAE():
         self.vae = train.train(
             self.train_dataset,
             self.test_dataset,
-            self.vae, 
+            self.vae,
             learning_rate,
             early_stopping_patience,
             early_stopping_tolerance,
+            early_stopping_warmup,
             num_epoch,
             num_step_per_epoch,
             L,
@@ -171,7 +173,7 @@ class scTGMVAE():
     # train the model with specified learning rate
     def train_all(self, learning_rate = 1e-3, batch_size = 32,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3,
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup=0,
             L=None, weight=None, plot_every_num_epoch=None):
         '''
         To pretrain and train the model by using same parameters for pre_train() and train().
@@ -183,6 +185,7 @@ class scTGMVAE():
             num_step_per_epoch,
             early_stopping_patience,
             early_stopping_tolerance,
+            early_stopping_warmup,
             L)
         self.init_GMM_plot()
         self.train(learning_rate,
@@ -191,6 +194,7 @@ class scTGMVAE():
             num_step_per_epoch,
             early_stopping_patience,
             early_stopping_tolerance,
+            early_stopping_warmup,
             L,
             weight,
             is_plot)
@@ -251,7 +255,7 @@ class scTGMVAE():
         milestones_true[(milestone_net['from']!=milestone_net['to'])
                        &(milestone_net['w']<0.5)] = milestone_net[(milestone_net['from']!=milestone_net['to'])
                                                                   &(milestone_net['w']<0.5)]['to'].values
-        milestones_true = milestones_true[pseudotime!=-1]        
+        milestones_true = milestones_true[pseudotime!=-1]
         res['score_ARI'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
         
         # 3. Correlation between geodesic distances / Pseudotime
