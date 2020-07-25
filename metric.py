@@ -18,15 +18,15 @@ def topology(G_true, G_pred):
     
     # 2. GED (graph edit distance)
     max_num_oper = len(G_true)
-    score_GED = np.min([nx.graph_edit_distance(G_true, G_pred, node_match=comparison),
+    score_GED = 1 - np.min([nx.graph_edit_distance(G_true, G_pred, node_match=comparison),
                         max_num_oper]) / max_num_oper
     res['score_GED'] = score_GED
         
     # 3. Hamming-Ipsen-Mikhailov distance
     if len(G_true)==len(G_pred):
         dist = netrd.distance.IpsenMikhailov()
-        score_HIM = 1-dist.dist(G_true, G_pred)
+        score_IM = 1-dist.dist(G_true, G_pred)
     else:
-        score_HIM = 0
-    res['score_HIM'] = score_HIM
+        score_IM = 0
+    res['score_IM'] = score_IM
     return res
