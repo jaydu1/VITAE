@@ -207,11 +207,13 @@ class scTGMVAE():
         
         # 1. Topology
         G_pred = nx.Graph()
+        G_pred.add_nodes_from(G.nodes)
         G_pred.add_edges_from(G.edges)
         nx.set_node_attributes(G_pred, False, 'is_init')
         G_pred.nodes[begin_node]['is_init'] = True
 
         G_true = nx.Graph()
+        G_true.add_nodes_from(G.nodes)
         G_true.add_edges_from(list(
             milestone_net[~pd.isna(milestone_net['w'])].groupby(['from', 'to']).count().index))
         nx.set_node_attributes(G_true, False, 'is_init')

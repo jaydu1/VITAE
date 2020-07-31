@@ -24,7 +24,7 @@ class Inferer(object):
         if method=='mean':
             for i in range(self.NUM_CLUSTER-1):
                 for j in range(i+1,self.NUM_CLUSTER):
-                    idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)>thres
+                    idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)>=thres
                     if np.sum(idx)>0:
                         graph[i,j] = np.sum(pc_x[idx,self.C[i,j]])/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]])
         elif method=='map':
@@ -71,7 +71,7 @@ class Inferer(object):
         
         # Build graph
         self.G = self.build_graphs(pc_x, thres=thres, method=method)
-        edges = np.array(self.G.edges)
+        edges = np.array(list(self.G.edges))
         self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
 
         return self.G, self.edges
@@ -183,7 +183,7 @@ class Inferer(object):
                 graph = nx.to_numpy_matrix(self.G)
                 graph[graph<=cutoff] = 0
                 G = nx.from_numpy_array(graph)
-            select_edges = np.array(G.edges)
+            select_edges = np.array(list(G.edges))
         
         # modify w_tilde
         w = self.modify_wtilde(self.w_tilde, select_edges)
