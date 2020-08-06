@@ -234,7 +234,7 @@ class scTGMVAE():
         pseudotime_ture[np.isnan(pseudotime_ture)] = milestone_net[pd.isna(milestone_net['w'])]['from'].values
         pseudotime_ture = pseudotime_ture[pseudotime>-1]
         pseudotime_pred = pseudotime[pseudotime>-1]
-        res['score_cor'] = np.corrcoef(pseudotime_ture,pseudotime_pred)[0,1]
+        res['score_cor'] = (np.corrcoef(pseudotime_ture,pseudotime_pred)[0,1] + 1)/2
         
         # 4. Shape
         score_cos_theta = 0
