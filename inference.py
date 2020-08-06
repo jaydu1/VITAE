@@ -33,6 +33,8 @@ class Inferer(object):
                 for j in range(i+1,self.NUM_CLUSTER):
                     if np.sum(c==self.C[i,j])>0:
                         graph[i,j] = np.sum(c==self.C[i,j])/np.sum((c==self.C[i,j])|(c==self.C[i,i])|(c==self.C[j,j]))
+                        if graph[i,j] < thres:
+                           graph[i,j] = 0.0
         else:
             raise ValueError("Invalid method, must be either 'mean' or 'map'.")
                     
