@@ -26,7 +26,7 @@ def topology(G_true, G_pred):
     # 3. Ipsen-Mikhailov distance
     if len(G_true)==len(G_pred):
         score_IM = 1 - IM_dist(G_true, G_pred)
-    score_IM = np.minimum(0, score_IM)
+    score_IM = np.maximum(0, score_IM)
     res['score_IM'] = score_IM
     return res
 
