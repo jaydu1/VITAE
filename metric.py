@@ -31,7 +31,7 @@ def topology(G_true, G_pred):
     return res
 
 
-def IM(G1, G2):
+def IM_dist(G1, G2):
     adj1 = nx.to_numpy_array(G1)
     adj2 = nx.to_numpy_array(G2)
     hwhm = 0.08
