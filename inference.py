@@ -33,8 +33,6 @@ class Inferer(object):
                 for j in range(i+1,self.NUM_CLUSTER):
                     if np.sum(c==self.C[i,j])>0:
                         graph[i,j] = np.sum(c==self.C[i,j])/np.sum((c==self.C[i,j])|(c==self.C[i,i])|(c==self.C[j,j]))
-                        if graph[i,j] < thres:
-                           graph[i,j] = 0.0
         else:
             raise ValueError("Invalid method, must be either 'mean' or 'map'.")
                     
@@ -50,20 +48,24 @@ class Inferer(object):
     def modify_wtilde(self, w_tilde, edges):
         w = np.zeros_like(w_tilde)
         
-        # projection on edges
-        idc = np.tile(np.arange(w.shape[0]), (2,1)).T
-        ide = edges[np.argmax(np.sum(w_tilde[:,edges], axis=-1)**2 -
-                              4 * np.prod(w_tilde[:,edges], axis=-1) +
-                              2*np.sum(w_tilde[:,edges], axis=-1), axis=-1)]
-        w[idc, ide] = w_tilde[idc, ide] + (1-np.sum(w_tilde[idc, ide], axis=-1, keepdims=True))/2
-        best_proj_err_edge = np.sum(w_tilde**2, axis=-1) - np.sum(w_tilde[idc, ide]**2, axis=-1) + (1-np.sum(w_tilde[idc, ide], axis=-1))**2/2
-
         # projection on nodes
         best_proj_err_node = np.sum(w_tilde**2, axis=-1) - 2*np.max(w_tilde, axis=-1) +1
         best_proj_err_node_ind = np.argmax(w_tilde, axis=-1)
-
-        idc = (best_proj_err_node<best_proj_err_edge)
-        w[idc,:] = np.eye(w_tilde.shape[-1])[best_proj_err_node_ind[idc]]
+        
+        if len(edges)>0:
+            # projection on edges
+            idc = np.tile(np.arange(w.shape[0]), (2,1)).T
+            ide = edges[np.argmax(np.sum(w_tilde[:,edges], axis=-1)**2 -
+                                  4 * np.prod(w_tilde[:,edges], axis=-1) +
+                                  2*np.sum(w_tilde[:,edges], axis=-1), axis=-1)]
+            w[idc, ide] = w_tilde[idc, ide] + (1-np.sum(w_tilde[idc, ide], axis=-1, keepdims=True))/2
+            best_proj_err_edge = np.sum(w_tilde**2, axis=-1) - np.sum(w_tilde[idc, ide]**2, axis=-1) + (1-np.sum(w_tilde[idc, ide], axis=-1))**2/2
+                         
+            idc = (best_proj_err_node<best_proj_err_edge)
+            w[idc,:] = np.eye(w_tilde.shape[-1])[best_proj_err_node_ind[idc]]
+        else:
+            idc = np.arange(w.shape[0])
+            w[idc, best_proj_err_node_ind] = 1
         return w
 
 
@@ -92,7 +94,7 @@ class Inferer(object):
         
     def plot_clusters(self, labels, path=None):
         if labels is None:
-            print('No clustering labels available!')            
+            print('No clustering labels available!')
         else:
             n_labels = len(np.unique(labels))
             colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
@@ -158,18 +160,21 @@ class Inferer(object):
     
     
     def comp_pseudotime(self, G, node, w):
-        connected_comps = nx.node_connected_component(G, node)
-        subG = G.subgraph(connected_comps)
-        milestone_net = self.build_milestone_net(subG,node)
-
-        # compute pseudotime
         pseudotime = - np.ones(w.shape[0])
-        for i in range(len(milestone_net)):
-            _from, _to = milestone_net[i,:2]
-            _from, _to = int(_from), int(_to)
-            
-            idc = (w[:,_from]>0)&(w[:,_to]>0)
-            pseudotime[idc] = w[idc,_to] + milestone_net[i,-1] - 1
+        
+        if G is None:
+            pseudotime[w[:,node]>0] = 0
+        else:
+            connected_comps = nx.node_connected_component(G, node)
+            subG = G.subgraph(connected_comps)
+            milestone_net = self.build_milestone_net(subG,node)
+
+            for i in range(len(milestone_net)):
+                _from, _to = milestone_net[i,:2]
+                _from, _to = int(_from), int(_to)
+
+                idc = (w[:,_from]>0)&(w[:,_to]>0)
+                pseudotime[idc] = w[idc,_to] + milestone_net[i,-1] - 1
         
         return pseudotime
 
@@ -178,6 +183,7 @@ class Inferer(object):
         # select edges
         if len(self.edges)==0:
             select_edges = []
+            G = None
         else:
             if cutoff is None:
                 G = nx.maximum_spanning_tree(self.G)
