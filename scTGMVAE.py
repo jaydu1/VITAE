@@ -12,6 +12,8 @@ import train
 from inference import Inferer
 from utils import get_igraph, louvain_igraph, plot_clusters
 from metric import topology
+from scipy.spatial.distance import pdist as dist
+import umap
 
 class scTGMVAE():
     """
@@ -248,3 +250,54 @@ class scTGMVAE():
 
         res['score_cos_theta'] = score_cos_theta/np.sum(np.sum(w>0, axis=-1)==2)
         return res
+
+
+    def plot_output(self, init_node, gene=None):
+        # dim_red
+        z = self.get_latent_z()
+        embed_z = umap.UMAP().fit_transform(z)
+        np.savetxt('dimred.csv', embed_z)
+
+        # cell_ids
+        if self.cell_names is None:
+            cell_ids = ['C'+str(i) for i in range(len(z))]
+        else:
+            cell_ids = self.cell_names
+        np.savetxt('cell_ids.csv', cell_ids, fmt="%s")
+
+        # grouping
+        np.savetxt('grouping.csv', self.label_names, fmt="%s")
+
+        # milestone_network
+        self.init_inference(batch_size=32, L=300)
+        G = self.comp_inference_score(no_loop=True)
+        from_to = self.inferer.build_milestone_net(G, init_node)[:,:2]
+        fromm = from_to[:,0]
+        to = from_to[:,1]
+        dd = np.zeros((self.n_clusters,self.n_clusters))
+        dd[np.triu_indices(self.n_clusters,1)]=dist(self.mu.T)
+        dd += dd.T
+        length = [dd[fromm[i], to[i]] for i in range(len(fromm))]
+        fromm = ['M'+str(j) for j in fromm]
+        to = ['M'+str(j) for j in to]
+        milestone_network = pd.DataFrame({'from': fromm, 'to': to, 'length': length, 'directed': [True] * len(to)})
+        milestone_network.to_csv('milestone_network.csv', index = False)
+
+        # milestone_percentage
+        modified_w_tilde = self.inferer.modify_wtilde(self.w_tilde, np.array(list(G.edges)))
+        cell_id = np.repeat(cell_ids, 2)
+        milestone_id = []
+        percentage = []
+        for i in range(len(z)):
+          milestone_id += ['M'+str(j) for j in np.where(modified_w_tilde[i,:]!=0)[0]]
+          percentage += modified_w_tilde[i,np.where(modified_w_tilde[i,:]!=0)[0]].tolist()
+        milestone_percentages = pd.DataFrame({'cell_id': cell_id, 'milestone_id': milestone_id, 'percentage': percentage})
+        milestone_percentages.to_csv('milestone_percentages.csv', index = False)
+
+        # pseudotime
+        np.savetxt('pseudotime.csv', self.inferer.comp_pseudotime(G, init_node, modified_w_tilde))
+
+        # gene_express
+        if gene is not None:
+            np.savetxt('gene_express.csv', self.X_normalized[:,self.gene_names == gene])
+
