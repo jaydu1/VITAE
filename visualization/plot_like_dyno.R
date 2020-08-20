@@ -18,6 +18,7 @@ source('waypoints.R')
 #                        percentage is weight on each milestone
 # gene_express: a vector of gene expression
 # gene_name: str, names of the gene to plot
+# plotwhat: a str, 4 choices: 'grouping','milestone','pseudotime','expression'
 plott = function(trajectory, plotwhat){
   alpha_cells = 1
   size_cells = 2.5
@@ -143,12 +144,43 @@ plott = function(trajectory, plotwhat){
   plot
 }
 
+IO = function(path, gene_name = NULL) {
+  cell_ids = read.csv(paste0(path, 'cell_ids.csv'), header = F, stringsAsFactors = F)[,1]
+  grouping = read.csv(paste0(path, 'grouping.csv'), header = F, stringsAsFactors = F)[,1]
+  if (is.numeric(grouping)) {
+    grouping = paste0('M', grouping)
+  }
+  names(grouping) = cell_ids
+  dimred = read.csv(paste0(path, 'dimred.csv'), header = F, sep = '')
+  milestone_network = as_tibble(read.csv(paste0(path, 'milestone_network.csv'), stringsAsFactors = F,header = T))
+  milestone_network$directed = T
+  milestone_percentages = as_tibble(read.csv(paste0(path, 'milestone_percentages.csv'), stringsAsFactors = F,header = T))
+  pseudotime = read.csv(paste0(path, 'pseudotime.csv'),header = F)[,1]
+  if (!is.null(gene_name)) {
+    gene_express = read.csv(paste0(path, 'gene_exp.csv'), header = F)[,1]  
+  }
+  
+  trajectory = list()
+  trajectory$cell_ids = cell_ids
+  trajectory$dimred = dimred
+  trajectory$milestone_network = milestone_network
+  trajectory$milestone_percentages = milestone_percentages
+  trajectory$grouping = grouping
+  trajectory$milestone_ids = unique(milestone_percentages$milestone_id)
+  trajectory$pseudotime = pseudotime
+  if (!is.null(gene_name)) {
+    trajectory$gene_express = gene_express
+    trajectory$gene_name = gene_name
+  }
+  return(trajectory)
+}
+
+trajectory = IO('', 'G15')
 # plotwhat = 'grouping'
 # plotwhat = 'pseudotime'
 # plotwhat = 'expression'
 # plotwhat = 'milestone'
 
-source('IO.R')
 pdf('combine.pdf', width = 16, height = 8, onefile = F)
 patchwork::wrap_plots(
   plott(trajectory, 'milestone') + ggtitle('Cell ordeing'),
