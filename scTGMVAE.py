@@ -3,6 +3,7 @@ import scipy as sp
 import pandas as pd
 import networkx as nx
 from sklearn.metrics.cluster import adjusted_rand_score
+from sklearn.preprocessing import LabelEncoder
 import warnings
 import os
 
@@ -11,9 +12,8 @@ import preprocess
 import train
 from inference import Inferer
 from utils import get_igraph, louvain_igraph, plot_clusters
-from metric import topology
-from scipy.spatial.distance import pdist as dist
-import umap
+from metric import topology, get_RI_continuous
+
 
 class scTGMVAE():
     """
@@ -199,44 +199,88 @@ class scTGMVAE():
         return None
 
 
-    def evaluate(self, milestone_net, method='mean', path=None):
-        begin_node = int(np.argmin(np.mean((
-            self.z[(milestone_net['from']==0)&(milestone_net['to']==0),:,np.newaxis] -
+    def evaluate(self, milestone_net, begin_node_true, grouping=None, thres=0.5, method='mean', path=None):
+        '''
+        Params:
+            milestone_net   - True milestone network.
+                              For real data, milestone_net will be a DataFrame of the graph of nodes.
+                              Eg.
+                                  from         to
+                                  cluster 1    cluster 2
+                                  cluster 2    cluster 3
+                              For synthetic data, milestone_net will be a DataFrame of the (projected)
+                              positions of cells. The indexes are the orders of cells in the dataset.
+                              Eg.
+                                  from         to          w
+                                  cluster 1    cluster 1   1
+                                  cluster 1    cluster 2   0.1
+            begin_node_true - True begin node of the milestone.
+            grouping        - For real data, grouping must be provided.
+        '''
+        # If the begin_node_true, need to encode it by self.le.
+        if isinstance(begin_node_true, str):
+            begin_node_true = self.le.transform([begin_node_true])[0]
+            
+        begin_node_pred = int(np.argmin(np.mean((
+            self.z[self.labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
         
-        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, 0.5, method, True)
-        w, pseudotime = self.inferer.plot_trajectory(begin_node, self.label_names, cutoff=None, path=path, is_plot=False)
+        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, True)
+        w, pseudotime = self.inferer.plot_trajectory(begin_node_pred, self.label_names, cutoff=None, path=path, is_plot=False)
         
         # 1. Topology
         G_pred = nx.Graph()
         G_pred.add_nodes_from(G.nodes)
         G_pred.add_edges_from(G.edges)
         nx.set_node_attributes(G_pred, False, 'is_init')
-        G_pred.nodes[begin_node]['is_init'] = True
+        G_pred.nodes[begin_node_pred]['is_init'] = True
 
         G_true = nx.Graph()
         G_true.add_nodes_from(G.nodes)
-        G_true.add_edges_from(list(
-            milestone_net[~pd.isna(milestone_net['w'])].groupby(['from', 'to']).count().index))
+        # if 'grouping' is not provided, assume 'milestone_net' contains proportions
+        if grouping is None:
+            G_true.add_edges_from(list(
+                milestone_net[~pd.isna(milestone_net['w'])].groupby(['from', 'to']).count().index))
+        # otherwise, 'milestone_net' indicates edges
+        else:
+            milestone_net['from'] = self.le.transform(milestone_net['from'])
+            milestone_net['to'] = self.le.transform(milestone_net['to'])
+            grouping = self.le.transform(grouping)
+            G_true.add_edges_from(list(
+                milestone_net.groupby(['from', 'to']).count().index))
+            
         nx.set_node_attributes(G_true, False, 'is_init')
-        G_true.nodes[0]['is_init'] = True
+        G_true.nodes[begin_node_true]['is_init'] = True
         res = topology(G_true, G_pred)
             
         # 2. Milestones assignment
-        milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
-        milestones_true = milestone_net['from'].values.copy()
-        milestones_true[(milestone_net['from']!=milestone_net['to'])
-                       &(milestone_net['w']<0.5)] = milestone_net[(milestone_net['from']!=milestone_net['to'])
-                                                                  &(milestone_net['w']<0.5)]['to'].values
+        if grouping is None:
+            milestones_true = milestone_net['from'].values.copy()
+            milestones_true[(milestone_net['from']!=milestone_net['to'])
+                           &(milestone_net['w']<0.5)] = milestone_net[(milestone_net['from']!=milestone_net['to'])
+                                                                      &(milestone_net['w']<0.5)]['to'].values
+        else:
+            milestones_true = grouping
         milestones_true = milestones_true[pseudotime!=-1]
-        res['score_ARI'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
+        milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
+        res['score_ARI_discrete'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
+        
+        if grouping is None:
+            n_samples = len(milestone_net)
+            prop = np.zeros((n_samples,n_samples))
+            prop[np.arange(n_samples), milestone_net['to']] = 1-milestone_net['w']
+            prop[np.arange(n_samples), milestone_net['from']] = np.where(np.isnan(milestone_net['w']), 1, milestone_net['w'])
+            res['score_RI_continuous'] = get_RI_continuous(prop, w)
+        else:
+            res['score_RI_continuous'] = get_RI_continuous(grouping, w)
         
         # 3. Correlation between geodesic distances / Pseudotime
-        pseudotime_ture = milestone_net['from'].values + 1 - milestone_net['w'].values
-        pseudotime_ture[np.isnan(pseudotime_ture)] = milestone_net[pd.isna(milestone_net['w'])]['from'].values
-        pseudotime_ture = pseudotime_ture[pseudotime>-1]
-        pseudotime_pred = pseudotime[pseudotime>-1]
-        res['score_cor'] = (np.corrcoef(pseudotime_ture,pseudotime_pred)[0,1] + 1)/2
+        if grouping is None:
+            pseudotime_ture = milestone_net['from'].values + 1 - milestone_net['w'].values
+            pseudotime_ture[np.isnan(pseudotime_ture)] = milestone_net[pd.isna(milestone_net['w'])]['from'].values
+            pseudotime_ture = pseudotime_ture[pseudotime>-1]
+            pseudotime_pred = pseudotime[pseudotime>-1]
+            res['score_cor'] = np.corrcoef(pseudotime_ture,pseudotime_pred)[0,1]
         
         # 4. Shape
         score_cos_theta = 0
@@ -300,4 +344,3 @@ class scTGMVAE():
         # gene_express
         if gene is not None:
             np.savetxt('gene_express.csv', self.X_normalized[:,self.gene_names == gene])
-

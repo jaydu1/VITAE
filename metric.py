@@ -1,15 +1,17 @@
 import networkx as nx
 import networkx.algorithms.isomorphism as iso
 import numpy as np
+import pandas as pd
 from scipy.sparse.csgraph import laplacian
 from scipy.linalg import eigh
 from scipy.integrate import quad
+from sklearn.metrics import pairwise_distances
 
-def topology(G_true, G_pred):   
+def topology(G_true, G_pred):
     res = {}
     
     # 1. Isomorphism with same initial node
-    def comparison(N1, N2):    
+    def comparison(N1, N2):
         if N1['is_init'] != N2['is_init']:
             return False
         else:
@@ -55,3 +57,27 @@ def IM_dist(G1, G2):
 
     func = lambda w: (density1(w) - density2(w)) ** 2
     return np.sqrt(quad(func, 0, np.inf, limit=100)[0])
+
+
+
+def get_RI_continuous(true, pred):
+    '''
+    Params:
+        ture - [n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping
+        pred - [n_samples, n_cluster_2] for estimated proportions
+    '''
+    if len(true)!=len(pred):
+        raise ValueError('Inputs should have same lengths!')
+        
+    if len(true.shape)==1:
+        true = pd.get_dummies(true).values
+    true = np.sqrt(true)
+    pred = np.sqrt(pred)
+    
+    M_true = pairwise_distances(true, metric=lambda x,y:np.sum(x*y), n_jobs=-1)
+    M_pred = pairwise_distances(pred, metric=lambda x,y:np.sum(x*y), n_jobs=-1)
+    
+    sum_triu = lambda A:(A.sum() - np.diag(A).sum())/2
+
+    RI = sum_triu(1 - np.abs(M_true - M_pred)) / (len(true)*(len(true)-1)/2)
+    return RI
