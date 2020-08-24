@@ -226,7 +226,7 @@ class scTGMVAE():
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
         
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, True)
-        w, pseudotime = self.inferer.plot_trajectory(begin_node_pred, self.label_names, cutoff=None, path=path, is_plot=False)
+        G, w, pseudotime = self.inferer.plot_trajectory(begin_node_pred, self.label_names, cutoff=None, path=path, is_plot=False)
         
         # 1. Topology
         G_pred = nx.Graph()
@@ -242,7 +242,7 @@ class scTGMVAE():
             G_true.add_edges_from(list(
                 milestone_net[~pd.isna(milestone_net['w'])].groupby(['from', 'to']).count().index))
         # otherwise, 'milestone_net' indicates edges
-        else:
+        elif milestone_net is not None:
             milestone_net['from'] = self.le.transform(milestone_net['from'])
             milestone_net['to'] = self.le.transform(milestone_net['to'])
             grouping = self.le.transform(grouping)
@@ -292,7 +292,7 @@ class scTGMVAE():
 
             score_cos_theta += np.sum((1-cos_theta)/2)
 
-        res['score_cos_theta'] = score_cos_theta/np.sum(np.sum(w>0, axis=-1)==2)
+        res['score_cos_theta'] = score_cos_theta/(np.sum(np.sum(w>0, axis=-1)==2)+1e-12)
         return res
 
 

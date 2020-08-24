@@ -75,6 +75,7 @@ class Inferer(object):
         
         # Build graph
         self.G = self.build_graphs(pc_x, thres=thres, method=method)
+        
         edges = np.array(list(self.G.edges))
         self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
 
@@ -162,7 +163,7 @@ class Inferer(object):
     def comp_pseudotime(self, G, node, w):
         pseudotime = - np.ones(w.shape[0])
         
-        if G is None:
+        if len(G.edges)==0:
             pseudotime[w[:,node]>0] = 0
         else:
             connected_comps = nx.node_connected_component(G, node)
@@ -183,7 +184,8 @@ class Inferer(object):
         # select edges
         if len(self.edges)==0:
             select_edges = []
-            G = None
+            G = nx.Graph()
+            G.add_nodes_from(self.G.nodes)
         else:
             if cutoff is None:
                 G = nx.maximum_spanning_tree(self.G)
@@ -238,16 +240,14 @@ class Inferer(object):
             if path is not None:
                 plt.savefig(path, dpi=300)
             plt.show()
-        return w, pseudotime
+        return G, w, pseudotime
         
         
-    def plot_marker_gene(self, expression, gene_name, path=None):
+    def plot_marker_gene(self, expression, gene_name):
         fig, ax = plt.subplots(1,1, figsize=(10, 5))
         cmap = matplotlib.cm.get_cmap('Reds')
         sc = ax.scatter(*self.embed_z.T, cmap=cmap, c=expression, s=1)
         plt.colorbar(sc, ax=[ax], location='right')
         ax.set_title('Normalized expression of {}'.format(gene_name))
-        if path is not None:
-            plt.savefig(path, dpi=300)
         plt.show()
         return None
