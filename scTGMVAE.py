@@ -365,15 +365,10 @@ class scTGMVAE():
         milestone_id = []
         percentage = []
         for i in range(len(z)):
-<<<<<<< Updated upstream
-            milestone_id += ['M'+str(j) for j in np.where(modified_w_tilde[i,:]!=0)[0]]
-            percentage += modified_w_tilde[i,np.where(modified_w_tilde[i,:]!=0)[0]].tolist()
-=======
-          ind = np.where(modified_w_tilde[i,:]!=0)[0]
-          cell_id += np.repeat(cell_ids[i], len(ind)).tolist()
-          milestone_id += ['M'+str(j) for j in ind]
-          percentage += modified_w_tilde[i, ind].tolist()
->>>>>>> Stashed changes
+            ind = np.where(modified_w_tilde[i,:]!=0)[0]
+            cell_id += np.repeat(cell_ids[i], len(ind)).tolist()
+            milestone_id += ['M'+str(j) for j in ind]
+            percentage += modified_w_tilde[i, ind].tolist()
         milestone_percentages = pd.DataFrame({'cell_id': cell_id, 'milestone_id': milestone_id, 'percentage': percentage})
         milestone_percentages.to_csv('milestone_percentages.csv', index = False)
 
