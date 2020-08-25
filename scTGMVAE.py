@@ -200,7 +200,7 @@ class scTGMVAE():
         return G
         
         
-    def plot_trajectory(self, init_node: int, cutoff=None, path=None):
+    def plot_trajectory(self, init_node: int, cutoff=None, path=None, is_plot=True):
         '''
         Params:
             init_node  - (int) the initial node for the inferred trajectory.
@@ -211,7 +211,7 @@ class scTGMVAE():
             w          - (numpy.array) modified w_tilde
             pseudotime - (numpy.array) pseudotime based on projected trajectory
         '''
-        G, w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, path=path)
+        G, w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, path=path, is_plot=is_plot)
         return G, w, pseudotime
 
     
@@ -321,7 +321,7 @@ class scTGMVAE():
         return res
 
 
-    def plot_output(self, init_node, gene=None):
+    def plot_output(self, init_node, cutoff=None, gene=None, thres=0.5, method='mean'):
         # dim_red
         z = self.get_latent_z()
         embed_z = umap.UMAP().fit_transform(z)
@@ -346,10 +346,11 @@ class scTGMVAE():
 
         # milestone_network
         self.init_inference(batch_size=32, L=300)
-        G = self.comp_inference_score(no_loop=True)
+        G = self.comp_inference_score(no_loop=True, method=method, thres=thres)
+        G, modified_w_tilde, pseudotime = self.plot_trajectory(init_node, cutoff=cutoff, is_plot = False)
         from_to = self.inferer.build_milestone_net(G, init_node)[:,:2]
-        fromm = from_to[:,0]
-        to = from_to[:,1]
+        fromm = from_to[:,0][from_to[:,0] != None]
+        to = from_to[:,1][from_to[:,0] != None]
         dd = np.zeros((self.n_clusters,self.n_clusters))
         dd[np.triu_indices(self.n_clusters,1)]=dist(self.mu.T)
         dd += dd.T
@@ -360,18 +361,24 @@ class scTGMVAE():
         milestone_network.to_csv('milestone_network.csv', index = False)
 
         # milestone_percentage
-        modified_w_tilde = self.inferer.modify_wtilde(self.w_tilde, np.array(list(G.edges)))
-        cell_id = np.repeat(cell_ids, 2)
+        cell_id = []
         milestone_id = []
         percentage = []
         for i in range(len(z)):
+<<<<<<< Updated upstream
             milestone_id += ['M'+str(j) for j in np.where(modified_w_tilde[i,:]!=0)[0]]
             percentage += modified_w_tilde[i,np.where(modified_w_tilde[i,:]!=0)[0]].tolist()
+=======
+          ind = np.where(modified_w_tilde[i,:]!=0)[0]
+          cell_id += np.repeat(cell_ids[i], len(ind)).tolist()
+          milestone_id += ['M'+str(j) for j in ind]
+          percentage += modified_w_tilde[i, ind].tolist()
+>>>>>>> Stashed changes
         milestone_percentages = pd.DataFrame({'cell_id': cell_id, 'milestone_id': milestone_id, 'percentage': percentage})
         milestone_percentages.to_csv('milestone_percentages.csv', index = False)
 
         # pseudotime
-        np.savetxt('pseudotime.csv', self.inferer.comp_pseudotime(G, init_node, modified_w_tilde))
+        np.savetxt('pseudotime.csv', pseudotime)
 
         # gene_express
         if gene is not None:

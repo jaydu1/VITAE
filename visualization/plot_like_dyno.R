@@ -37,11 +37,15 @@ prepare_traj = function(path, root_milestone_id, gene_name = NULL) {
   trajectory$divergence_regions = tibble(divergence_id = character(), milestone_id = character(), is_start = logical())
   trajectory$milestone_percentages = milestone_percentages
   percen2progres = function(df, milestone_network){
-    for (j in 1:nrow(milestone_network)){
-      if ((df$milestone_id[1] == milestone_network$from[j]) & (df$milestone_id[2] == milestone_network$to[j])){
-        return(tibble(from = df$milestone_id[1], to = df$milestone_id[2], percentage = df$percentage[2]))
-      } else if ((df$milestone_id[2] == milestone_network$from[j]) & (df$milestone_id[1] == milestone_network$to[j])){
-        return(tibble(from = df$milestone_id[2], to = df$milestone_id[1], percentage = df$percentage[1]))
+    if (nrow(df) == 1) {
+      return(tibble(from = df$milestone_id[1], to = df$milestone_id[1], percentage = 1))
+    } else {
+      for (j in 1:nrow(milestone_network)){
+        if ((df$milestone_id[1] == milestone_network$from[j]) & (df$milestone_id[2] == milestone_network$to[j])){
+          return(tibble(from = df$milestone_id[1], to = df$milestone_id[2], percentage = df$percentage[2]))
+        } else if ((df$milestone_id[2] == milestone_network$from[j]) & (df$milestone_id[1] == milestone_network$to[j])){
+          return(tibble(from = df$milestone_id[2], to = df$milestone_id[1], percentage = df$percentage[1]))
+        }
       }
     }
   }
