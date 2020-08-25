@@ -20,7 +20,7 @@ prepare_traj = function(path, root_milestone_id, gene_name = NULL) {
   pseudotime = read.csv(paste0(path, 'pseudotime.csv'),header = F)[,1]
   names(pseudotime) = cell_ids
   if (!is.null(gene_name)) {
-    gene_express = read.csv(paste0(path, 'gene_exp.csv'), header = F) 
+    gene_express = read.csv(paste0(path, 'gene_express.csv'), header = F) 
     rownames(gene_express) = cell_ids
     colnames(gene_express) = gene_name
   }
