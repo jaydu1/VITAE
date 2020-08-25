@@ -13,7 +13,8 @@ import train
 from inference import Inferer
 from utils import get_igraph, louvain_igraph, plot_clusters
 from metric import topology, get_RI_continuous
-
+from scipy.spatial.distance import pdist as dist
+import umap
 
 class scTGMVAE():
     """
@@ -242,7 +243,7 @@ class scTGMVAE():
             G_true.add_edges_from(list(
                 milestone_net[~pd.isna(milestone_net['w'])].groupby(['from', 'to']).count().index))
         # otherwise, 'milestone_net' indicates edges
-        else
+        else:
             if milestone_net is not None:
                 milestone_net['from'] = self.le.transform(milestone_net['from'])
                 milestone_net['to'] = self.le.transform(milestone_net['to'])                
@@ -309,6 +310,13 @@ class scTGMVAE():
         else:
             cell_ids = self.cell_names
         np.savetxt('cell_ids.csv', cell_ids, fmt="%s")
+
+        # feature_ids (gene)
+        if self.gene_names is None:
+            feature_ids = ['G'+str(i) for i in range(self.X_normalized.shape[1])]
+        else:
+            feature_ids = self.gene_names
+        np.savetxt('feature_ids.csv', feature_ids, fmt="%s")
 
         # grouping
         np.savetxt('grouping.csv', self.label_names, fmt="%s")
