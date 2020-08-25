@@ -358,8 +358,8 @@ class scTGMVAE():
         milestone_id = []
         percentage = []
         for i in range(len(z)):
-          milestone_id += ['M'+str(j) for j in np.where(modified_w_tilde[i,:]!=0)[0]]
-          percentage += modified_w_tilde[i,np.where(modified_w_tilde[i,:]!=0)[0]].tolist()
+            milestone_id += ['M'+str(j) for j in np.where(modified_w_tilde[i,:]!=0)[0]]
+            percentage += modified_w_tilde[i,np.where(modified_w_tilde[i,:]!=0)[0]].tolist()
         milestone_percentages = pd.DataFrame({'cell_id': cell_id, 'milestone_id': milestone_id, 'percentage': percentage})
         milestone_percentages.to_csv('milestone_percentages.csv', index = False)
 
