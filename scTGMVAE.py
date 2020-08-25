@@ -191,6 +191,9 @@ class scTGMVAE():
                       or 'map' for maximum a priori estimation.
             no_loop - (boolean) if loops are allowed to exist in the graph.
             path    - (string) path to save figure, or don't save if it is None.
+        Returns:
+            G       - (networkx.Graph) a weighted graph with weight on each edge
+                      indicating its score of existence.
         '''
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
         self.inferer.plot_clusters(self.cluster_labels, path=path)
@@ -200,9 +203,13 @@ class scTGMVAE():
     def plot_trajectory(self, init_node: int, cutoff=None, path=None):
         '''
         Params:
-            init_node - (int) the initial node for the inferred trajectory.
-            cutoff    - (string) threshold for filtering edges with scores less than cutoff.
-            path      - (string) path to save figure, or don't save if it is None.
+            init_node  - (int) the initial node for the inferred trajectory.
+            cutoff     - (string) threshold for filtering edges with scores less than cutoff.
+            path       - (string) path to save figure, or don't save if it is None.
+        Returns:
+            G          - (networkx.Graph) modified graph that indicates the inferred trajectory
+            w          - (numpy.array) modified w_tilde
+            pseudotime - (numpy.array) pseudotime based on projected trajectory
         '''
         G, w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, path=path)
         return G, w, pseudotime
