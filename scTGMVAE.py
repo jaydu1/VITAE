@@ -182,14 +182,30 @@ class scTGMVAE():
         
         
     def comp_inference_score(self, thres=0.5, method='mean', no_loop=False, path=None):
+        '''
+        Params:
+            thres   - threshold used for filtering edges e_{ij} that
+                      (n_{i}+n_{j}+e_{ij})/N<thres, only applied to
+                      mean method.
+            method  - (string) either 'mean' for posterior mean estimation,
+                      or 'map' for maximum a priori estimation.
+            no_loop - (boolean) if loops are allowed to exist in the graph.
+            path    - (string) path to save figure, or don't save if it is None.
+        '''
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
         self.inferer.plot_clusters(self.cluster_labels, path=path)
         return G
         
         
     def plot_trajectory(self, init_node: int, cutoff=None, path=None):
-        w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, path=path)
-        return w, pseudotime
+        '''
+        Params:
+            init_node - (int) the initial node for the inferred trajectory.
+            cutoff    - (string) threshold for filtering edges with scores less than cutoff.
+            path      - (string) path to save figure, or don't save if it is None.
+        '''
+        G, w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, path=path)
+        return G, w, pseudotime
 
     
     def plot_marker_gene(self, gene_name: str, path=None):
