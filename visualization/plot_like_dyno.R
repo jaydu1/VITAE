@@ -15,7 +15,9 @@ prepare_traj = function(path, root_milestone_id, gene_name = NULL) {
   dimred = read.csv(paste0(path, 'dimred.csv'), header = F, sep = '')
   rownames(dimred) = cell_ids
   milestone_network = as_tibble(read.csv(paste0(path, 'milestone_network.csv'), stringsAsFactors = F,header = T))
-  milestone_network$directed = T
+  if (nrow(milestone_network) > 0) {
+    milestone_network$directed = T
+  }
   milestone_percentages = as_tibble(read.csv(paste0(path, 'milestone_percentages.csv'), stringsAsFactors = F,header = T))
   pseudotime = read.csv(paste0(path, 'pseudotime.csv'),header = F)[,1]
   names(pseudotime) = cell_ids
