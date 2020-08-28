@@ -160,15 +160,15 @@ class Inferer(object):
             return np.array(milestone_net)
     
     
-    def comp_pseudotime(self, G, node, w):
+    def comp_pseudotime(self, G, init_node, w):
         pseudotime = - np.ones(w.shape[0])
         
         if len(G.edges)==0:
-            pseudotime[w[:,node]>0] = 0
+            pseudotime[w[:,init_node]>0] = 0
         else:
-            connected_comps = nx.node_connected_component(G, node)
+            connected_comps = nx.node_connected_component(G, init_node)
             subG = G.subgraph(connected_comps)
-            milestone_net = self.build_milestone_net(subG,node)
+            milestone_net = self.build_milestone_net(subG,init_node)
 
             for i in range(len(milestone_net)):
                 _from, _to = milestone_net[i,:2]
@@ -180,26 +180,43 @@ class Inferer(object):
         return pseudotime
 
 
-    def plot_trajectory(self, node, labels=None, cutoff=None, is_plot=True, path=None):
+    def plot_trajectory(self, init_node, labels=None, cutoff=None, is_plot=True, path=None):
+        '''
+        Params:
+            init_node  - (int) the initial node for the inferred trajectory.
+            labels     - (numpy.array) labels of cells, used for plotting.
+            cutoff     - (string) threshold for filtering edges with scores less than cutoff.
+            is_plot    - (boolean) if is_plot is True and labels are given, two plots of the
+                         groupings and the pseudotimes will be displayed; if is_plot is True
+                         and labels are None, only the plot of pseudotime will be displayed.
+            path       - (string) path to save figure, or don't save if it is None.
+        Returns:
+            G          - (networkx.Graph) modified graph that indicates the inferred trajectory
+            w          - (numpy.array) modified w_tilde
+            pseudotime - (numpy.array) pseudotime based on projected trajectory
+        '''
         # select edges
         if len(self.edges)==0:
             select_edges = []
             G = nx.Graph()
             G.add_nodes_from(self.G.nodes)
         else:
-            if cutoff is None:
+            if self.no_loop:
                 G = nx.maximum_spanning_tree(self.G)
             else:
-                graph = nx.to_numpy_matrix(self.G)
-                graph[graph<=cutoff] = 0
-                G = nx.from_numpy_array(graph)
+                G = self.G
+            if cutoff is None:
+                cutoff = 0.01
+            graph = nx.to_numpy_matrix(G)
+            graph[graph<=cutoff] = 0
+            G = nx.from_numpy_array(graph)
             select_edges = np.array(list(G.edges))
         
         # modify w_tilde
         w = self.modify_wtilde(self.w_tilde, select_edges)
         
         # compute pseudotime
-        pseudotime = self.comp_pseudotime(G, node, w)
+        pseudotime = self.comp_pseudotime(G, init_node, w)
         
         if is_plot:
             fig, ax = plt.subplots(1,1, figsize=(10, 5))
