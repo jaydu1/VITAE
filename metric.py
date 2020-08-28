@@ -6,6 +6,7 @@ from scipy.sparse.csgraph import laplacian
 from scipy.linalg import eigh
 from scipy.integrate import quad
 from sklearn.metrics import pairwise_distances
+import warnings
 
 def topology(G_true, G_pred):
     res = {}
@@ -20,10 +21,14 @@ def topology(G_true, G_pred):
     res['score_isomorphism'] = score_isomorphism
     
     # 2. GED (graph edit distance)
-    max_num_oper = len(G_true)
-    score_GED = 1 - np.min([nx.graph_edit_distance(G_true, G_pred, node_match=comparison),
-                        max_num_oper]) / max_num_oper
-    res['score_GED'] = score_GED
+    if len(G_true)>10:
+        warnings.warn("Didn't calculate graph edit distances for large graphs.")
+        res['score_GED'] = np.nan
+    else:
+        max_num_oper = len(G_true)
+        score_GED = 1 - np.min([nx.graph_edit_distance(G_true, G_pred, node_match=comparison),
+                            max_num_oper]) / max_num_oper
+        res['score_GED'] = score_GED
         
     # 3. Ipsen-Mikhailov distance
     if len(G_true)==len(G_pred):
@@ -66,6 +71,10 @@ def get_RI_continuous(true, pred):
         ture - [n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping
         pred - [n_samples, n_cluster_2] for estimated proportions
     '''
+    if len(true)>1e4:
+        warnings.warn("Didn't calculate rand index for large samples.")
+        return np.nan
+        
     if len(true)!=len(pred):
         raise ValueError('Inputs should have same lengths!')
         
