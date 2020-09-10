@@ -162,10 +162,9 @@ class Inferer(object):
     
     def comp_pseudotime(self, G, init_node, w):
         pseudotime = - np.ones(w.shape[0])
+        pseudotime[w[:,init_node]>0] = 0
         
-        if len(G.edges)==0:
-            pseudotime[w[:,init_node]>0] = 0
-        else:
+        if len(G.edges)>0:
             connected_comps = nx.node_connected_component(G, init_node)
             subG = G.subgraph(connected_comps)
             milestone_net = self.build_milestone_net(subG,init_node)
