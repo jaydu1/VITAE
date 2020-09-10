@@ -176,7 +176,7 @@ class scTGMVAE():
     # inference for trajectory
     def init_inference(self, batch_size=32, L=5):
         self.test_dataset = train.warp_dataset(self.X_normalized, batch_size)
-        _, self.mu,self.c,self.pc_x,self.w,self.var_w,self.wc,self.var_wc,self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
+        self.pi, self.mu,self.c,self.pc_x,self.w,self.var_w,self.wc,self.var_wc,self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
         self.inferer.init_embedding(self.z, self.mu)
         return None
         
