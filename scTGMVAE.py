@@ -321,7 +321,7 @@ class scTGMVAE():
         return res
 
 
-    def plot_output(self, init_node, cutoff=None, gene=None, thres=0.5, method='mean'):
+    def plot_output(self, init_node, batchsize = 32, cutoff=None, gene=None, thres=0.5, method='mean'):
         # dim_red
         z = self.get_latent_z()
         embed_z = umap.UMAP().fit_transform(z)
@@ -345,7 +345,7 @@ class scTGMVAE():
         np.savetxt('grouping.csv', self.label_names, fmt="%s")
 
         # milestone_network
-        self.init_inference(batch_size=32, L=300)
+        self.init_inference(batch_size=batchsize, L=300)
         G = self.comp_inference_score(no_loop=True, method=method, thres=thres)
         G, modified_w_tilde, pseudotime = self.plot_trajectory(init_node, cutoff=cutoff, is_plot = False)
         from_to = self.inferer.build_milestone_net(G, init_node)[:,:2]
