@@ -47,6 +47,9 @@ prepare_traj = function(path, root_milestone_id, gene_name = NULL) {
           return(tibble(from = df$milestone_id[1], to = df$milestone_id[2], percentage = df$percentage[2]))
         } else if ((df$milestone_id[2] == milestone_network$from[j]) & (df$milestone_id[1] == milestone_network$to[j])){
           return(tibble(from = df$milestone_id[2], to = df$milestone_id[1], percentage = df$percentage[1]))
+        } else {
+          more = which.max(df$percentage)
+          return(tibble(from = df$milestone_id[-more], to = df$milestone_id[more], percentage = 1))
         }
       }
     }
