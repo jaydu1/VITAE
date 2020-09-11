@@ -8,6 +8,10 @@ from scipy.integrate import quad
 from sklearn.metrics import pairwise_distances
 import warnings
 
+import numba
+from numba import jit, float32
+
+
 def topology(G_true, G_pred):
     res = {}
     
@@ -64,6 +68,22 @@ def IM_dist(G1, G2):
     return np.sqrt(quad(func, 0, np.inf, limit=100)[0])
 
 
+@jit((float32[:,:], float32[:,:]), nopython=True, nogil=True)
+def _rand_index(true, pred):
+    n = true.shape[0]
+    m_true = true.shape[1]
+    m_pred = pred.shape[1]
+    RI = 0.0
+    for i in range(1, n-1):
+        for j in range(i, n):
+            RI_ij = 0.0
+            for k in range(m_true):
+                RI_ij += true[i,k]*true[j,k]
+            for k in range(m_pred):
+                RI_ij -= pred[i,k]*pred[j,k]
+            RI += 1-np.abs(RI_ij)
+    return RI / (n*(n-1)/2.0)
+
 
 def get_RI_continuous(true, pred):
     '''
@@ -71,22 +91,12 @@ def get_RI_continuous(true, pred):
         ture - [n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping
         pred - [n_samples, n_cluster_2] for estimated proportions
     '''
-    if len(true)>1e4:
-        warnings.warn("Didn't calculate rand index for large samples.")
-        return np.nan
-        
     if len(true)!=len(pred):
         raise ValueError('Inputs should have same lengths!')
         
     if len(true.shape)==1:
         true = pd.get_dummies(true).values
-    true = np.sqrt(true)
-    pred = np.sqrt(pred)
-    
-    M_true = pairwise_distances(true, metric=lambda x,y:np.sum(x*y), n_jobs=-1)
-    M_pred = pairwise_distances(pred, metric=lambda x,y:np.sum(x*y), n_jobs=-1)
-    
-    sum_triu = lambda A:(A.sum() - np.diag(A).sum())/2
+    true = np.sqrt(true).astype(np.float32)
+    pred = np.sqrt(pred).astype(np.float32)
 
-    RI = sum_triu(1 - np.abs(M_true - M_pred)) / (len(true)*(len(true)-1)/2)
-    return RI
+    return _rand_index(true, pred)
