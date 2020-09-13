@@ -96,6 +96,9 @@ def get_RI_continuous(true, pred):
         
     if len(true.shape)==1:
         true = pd.get_dummies(true).values
+    if len(pred.shape)==1:
+        pred = pd.get_dummies(pred).values
+    
     true = np.sqrt(true).astype(np.float32)
     pred = np.sqrt(pred).astype(np.float32)
 
