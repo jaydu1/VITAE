@@ -223,7 +223,9 @@ class scTGMVAE():
         return None
 
 
-    def evaluate(self, milestone_net, begin_node_true, grouping=None, thres=0.5, method='mean', path=None):
+    def evaluate(self, milestone_net, begin_node_true, grouping=None,
+                thres=0.5, no_loop=True, cutoff=None,
+                method='mean', path=None):
         '''
         Params:
             milestone_net   - True milestone network.
@@ -249,8 +251,8 @@ class scTGMVAE():
             self.z[self.labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
         
-        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, True)
-        G, w, pseudotime = self.inferer.plot_trajectory(begin_node_pred, self.label_names, cutoff=None, path=path, is_plot=False)
+        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
+        G, w, pseudotime = self.inferer.plot_trajectory(begin_node_pred, self.label_names, cutoff=cutoff, path=path, is_plot=False)
         
         # 1. Topology
         G_pred = nx.Graph()
