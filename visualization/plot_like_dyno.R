@@ -3,7 +3,7 @@ library(dplyr)
 library(dyno)
 library(ggplot2)
 
-prepare_traj = function(path, root_milestone_id, gene_name = NULL) {
+prepare_traj = function(path, root_milestone_id, gene_name = NULL, Pos_var = F) {
   # IO
   cell_ids = read.csv(paste0(path, 'cell_ids.csv'), header = F, stringsAsFactors = F)[,1]
   feature_ids = read.csv(paste0(path, 'feature_ids.csv'), header = F, stringsAsFactors = F)[,1]
@@ -21,6 +21,10 @@ prepare_traj = function(path, root_milestone_id, gene_name = NULL) {
   milestone_percentages = as_tibble(read.csv(paste0(path, 'milestone_percentages.csv'), stringsAsFactors = F,header = T))
   pseudotime = read.csv(paste0(path, 'pseudotime.csv'),header = F)[,1]
   names(pseudotime) = cell_ids
+  if (Pos_var) {
+    pos_var = read.csv(paste0(path, 'pos_var.csv'),header = F)[,1]
+    names(pos_var) = cell_ids
+  }
   if (!is.null(gene_name)) {
     gene_express = read.csv(paste0(path, 'gene_express.csv'), header = F) 
     rownames(gene_express) = cell_ids
@@ -73,18 +77,24 @@ prepare_traj = function(path, root_milestone_id, gene_name = NULL) {
   trajectory$dimred = dimred
   trajectory$grouping = grouping
   trajectory$pseudotime = pseudotime
-  
+  if (Pos_var) {
+    trajectory$pos_var = pos_var
+  }
+
   return(trajectory)
 }
 
-trajectory = prepare_traj('', root_milestone_id = 'M1', 'G15')
+gene_name = 'G15'
+trajectory = prepare_traj('', root_milestone_id = 'M1', gene_name, pos_var = T)
 
 pdf('dimred.pdf', width = 16, height = 8, onefile = F)
 patchwork::wrap_plots(
-  plot_dimred(trajectory, dimred = trajectory$dimred) + ggtitle('Cell ordeing'),
-  plot_dimred(trajectory, color_cells = 'grouping', grouping = trajectory$grouping, dimred = trajectory$dimred) + ggtitle('True grouping'),
-  plot_dimred(trajectory, color_cells = 'feature', feature_oi = 'G15', dimred = trajectory$dimred) + ggtitle('Gene expression'),
-  plot_dimred(trajectory, color_cells = 'pseudotime', pseudotime = trajectory$pseudotime, dimred = trajectory$dimred) + ggtitle('Pseudotime')
+  plot_dimred(trajectory, dimred = trajectory$dimred, hex_cells = FALSE) + ggtitle('Cell ordeing'),
+  plot_dimred(trajectory, color_cells = 'grouping', grouping = trajectory$grouping, dimred = trajectory$dimred, hex_cells = FALSE) + ggtitle('True grouping'),
+  plot_dimred(trajectory, color_cells = 'feature', feature_oi = gene_name, dimred = trajectory$dimred, hex_cells = FALSE) + ggtitle('Gene expression'),
+  plot_dimred(trajectory, color_cells = 'pseudotime', pseudotime = trajectory$pseudotime, dimred = trajectory$dimred, hex_cells = FALSE) + ggtitle('Pseudotime'),
+  plot_dimred(trajectory, color_cells = 'pseudotime', pseudotime = trajectory$pos_var, dimred = trajectory$dimred, hex_cells = FALSE) +
+    viridis::scale_color_viridis("posterior_variance", option = 'plasma') + ggtitle('Posterior variance')
 )
 dev.off()
 
@@ -92,7 +102,7 @@ pdf('graph.pdf', width = 16, height = 8, onefile = F)
 patchwork::wrap_plots(
   plot_graph(trajectory) + ggtitle('Cell ordeing'),
   plot_graph(trajectory, color_cells = 'grouping', grouping = trajectory$grouping) + ggtitle('True grouping'),
-  plot_graph(trajectory, color_cells = 'feature', feature_oi = 'G15') + ggtitle('Gene expression'),
+  plot_graph(trajectory, color_cells = 'feature', feature_oi = gene_name) + ggtitle('Gene expression'),
   plot_graph(trajectory, color_cells = 'pseudotime', pseudotime = trajectory$pseudotime) + ggtitle('Pseudotime')
 )
 dev.off()
@@ -101,7 +111,7 @@ pdf('dendro.pdf', width = 16, height = 8, onefile = F)
 patchwork::wrap_plots(
   plot_dendro(trajectory) + ggtitle('Cell ordeing'),
   plot_dendro(trajectory, color_cells = 'grouping', grouping = trajectory$grouping) + ggtitle('True grouping'),
-  plot_dendro(trajectory, color_cells = 'feature', feature_oi = 'G15') + ggtitle('Gene expression'),
+  plot_dendro(trajectory, color_cells = 'feature', feature_oi = gene_name) + ggtitle('Gene expression'),
   plot_dendro(trajectory, color_cells = 'pseudotime', pseudotime = trajectory$pseudotime) + ggtitle('Pseudotime')
 )
 dev.off()
@@ -110,7 +120,7 @@ pdf('onedim.pdf', width = 16, height = 8, onefile = F)
 patchwork::wrap_plots(
   plot_onedim(trajectory, label_milestones = T) + ggtitle('Cell ordeing'),
   plot_onedim(trajectory, label_milestones = T, color_cells = 'grouping', grouping = trajectory$grouping) + ggtitle('True grouping'),
-  plot_onedim(trajectory, label_milestones = T, color_cells = 'feature', feature_oi = 'G15') + ggtitle('Gene expression'),
+  plot_onedim(trajectory, label_milestones = T, color_cells = 'feature', feature_oi = gene_name) + ggtitle('Gene expression'),
   plot_onedim(trajectory, label_milestones = T, color_cells = 'pseudotime', pseudotime = trajectory$pseudotime) + ggtitle('Pseudotime')
 )
 dev.off()

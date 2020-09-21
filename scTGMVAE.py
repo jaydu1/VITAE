@@ -377,6 +377,9 @@ class scTGMVAE():
         # pseudotime
         np.savetxt('pseudotime.csv', pseudotime)
 
+        # posterior variance
+        np.savetxt('pos_var.csv', self.var_w_tilde.mean(axis=1))        
+
         # gene_express
         if gene is not None:
             np.savetxt('gene_express.csv', self.X_normalized[:,self.gene_names == gene])
