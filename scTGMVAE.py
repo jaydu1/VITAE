@@ -200,7 +200,7 @@ class scTGMVAE():
         return G
         
         
-    def plot_trajectory(self, init_node: int, cutoff=None, path=None, is_plot=True):
+    def plot_trajectory(self, init_node: int, cutoff=None, path=None):
         '''
         Params:
             init_node  - (int) the initial node for the inferred trajectory.
@@ -349,7 +349,7 @@ class scTGMVAE():
         # milestone_network
         self.init_inference(batch_size=batchsize, L=300)
         G = self.comp_inference_score(no_loop=True, method=method, thres=thres)
-        G, modified_w_tilde, pseudotime = self.plot_trajectory(init_node, cutoff=cutoff, is_plot = False)
+        G, modified_w_tilde, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, is_plot = False)
         from_to = self.inferer.build_milestone_net(G, init_node)[:,:2]
         fromm = from_to[:,0][from_to[:,0] != None]
         to = from_to[:,1][from_to[:,0] != None]
