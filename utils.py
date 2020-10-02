@@ -122,6 +122,7 @@ def plot_clusters(embed_z, labels, path=None):
     plt.plot()
 
 
+import os 
 import numpy as np
 import pandas as pd
 import h5py
@@ -153,8 +154,6 @@ type_dict = {
 }
 
 def get_data(path, file_name):
-    if file_name in ['dentate', 'immune', 'aging']
-    
     data = {}
     
     # file_name = 'bifurcating_1000_2000_2'
