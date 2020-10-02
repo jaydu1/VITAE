@@ -155,8 +155,7 @@ type_dict = {
 def get_data(path, file_name):
     data = {}
     
-    # file_name = 'bifurcating_1000_2000_2'
-    with h5py.File(os.path.join(path,file_name+'.h5'), 'r') as f:
+    with h5py.File(os.path.join(path, file_name+'.h5'), 'r') as f:
         data['count'] = np.array(f['count'], dtype=np.float32)
         data['grouping'] = np.array(f['grouping']).astype('U')
         if 'gene_names' in f:
@@ -168,7 +167,7 @@ def get_data(path, file_name):
         else:
             data['cell_ids'] = None
         if 'milestone_network' in f:
-            if file_name in ['linear','bifurcation','multifurcating','tree']:
+            if file_name in ['linear','bifurcation','multifurcating','tree','bifurcating_1000_2000_2']:
                 data['milestone_network'] = pd.DataFrame(
                     np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'),
                     columns=['from','to','w']
