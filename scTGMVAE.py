@@ -247,6 +247,10 @@ class scTGMVAE():
         if isinstance(begin_node_true, str):
             begin_node_true = self.le.transform([begin_node_true])[0]
             
+        # For generated data, grouping information is already in milestone_net
+        if 'w' in milestone_net.columns:
+            grouping = None
+            
         begin_node_pred = int(np.argmin(np.mean((
             self.z[self.labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
