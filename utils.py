@@ -121,8 +121,7 @@ def plot_clusters(embed_z, labels, path=None):
         plt.savefig(path, dpi=300)
     plt.plot()
 
-
-import os 
+import os
 import numpy as np
 import pandas as pd
 import h5py
@@ -168,14 +167,14 @@ def get_data(path, file_name):
             data['cell_ids'] = np.array(f['cell_ids']) .astype('U')
         else:
             data['cell_ids'] = None
-        if 'milestone_net' in f:
+        if 'milestone_network' in f:
             if file_name in ['linear','bifurcation','multifurcating','tree']:
-                data['milestone_net'] = pd.DataFrame(
+                data['milestone_network'] = pd.DataFrame(
                     np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'),
                     columns=['from','to','w']
                 ).astype({'w':np.float32})
             else:
-                data['milestone_net'] = pd.DataFrame(
+                data['milestone_network'] = pd.DataFrame(
                     np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'),
                     columns=['from','to']
                 )
@@ -189,4 +188,4 @@ def get_data(path, file_name):
         scale_factor = np.sum(data['x'],axis=1, keepdims=True)/1e6
         data['x'] = data['x']/scale_factor
     
-    return data['x']
+    return data['x']    
