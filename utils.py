@@ -185,7 +185,7 @@ def get_data(path, file_name):
     
     data['type'] = type_dict[file_name]
     if data['type']=='non-UMI':
-        scale_factor = np.sum(data['x'],axis=1, keepdims=True)/1e6
-        data['x'] = data['x']/scale_factor
+        scale_factor = np.sum(data['count'],axis=1, keepdims=True)/1e6
+        data['count'] = data['count']/scale_factor
     
-    return data['x']    
+    return data  
