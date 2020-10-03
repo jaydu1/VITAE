@@ -251,6 +251,11 @@ class scTGMVAE():
         if 'w' in milestone_net.columns:
             grouping = None
             
+        # If milestone_net is provided, transform them to be numeric.
+        if milestone_net is not None:
+            milestone_net['from'] = self.le.transform(milestone_net['from'])
+            milestone_net['to'] = self.le.transform(milestone_net['to'])
+            
         begin_node_pred = int(np.argmin(np.mean((
             self.z[self.labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
@@ -273,13 +278,11 @@ class scTGMVAE():
                 milestone_net[~pd.isna(milestone_net['w'])].groupby(['from', 'to']).count().index))
         # otherwise, 'milestone_net' indicates edges
         else:
-            if milestone_net is not None:
-                milestone_net['from'] = self.le.transform(milestone_net['from'])
-                milestone_net['to'] = self.le.transform(milestone_net['to'])                
+            if milestone_net is not None:             
                 G_true.add_edges_from(list(
                     milestone_net.groupby(['from', 'to']).count().index))
             grouping = self.le.transform(grouping)
-            
+        G_true.remove_edges_from(nx.selfloop_edges(G_true))
         nx.set_node_attributes(G_true, False, 'is_init')
         G_true.nodes[begin_node_true]['is_init'] = True
         res = topology(G_true, G_pred)
