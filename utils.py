@@ -144,6 +144,8 @@ type_dict = {
     
     # dyngen
     'bifurcating_1000_2000_2':'non-UMI',
+    'linear_1':'non-UMI',
+    'bifurcating_1':'non-UMI',
     
     # our model
     'linear':'UMI',
@@ -166,8 +168,10 @@ def get_data(path, file_name):
             data['cell_ids'] = np.array(f['cell_ids']) .astype('U')
         else:
             data['cell_ids'] = None
+            
         if 'milestone_network' in f:
-            if file_name in ['linear','bifurcation','multifurcating','tree','bifurcating_1000_2000_2']:
+            if file_name in ['linear','bifurcation','multifurcating','tree',
+                             'bifurcating_1000_2000_2', 'linear_1', 'bifurcating_1']:
                 data['milestone_network'] = pd.DataFrame(
                     np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'),
                     columns=['from','to','w']
@@ -181,7 +185,11 @@ def get_data(path, file_name):
         else:
             data['milestone_net'] = None
             data['root_milestone_id'] = None
-    
+            
+        if file_name in ['mouse_brain']:
+            data['grouping'] = np.array(['%02d'%int(i) for i in data['grouping']])
+            data['root_milestone_id'] = '06'
+
     data['type'] = type_dict[file_name]
     if data['type']=='non-UMI':
         scale_factor = np.sum(data['count'],axis=1, keepdims=True)/1e6
