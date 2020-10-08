@@ -121,7 +121,7 @@ def plot_clusters(embed_z, labels, path=None):
         plt.savefig(path, dpi=300)
     plt.plot()
 
-import os
+import os     
 import numpy as np
 import pandas as pd
 import h5py
@@ -129,23 +129,27 @@ import pickle as pk
 
 type_dict = {
     # dyno
-    'dentate':'UMI',
-    'immune':'UMI',
-    'neonatal':'UMI',
-    'mouse_brain':'UMI',
-    'planaria_full':'UMI',
+    'dentate':'UMI', 
+    'immune':'UMI', 
+    'neonatal':'UMI', 
+    'mouse_brain':'UMI', 
+    'planaria_full':'UMI', 
     'planaria_muscle':'UMI',
-    'aging':'non-UMI',
+    'aging':'non-UMI', 
     'cell_cycle':'non-UMI',
-    'fibroblast':'non-UMI',
-    'germline':'non-UMI',
-    'human':'non-UMI',
+    'fibroblast':'non-UMI', 
+    'germline':'non-UMI',    
+    'human':'non-UMI', 
     'mesoderm':'non-UMI',
     
     # dyngen
     'bifurcating_1000_2000_2':'non-UMI',
     'linear_1':'non-UMI',
     'bifurcating_1':'non-UMI',
+    "binary_tree_1":'non-UMI',
+    "branching_1":'non-UMI',
+    "converging_1":'non-UMI',
+    "trifurcating_1":'non-UMI',
     
     # our model
     'linear':'UMI',
@@ -154,7 +158,7 @@ type_dict = {
     'tree':'UMI',
 }
 
-def get_data(path, file_name):
+def get_data(path, file_name):   
     data = {}
     
     with h5py.File(os.path.join(path, file_name+'.h5'), 'r') as f:
@@ -171,17 +175,18 @@ def get_data(path, file_name):
             
         if 'milestone_network' in f:
             if file_name in ['linear','bifurcation','multifurcating','tree',
-                             'bifurcating_1000_2000_2', 'linear_1', 'bifurcating_1']:
+                             'bifurcating_1000_2000_2', 'linear_1', 'bifurcating_1',
+                            "binary_tree_1", "branching_1", "converging_1", "trifurcating_1"]:
                 data['milestone_network'] = pd.DataFrame(
-                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'),
+                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'), 
                     columns=['from','to','w']
                 ).astype({'w':np.float32})
             else:
                 data['milestone_network'] = pd.DataFrame(
-                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'),
+                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'), 
                     columns=['from','to']
                 )
-            data['root_milestone_id'] = np.array(f['root_milestone_id']).astype('U')[0]
+            data['root_milestone_id'] = np.array(f['root_milestone_id']).astype('U')[0]            
         else:
             data['milestone_net'] = None
             data['root_milestone_id'] = None
