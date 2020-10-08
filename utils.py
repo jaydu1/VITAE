@@ -146,10 +146,17 @@ type_dict = {
     'bifurcating_1000_2000_2':'non-UMI',
     'linear_1':'non-UMI',
     'bifurcating_1':'non-UMI',
-    "binary_tree_1":'non-UMI',
-    "branching_1":'non-UMI',
-    "converging_1":'non-UMI',
-    "trifurcating_1":'non-UMI',
+    "cycle_1":'non-UMI', 
+    "cycle_2":'non-UMI', 
+    "cycle_3":'non-UMI',
+    "linear_1":'non-UMI', 
+    "linear_2":'non-UMI', 
+    "linear_3":'non-UMI', 
+    "trifurcating_1":'non-UMI', 
+    "trifurcating_2":'non-UMI', 
+    "bifurcating_1":'non-UMI', 
+    "bifurcating_3":'non-UMI', 
+    "converging_2":'non-UMI',
     
     # our model
     'linear':'UMI',
@@ -176,7 +183,11 @@ def get_data(path, file_name):
         if 'milestone_network' in f:
             if file_name in ['linear','bifurcation','multifurcating','tree',
                              'bifurcating_1000_2000_2', 'linear_1', 'bifurcating_1',
-                            "binary_tree_1", "branching_1", "converging_1", "trifurcating_1"]:
+                            "cycle_1", "cycle_2", "cycle_3",
+                            "linear_1", "linear_2", "linear_3", 
+                            "trifurcating_1", "trifurcating_2", 
+                            "bifurcating_1", "bifurcating_3", 
+                            "converging_2"]:
                 data['milestone_network'] = pd.DataFrame(
                     np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'), 
                     columns=['from','to','w']
