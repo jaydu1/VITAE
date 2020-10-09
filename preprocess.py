@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import localreg
 from sklearn import preprocessing
 import warnings
+from sklearn.decomposition import PCA
 
 def log_norm(x, K = 1e4):
     """
@@ -66,15 +67,18 @@ def label_encoding(labels):
     return y, le
 
 
-def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4, gene_num = 2000):
+def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4,
+                 gene_num = 2000, Gaussian_input = False, npc = 64):
     '''
-    input 
-    x: raw count matrix
-    cell_names: names of cells
-    gene_names: names of genes
-    K: sum number related to scale_factor
-    gene_num: total number of genes to select
-    grouping: true labels
+    Params: 
+    x               - raw count matrix
+    cell_names      - names of cells
+    gene_names      - names of genes
+    K               - sum number related to scale_factor
+    gene_num        - total number of genes to select
+    grouping        - true labels
+    Gaussian_input  - whether use PCs of normalized X with Gaussian assumption as VAE input
+    npc             - Number of PCs
     '''
     # log-normalization
     x_normalized, scale_factor = log_norm(x, K)
@@ -87,6 +91,9 @@ def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4, gene_num
     # per-gene standardization
     gene_scalar = preprocessing.StandardScaler()
     x_normalized = gene_scalar.fit_transform(x_normalized)
+    if Gaussian_input:
+        pca = PCA(n_components = npc)
+        x_normalized = x = pca.fit_transform(x_normalized)       
     
     if label_names is None:
         warnings.warn('No labels for cells!')
