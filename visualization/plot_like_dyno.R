@@ -3,7 +3,7 @@ library(dplyr)
 library(dyno)
 library(ggplot2)
 
-prepare_traj = function(path, root_milestone_id, gene_name = NULL, Pos_var = F) {
+prepare_traj = function(path, root_milestone_id, gene_name = NULL) {
   # IO
   cell_ids = read.csv(paste0(path, 'cell_ids.csv'), header = F, stringsAsFactors = F)[,1]
   feature_ids = read.csv(paste0(path, 'feature_ids.csv'), header = F, stringsAsFactors = F)[,1]
@@ -21,10 +21,9 @@ prepare_traj = function(path, root_milestone_id, gene_name = NULL, Pos_var = F) 
   milestone_percentages = as_tibble(read.csv(paste0(path, 'milestone_percentages.csv'), stringsAsFactors = F,header = T))
   pseudotime = read.csv(paste0(path, 'pseudotime.csv'),header = F)[,1]
   names(pseudotime) = cell_ids
-  if (Pos_var) {
-    pos_var = read.csv(paste0(path, 'pos_var.csv'),header = F)[,1]
-    names(pos_var) = cell_ids
-  }
+  pos_var = read.csv(paste0(path, 'pos_var.csv'),header = F)[,1]
+  names(pos_var) = cell_ids
+  
   if (!is.null(gene_name)) {
     gene_express = read.csv(paste0(path, 'gene_express.csv'), header = F) 
     rownames(gene_express) = cell_ids
@@ -77,9 +76,7 @@ prepare_traj = function(path, root_milestone_id, gene_name = NULL, Pos_var = F) 
   trajectory$dimred = dimred
   trajectory$grouping = grouping
   trajectory$pseudotime = pseudotime
-  if (Pos_var) {
-    trajectory$pos_var = pos_var
-  }
+  trajectory$pos_var = pos_var
 
   return(trajectory)
 }
