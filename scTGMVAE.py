@@ -185,12 +185,14 @@ class scTGMVAE():
     # inference for trajectory
     def init_inference(self, batch_size=32, L=5):
         self.test_dataset = train.warp_dataset(self.X_normalized, batch_size)
-        self.pi, self.mu,self.c,self.pc_x,self.w,self.var_w,self.wc,self.var_wc,self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
+        self.pi, self.mu,self.c,self.pc_x,\
+            self.p_wc_x,self.w,self.var_w,self.wc,self.var_wc,\
+            self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
         self.inferer.init_embedding(self.z, self.mu)
         return None
         
         
-    def comp_inference_score(self, thres=0.5, method='mean', no_loop=False, path=None):
+    def comp_inference_score(self, thres=0.5, method='mean', no_loop=False, is_plot=True, path=None):
         '''
         Params:
             thres   - threshold used for filtering edges e_{ij} that
@@ -199,28 +201,31 @@ class scTGMVAE():
             method  - (string) either 'mean' for posterior mean estimation,
                       or 'map' for maximum a priori estimation.
             no_loop - (boolean) if loops are allowed to exist in the graph.
+            is_plot - (boolean) whether to plot or not.
             path    - (string) path to save figure, or don't save if it is None.
         Returns:
             G       - (networkx.Graph) a weighted graph with weight on each edge
                       indicating its score of existence.
         '''
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
-        self.inferer.plot_clusters(self.cluster_labels, path=path)
+        if is_plot:
+            self.inferer.plot_clusters(self.cluster_labels, path=path)
         return G
         
         
-    def plot_trajectory(self, init_node: int, cutoff=None, path=None):
+    def infer_trajectory(self, init_node: int, cutoff=None, is_plot=True, path=None):
         '''
         Params:
             init_node  - (int) the initial node for the inferred trajectory.
             cutoff     - (string) threshold for filtering edges with scores less than cutoff.
+            is_plot    - (boolean) whether to plot or not.
             path       - (string) path to save figure, or don't save if it is None.
         Returns:
             G          - (networkx.Graph) modified graph that indicates the inferred trajectory
             w          - (numpy.array) modified w_tilde
             pseudotime - (numpy.array) pseudotime based on projected trajectory
         '''
-        G, w, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, path=path, is_plot=is_plot)
+        G, w, pseudotime = self.inferer.infer_trajectory(init_node, self.label_names, cutoff, path=path, is_plot=is_plot)
         return G, w, pseudotime
 
     
@@ -270,7 +275,7 @@ class scTGMVAE():
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
         
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
-        G, w, pseudotime = self.inferer.plot_trajectory(begin_node_pred, self.label_names, cutoff=cutoff, path=path, is_plot=False)
+        G, w, pseudotime = self.inferer.infer_trajectory(begin_node_pred, self.label_names, cutoff=cutoff, path=path, is_plot=False)
         
         # 1. Topology
         G_pred = nx.Graph()
@@ -365,7 +370,7 @@ class scTGMVAE():
         # milestone_network
         self.init_inference(batch_size=batchsize, L=300)
         G = self.comp_inference_score(no_loop=True, method=method, thres=thres)
-        G, modified_w_tilde, pseudotime = self.inferer.plot_trajectory(init_node, self.label_names, cutoff, is_plot = False)
+        G, modified_w_tilde, pseudotime = self.inferer.infer_trajectory(init_node, self.label_names, cutoff, is_plot = False)
         from_to = self.inferer.build_milestone_net(G, init_node)[:,:2]
         fromm = from_to[:,0][from_to[:,0] != None]
         to = from_to[:,1][from_to[:,0] != None]

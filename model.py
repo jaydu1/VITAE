@@ -187,7 +187,9 @@ class GMM(Layer):
         '''
         batch_size = tf.shape(z)[0]
         L = tf.shape(z)[1]
-    
+        
+        res = {}
+        
         # [batch_size, L, dim_latent, n_states, M]
         temp_Z = tf.tile(tf.expand_dims(tf.expand_dims(z,-1), -1),
                     (1,1,1,self.n_states,self.M))
@@ -205,25 +207,30 @@ class GMM(Layer):
         temp_pi = tf.tile(tf.expand_dims(
                         tf.expand_dims(tf.nn.softmax(self.pi), -1), 1),
                         (batch_size,L,1,self.M))
+        
+        # [batch_size, L, M]
         log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(2 * math.pi) + \
                         tf.math.log(temp_pi+1e-30) - \
-                        tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2
+                        tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2  # this omits a term -logM for avoiding numerical issue
+        
         # [batch_size, L]
-        log_p_z_L = tf.reduce_logsumexp(log_p_zc_w, axis=[2,3]) \
-                        - tf.math.log(tf.cast(self.M, tf.float32))
+        log_p_z_L = tf.reduce_logsumexp(log_p_zc_w, axis=[2,3]) # this omits a term -logM for avoiding numerical issue
+                        
         # [1, ]
-        log_p_z = tf.reduce_mean(log_p_z_L)
+        log_p_z = tf.reduce_mean(log_p_z_L) - tf.math.log(tf.cast(self.M, tf.float32))
                             
-        if inference:
+        if not inference:
+            return tf.nn.softmax(self.pi), self.mu, log_p_z
+        else:
             # log_p_c_x     -   predicted probability distribution
             # [batch_size, n_states]
             log_p_c_x = tf.reduce_logsumexp(
                             tf.reduce_logsumexp(
                                 log_p_zc_w, axis=-1) -
-                            tf.math.log(tf.cast(self.M, tf.float32)) -
                             tf.expand_dims(log_p_z_L, -1),
                         axis=1) - tf.math.log(tf.cast(L, tf.float32))
-
+            res['p_c_x'] = tf.exp(log_p_c_x).numpy()
+            
             # c         -   predicted clusters
             c = tf.math.argmax(log_p_c_x, axis=-1)
             c = tf.cast(c, 'int32')
@@ -233,26 +240,30 @@ class GMM(Layer):
             p_w_x = tf.reduce_mean(tf.exp(
                         tf.reduce_logsumexp(log_p_zc_w, axis=2) -
                         tf.expand_dims(log_p_z_L, -1)
-                        ), axis=1)
-                
-            w =  tf.reduce_mean(
+                        ), axis=1) # this omits a term M for avoiding numerical issue
+            
+            # [batch_size, ]
+            w =  tf.reduce_sum(
                     tf.tile(self.w, (batch_size,1)) * p_w_x, axis=-1
                     )
+            res['w_x'] = w.numpy()
             
             # var_w     -   Var(w|x)
-            var_w =  tf.reduce_mean(
+            var_w =  tf.reduce_sum(
                         tf.square(
                             tf.tile(self.w, (batch_size,1))
                             ) * p_w_x, axis=-1
                         ) - tf.square(w)
-                        
+            res['var_w_x'] = var_w.numpy()
+            
             # w|c       -   E(w|x,c)
             # [batch_size, L, M]
             map_log_p_zc_w = tf.gather_nd(log_p_zc_w,
                                 tf.reshape(
                                 tf.stack([tf.repeat(tf.range(batch_size), L),
                                         tf.tile(tf.range(L), [batch_size]),
-                                        tf.repeat(c, L)], 1), [batch_size, L, -1]))
+                                        tf.repeat(c, L)], 1), [batch_size, L, -1])) # this omits a term M for avoiding numerical issue
+            
             # [batch_size, M]
             p_w_xc = tf.exp(tf.reduce_logsumexp(
                     map_log_p_zc_w -
@@ -261,28 +272,32 @@ class GMM(Layer):
                                 list(zip(np.arange(batch_size),
                                         c.numpy()))), -1)) / tf.cast(L, tf.float32)
                 
-            wc = tf.reduce_mean(
+            wc = tf.reduce_sum(
                         tf.tile(self.w, (batch_size,1)) * p_w_xc, axis=-1
                     )
-
+            res['w_xc'] = wc.numpy()
+                        
             # var_w|c   -   Var(w|x,c)
             var_wc = tf.reduce_mean(
                         tf.square(
                             tf.tile(self.w, (batch_size,1))
                             ) * p_w_xc, axis=-1
                         ) - tf.square(wc)
+            res['var_w_xc'] = var_wc.numpy()
             
             c = tf.where(wc>1e-3, c,
                         tf.gather(self.clusters_ind, tf.gather(self.B, c)))
             c = tf.where(wc<1-1e-3, c,
                         tf.gather(self.clusters_ind, tf.gather(self.A, c)))
-                  
+            res['c'] = c.numpy()
+            
             # [batch_size, n_states, M]
             p_wc_x = tf.exp(tf.reduce_logsumexp(
                         log_p_zc_w -
                         tf.expand_dims(tf.expand_dims(log_p_z_L, -1), -1),
                         1) - tf.math.log(tf.cast(L, tf.float32)))
-           
+            res['p_wc_x'] = p_wc_x.numpy()
+            
             # [batch_size, n_states, n_clusters, M]
             _w = tf.tile(tf.expand_dims(
                     tf.tile(tf.expand_dims(
@@ -296,16 +311,27 @@ class GMM(Layer):
             w_tilde = tf.reduce_sum(
                 _w  * \
                 tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-                (1,3)) / tf.cast(self.M, tf.float32)
-                
+                (1,3))
+            res['w_tilde'] = w_tilde.numpy()
+            
             var_w_tilde = tf.reduce_sum(
                 tf.math.square(_w)  *
                 tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-                (1,3)) / tf.cast(self.M, tf.float32) - tf.square(w_tilde)
-                
-            return c.numpy(), tf.exp(log_p_c_x).numpy(), w.numpy(), var_w.numpy(), wc.numpy(), var_wc.numpy(), w_tilde.numpy(), var_w_tilde.numpy()
-        else:
-            return tf.nn.softmax(self.pi), self.mu, log_p_z
+                (1,3)) - tf.square(w_tilde)
+            res['var_w_tilde'] = var_w_tilde.numpy()
+            
+            # Jensen–Shannon divergence
+            _wtilde = tf.expand_dims(tf.expand_dims(w_tilde, 1), -1)
+            res['D_JS'] = tf.reduce_sum(
+                tf.math.sqrt(
+                    0.5 * tf.reduce_mean(
+                        _w * tf.math.log(
+                            _w/(0.5 * (_w + _wtilde) + 1e-12) + 1e-12) +
+                        _wtilde * tf.math.log(
+                            _wtilde/(0.5 * (_w + _wtilde) + 1e-12) + 1e-12),
+                        axis=2)) * \
+                p_wc_x, (1,2)) / tf.cast(self.M, tf.float32).numpy()
+            return res
 
     def get_proj_z(self, c):
         '''
@@ -440,23 +466,30 @@ class VariationalAutoEncoder(tf.keras.Model):
         pi_norm = tf.nn.softmax(self.GMM.pi).numpy()
         mu = self.GMM.mu.numpy()
         z_mean = []
-        res = []
-        pc_x = []
+        result = []
+        p_c_x = []
+        p_wc_x = []
         w_tilde = []
         var_w_tilde = []
         for x in test_dataset:
             _z_mean, _, z = self.encoder(x, L, False)
-            _c, _pc_x, _w, _var_w, _wc, _var_wc, _w_tilde, _var_w_tilde = self.GMM(z, inference=True)
-            res.append(np.c_[_c, _w, _var_w, _wc, _var_wc])
-            pc_x.append(_pc_x)
+            res = self.GMM(z, inference=True)
+            result.append(np.c_[res['c'], res['w_x'], res['var_w_x'], res['w_xc'], res['var_w_xc'], res['D_JS']])
+            p_c_x.append(res['p_c_x'])
             z_mean.append(_z_mean.numpy())
-            w_tilde.append(_w_tilde)
-            var_w_tilde.append(_var_w_tilde)
-        
-        c, w, var_w, wc, var_wc = np.hsplit(np.concatenate(res), 5)
+            w_tilde.append(res['w_tilde'])
+            var_w_tilde.append(res['var_w_tilde'])
+            p_wc_x.append(res['p_wc_x'])
+        c, w_x, var_w_x, w_xc, var_w_xc, D_JS = np.hsplit(np.concatenate(result), 6)
+        c = c[:,0].astype(np.int32)
+        w_x = w_x[:,0]
+        var_w_x = var_w_x[:,0]
+        w_xc = w_xc[:,0]
+        var_w_xc = var_w_xc[:,0]
+        D_JS = D_JS[:,0]
         z_mean = np.concatenate(z_mean)
-        pc_x = np.concatenate(pc_x)
+        p_c_x = np.concatenate(p_c_x)
         w_tilde = np.concatenate(w_tilde)
         var_w_tilde = np.concatenate(var_w_tilde)
-        
-        return pi_norm, mu, c[:,0].astype(np.int32), pc_x, w[:,0], var_w[:,0], wc[:,0], var_wc[:,0], w_tilde, var_w_tilde, z_mean
+        p_wc_x = np.concatenate(p_wc_x)
+        return pi_norm, mu, c, p_c_x, p_wc_x, w_x, var_w_x, w_xc, var_w_xc, w_tilde, var_w_tilde, D_JS, z_mean

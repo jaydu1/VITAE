@@ -184,7 +184,7 @@ class Inferer(object):
         return pseudotime
 
 
-    def plot_trajectory(self, init_node, labels=None, cutoff=None, is_plot=True, path=None):
+    def infer_trajectory(self, init_node, labels=None, cutoff=None, is_plot=True, path=None):
         '''
         Params:
             init_node  - (int) the initial node for the inferred trajectory.
