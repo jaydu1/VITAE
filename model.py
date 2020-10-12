@@ -174,7 +174,7 @@ class GMM(Layer):
     def normalize(self):
         self.pi = tf.nn.softmax(self.pi)
 
-    def call(self, z, cluster=False, inference=False):
+    def call(self, z, inference=False):
         '''
         Input :
                 z       - latent variables outputed by the encoder
@@ -187,142 +187,125 @@ class GMM(Layer):
         '''
         batch_size = tf.shape(z)[0]
         L = tf.shape(z)[1]
-        
-        if cluster:
-            # [batch_size, L, dim_latent, n_clusters]
-            temp_Z = tf.tile(tf.expand_dims(z,-1),
-                        (1,1,1,self.n_clusters))
-            temp_mu = tf.tile(tf.expand_dims(
-                            tf.expand_dims(
-                                self.mu,0),0),
-                            (batch_size,L,1,1))
-            distance = tf.sqrt(tf.reduce_sum(tf.math.square(temp_Z - temp_mu),1))
-            c = tf.argmin(distance, 1)
-            cluster_loss = tf.reduce_mean(
-                tf.reduce_max(tf.exp(-distance),1)/
-                (tf.reduce_sum(tf.exp(-distance),1)+1e-30)
-                )
+    
+        # [batch_size, L, dim_latent, n_states, M]
+        temp_Z = tf.tile(tf.expand_dims(tf.expand_dims(z,-1), -1),
+                    (1,1,1,self.n_states,self.M))
+        temp_mu = tf.tile(
+                        tf.expand_dims(tf.expand_dims(
+                            tf.gather(self.mu, self.A, axis=1),0),-1),
+                        (batch_size,1,1,self.M)) * self.w + \
+                tf.tile(
+                        tf.expand_dims(tf.expand_dims(
+                            tf.gather(self.mu, self.B, axis=1),0),-1),
+                        (batch_size,1,1,self.M)) * (1-self.w)
+        temp_mu = tf.tile(tf.expand_dims(temp_mu, 1), (1,L,1,1,1))
+            
+        # [batch_size, L, n_states, M]
+        temp_pi = tf.tile(tf.expand_dims(
+                        tf.expand_dims(tf.nn.softmax(self.pi), -1), 1),
+                        (batch_size,L,1,self.M))
+        log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(2 * math.pi) + \
+                        tf.math.log(temp_pi+1e-30) - \
+                        tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2
+        # [batch_size, L]
+        log_p_z_L = tf.reduce_logsumexp(log_p_zc_w, axis=[2,3]) \
+                        - tf.math.log(tf.cast(self.M, tf.float32))
+        # [1, ]
+        log_p_z = tf.reduce_mean(log_p_z_L)
+                            
+        if inference:
+            # log_p_c_x     -   predicted probability distribution
+            # [batch_size, n_states]
+            log_p_c_x = tf.reduce_logsumexp(
+                            tf.reduce_logsumexp(
+                                log_p_zc_w, axis=-1) -
+                            tf.math.log(tf.cast(self.M, tf.float32)) -
+                            tf.expand_dims(log_p_z_L, -1),
+                        axis=1) - tf.math.log(tf.cast(L, tf.float32))
 
-            return self.mu, c, cluster_loss
+            # c         -   predicted clusters
+            c = tf.math.argmax(log_p_c_x, axis=-1)
+            c = tf.cast(c, 'int32')
+
+            # w         -   E(w|x)
+            # [batch_size, M]
+            p_w_x = tf.reduce_mean(tf.exp(
+                        tf.reduce_logsumexp(log_p_zc_w, axis=2) -
+                        tf.expand_dims(log_p_z_L, -1)
+                        ), axis=1)
+                
+            w =  tf.reduce_mean(
+                    tf.tile(self.w, (batch_size,1)) * p_w_x, axis=-1
+                    )
+            
+            # var_w     -   Var(w|x)
+            var_w =  tf.reduce_mean(
+                        tf.square(
+                            tf.tile(self.w, (batch_size,1))
+                            ) * p_w_x, axis=-1
+                        ) - tf.square(w)
+                        
+            # w|c       -   E(w|x,c)
+            # [batch_size, L, M]
+            map_log_p_zc_w = tf.gather_nd(log_p_zc_w,
+                                tf.reshape(
+                                tf.stack([tf.repeat(tf.range(batch_size), L),
+                                        tf.tile(tf.range(L), [batch_size]),
+                                        tf.repeat(c, L)], 1), [batch_size, L, -1]))
+            # [batch_size, M]
+            p_w_xc = tf.exp(tf.reduce_logsumexp(
+                    map_log_p_zc_w -
+                    tf.expand_dims(log_p_z_L, -1), axis=1) -
+                    tf.expand_dims(tf.gather_nd(log_p_c_x,
+                                list(zip(np.arange(batch_size),
+                                        c.numpy()))), -1)) / tf.cast(L, tf.float32)
+                
+            wc = tf.reduce_mean(
+                        tf.tile(self.w, (batch_size,1)) * p_w_xc, axis=-1
+                    )
+
+            # var_w|c   -   Var(w|x,c)
+            var_wc = tf.reduce_mean(
+                        tf.square(
+                            tf.tile(self.w, (batch_size,1))
+                            ) * p_w_xc, axis=-1
+                        ) - tf.square(wc)
+            
+            c = tf.where(wc>1e-3, c,
+                        tf.gather(self.clusters_ind, tf.gather(self.B, c)))
+            c = tf.where(wc<1-1e-3, c,
+                        tf.gather(self.clusters_ind, tf.gather(self.A, c)))
+                  
+            # [batch_size, n_states, M]
+            p_wc_x = tf.exp(tf.reduce_logsumexp(
+                        log_p_zc_w -
+                        tf.expand_dims(tf.expand_dims(log_p_z_L, -1), -1),
+                        1) - tf.math.log(tf.cast(L, tf.float32)))
+           
+            # [batch_size, n_states, n_clusters, M]
+            _w = tf.tile(tf.expand_dims(
+                    tf.tile(tf.expand_dims(
+                        tf.one_hot(self.A, self.n_clusters),
+                        -1), (1,1,self.M)) * self.w +
+                    tf.tile(tf.expand_dims(
+                        tf.one_hot(self.B, self.n_clusters),
+                        -1), (1,1,self.M)) * (1-self.w), 0), (batch_size,1,1,1))
+                        
+            # [batch_size, n_clusters]
+            w_tilde = tf.reduce_sum(
+                _w  * \
+                tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
+                (1,3)) / tf.cast(self.M, tf.float32)
+                
+            var_w_tilde = tf.reduce_sum(
+                tf.math.square(_w)  *
+                tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
+                (1,3)) / tf.cast(self.M, tf.float32) - tf.square(w_tilde)
+                
+            return c.numpy(), tf.exp(log_p_c_x).numpy(), w.numpy(), var_w.numpy(), wc.numpy(), var_wc.numpy(), w_tilde.numpy(), var_w_tilde.numpy()
         else:
-            # [batch_size, L, dim_latent, n_states, M]
-            temp_Z = tf.tile(tf.expand_dims(tf.expand_dims(z,-1), -1),
-                        (1,1,1,self.n_states,self.M))
-            temp_mu = tf.tile(
-                            tf.expand_dims(tf.expand_dims(
-                                tf.gather(self.mu, self.A, axis=1),0),-1),
-                            (batch_size,1,1,self.M)) * self.w + \
-                    tf.tile(
-                            tf.expand_dims(tf.expand_dims(
-                                tf.gather(self.mu, self.B, axis=1),0),-1),
-                            (batch_size,1,1,self.M)) * (1-self.w)
-            temp_mu = tf.tile(tf.expand_dims(temp_mu, 1), (1,L,1,1,1))
-                
-            # [batch_size, L, n_states, M]
-            temp_pi = tf.tile(tf.expand_dims(
-                            tf.expand_dims(tf.nn.softmax(self.pi), -1), 1),
-                            (batch_size,L,1,self.M))
-            log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(2 * math.pi) + \
-                            tf.math.log(temp_pi+1e-30) - \
-                            tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2
-            # [batch_size, L]
-            log_p_z_L = tf.reduce_logsumexp(log_p_zc_w, axis=[2,3]) \
-                            - tf.math.log(tf.cast(self.M, tf.float32))
-            # [1, ]
-            log_p_z = tf.reduce_mean(log_p_z_L)
-                                
-            if inference:
-                # log_p_c_x     -   predicted probability distribution
-                # [batch_size, n_states]
-                log_p_c_x = tf.reduce_logsumexp(
-                                tf.reduce_logsumexp(
-                                    log_p_zc_w, axis=-1) -
-                                tf.math.log(tf.cast(self.M, tf.float32)) -
-                                tf.expand_dims(log_p_z_L, -1),
-                            axis=1) - tf.math.log(tf.cast(L, tf.float32))
-
-                # c         -   predicted clusters
-                c = tf.math.argmax(log_p_c_x, axis=-1)
-                c = tf.cast(c, 'int32')
-
-                # w         -   E(w|x)
-                # [batch_size, M]
-                p_w_x = tf.reduce_mean(tf.exp(
-                            tf.reduce_logsumexp(log_p_zc_w, axis=2) -
-                            tf.expand_dims(log_p_z_L, -1)
-                            ), axis=1)
-                    
-                w =  tf.reduce_mean(
-                        tf.tile(self.w, (batch_size,1)) * p_w_x, axis=-1
-                        )
-                
-                # var_w     -   Var(w|x)
-                var_w =  tf.reduce_mean(
-                            tf.square(
-                                tf.tile(self.w, (batch_size,1))
-                                ) * p_w_x, axis=-1
-                            ) - tf.square(w)
-                            
-                # w|c       -   E(w|x,c)
-                # [batch_size, L, M]
-                map_log_p_zc_w = tf.gather_nd(log_p_zc_w,
-                                    tf.reshape(
-                                    tf.stack([tf.repeat(tf.range(batch_size), L),
-                                            tf.tile(tf.range(L), [batch_size]),
-                                            tf.repeat(c, L)], 1), [batch_size, L, -1]))
-                # [batch_size, M]
-                p_w_xc = tf.exp(tf.reduce_logsumexp(
-                        map_log_p_zc_w -
-                        tf.expand_dims(log_p_z_L, -1), axis=1) -
-                        tf.expand_dims(tf.gather_nd(log_p_c_x,
-                                    list(zip(np.arange(batch_size),
-                                            c.numpy()))), -1)) / tf.cast(L, tf.float32)
-                    
-                wc = tf.reduce_mean(
-                            tf.tile(self.w, (batch_size,1)) * p_w_xc, axis=-1
-                        )
-
-                # var_w|c   -   Var(w|x,c)
-                var_wc = tf.reduce_mean(
-                            tf.square(
-                                tf.tile(self.w, (batch_size,1))
-                                ) * p_w_xc, axis=-1
-                            ) - tf.square(wc)
-                
-                c = tf.where(wc>1e-3, c,
-                            tf.gather(self.clusters_ind, tf.gather(self.B, c)))
-                c = tf.where(wc<1-1e-3, c,
-                            tf.gather(self.clusters_ind, tf.gather(self.A, c)))
-                      
-                # [batch_size, n_states, M]
-                p_wc_x = tf.exp(tf.reduce_logsumexp(
-                            log_p_zc_w -
-                            tf.expand_dims(tf.expand_dims(log_p_z_L, -1), -1),
-                            1) - tf.math.log(tf.cast(L, tf.float32)))
-               
-                # [batch_size, n_states, n_clusters, M]
-                _w = tf.tile(tf.expand_dims(
-                        tf.tile(tf.expand_dims(
-                            tf.one_hot(self.A, self.n_clusters),
-                            -1), (1,1,self.M)) * self.w +
-                        tf.tile(tf.expand_dims(
-                            tf.one_hot(self.B, self.n_clusters),
-                            -1), (1,1,self.M)) * (1-self.w), 0), (batch_size,1,1,1))
-                            
-                # [batch_size, n_clusters]
-                w_tilde = tf.reduce_sum(
-                    _w  * \
-                    tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-                    (1,3)) / tf.cast(self.M, tf.float32)
-                    
-                var_w_tilde = tf.reduce_sum(
-                    tf.math.square(_w)  *
-                    tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-                    (1,3)) / tf.cast(self.M, tf.float32) - tf.square(w_tilde)
-                    
-                return c.numpy(), tf.exp(log_p_c_x).numpy(), w.numpy(), var_w.numpy(), wc.numpy(), var_wc.numpy(), w_tilde.numpy(), var_w_tilde.numpy()
-            else:
-                return tf.nn.softmax(self.pi), self.mu, log_p_z
+            return tf.nn.softmax(self.pi), self.mu, log_p_z
 
     def get_proj_z(self, c):
         '''
@@ -372,7 +355,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.GMM.initialize(mu, pi)
 
     def call(self, x_normalized, x = None, scale_factor = 1,
-             pre_train = False, cluster = False, L=None):
+             pre_train = False, L=None):
         # Feed forward through encoder, GMM layer and decoder.
         if not pre_train and self.GMM is None:
             raise ReferenceError('Have not initialized GMM.')
@@ -395,11 +378,6 @@ class VariationalAutoEncoder(tf.keras.Model):
                 x_hat, r = self.decoder(z)
             else:
                 x_hat, r, phi = self.decoder(z)
-
-            if cluster:
-                mu, c, cluster_loss = self.GMM(z, cluster=True)
-                self.add_loss(cluster_loss)
-                return None
 
             x_hat = x_hat*tf.expand_dims(tf.expand_dims(scale_factor, 1), 1)
             x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
