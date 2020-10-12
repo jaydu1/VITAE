@@ -88,12 +88,16 @@ def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4,
     x_normalized = x_normalized[expressed, :][:, index]
     scale_factor = scale_factor[expressed, :]
     
+    if Gaussian_input:
+        pca = PCA(n_components = npc)
+        x_normalized = pca.fit_transform(x_normalized)
+    
     # per-gene standardization
     gene_scalar = preprocessing.StandardScaler()
     x_normalized = gene_scalar.fit_transform(x_normalized)
+    
     if Gaussian_input:
-        pca = PCA(n_components = npc)
-        x_normalized = x = pca.fit_transform(x_normalized)       
+        x = x_normalized
     
     if label_names is None:
         warnings.warn('No labels for cells!')
