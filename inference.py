@@ -26,6 +26,12 @@ class Inferer(object):
                 for j in range(i+1,self.NUM_CLUSTER):
                     idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)>=thres
                     if np.sum(idx)>0:
+                        graph[i,j] = np.mean(pc_x[idx,self.C[i,j]]/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]], axis=-1))
+        elif method=='modified_mean':
+            for i in range(self.NUM_CLUSTER-1):
+                for j in range(i+1,self.NUM_CLUSTER):
+                    idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)>=thres
+                    if np.sum(idx)>0:
                         graph[i,j] = np.sum(pc_x[idx,self.C[i,j]])/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]])
         elif method=='map':
             c = np.argmax(pc_x, axis=-1)
@@ -39,7 +45,7 @@ class Inferer(object):
                 for j in range(i+1,self.NUM_CLUSTER):
                     graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((self.w_tilde[:,i]>0.5)|(self.w_tilde[:,j]>0.5))+1e-16)
         else:
-            raise ValueError("Invalid method, must be either 'mean', 'map', or 'modified_map'.")
+            raise ValueError("Invalid method, must be either 'mean', 'modified_mean', 'map', or 'modified_map'.")
                     
         G = nx.from_numpy_array(graph)
         
