@@ -28,6 +28,9 @@ def topology(G_true, G_pred):
     if len(G_true)>10:
         warnings.warn("Didn't calculate graph edit distances for large graphs.")
         res['score_GED'] = np.nan
+    elif len(G_pred)>10:
+        warnings.warn("Didn't calculate graph edit distances for large predition graphs.")
+        res['score_GED'] = np.nan
     else:
         max_num_oper = len(G_true)
         score_GED = 1 - np.min([nx.graph_edit_distance(G_pred, G_true, node_match=comparison),
