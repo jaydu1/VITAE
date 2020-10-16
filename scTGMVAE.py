@@ -26,10 +26,10 @@ class scTGMVAE():
     def get_data(self, X, labels = None, cell_names = None, gene_names = None):
         ''' get data for model
         Params:
-            X:          - 2-dimension np array, original counts data
-            labels:     - a list of labelss for cells
-            cell_names  - a list of cell names
-            gene_names  - a list of gene names
+            X:          - 2-dimension np array, counts or expressions data
+            labels:     - (optional) a list of labelss for cells
+            cell_names  - (optional) a list of cell names
+            gene_names  - (optional) a list of gene names
         '''
         self.X = X.astype(np.float32)
         if sp.sparse.issparse(self.X):
@@ -61,9 +61,7 @@ class scTGMVAE():
     def build_model(self,
         dimensions = [16],
         dim_latent = 8,
-        L = 5,
-        data_type = 'UMI',
-        save_weights = False,
+        data_type = 'UMI',        
         path_to_weights_pretrain = 'pre_train.checkpoint',
         path_to_weights_train = 'train.checkpoint'
         ):
@@ -80,7 +78,6 @@ class scTGMVAE():
         '''
         self.dimensions = dimensions
         self.dim_latent = dim_latent
-        self.L = L
         self.data_type = data_type
         self.save_weights = save_weights
         self.path_to_weights_pretrain = path_to_weights_pretrain
@@ -90,7 +87,6 @@ class scTGMVAE():
             self.dim_origin,
             self.dimensions,
             self.dim_latent,
-            self.L,
             self.data_type,
             self.Gaussian_input
             )
@@ -118,9 +114,10 @@ class scTGMVAE():
 
 
     # pre train the model with specified learning rate
-    def pre_train(self, learning_rate = 1e-3, batch_size = 32,
+    def pre_train(self, learning_rate = 1e-3, batch_size = 32, L = 1,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup=0, L=None):
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0, 
+            path_to_weights = None):
             
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
@@ -137,8 +134,9 @@ class scTGMVAE():
             num_epoch,
             num_step_per_epoch,
             L)
-        if self.save_weights:
-            self.save_model(self.path_to_weights_pretrain)
+
+        if path_to_weights is not None:
+            self.save_model(path_to_weights)
           
 
     def get_latent_z(self):
@@ -153,10 +151,11 @@ class scTGMVAE():
 
 
     # train the model with specified learning rate
-    def train(self, learning_rate = 1e-3, batch_size = 32,
+    def train(self, learning_rate = 1e-3, batch_size = 32, L = 1,
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup=0,
-            L=None, weight=None, plot_every_num_epoch=None):
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0,
+            weight=None, plot_every_num_epoch=None,
+            path_to_weights = None):
         
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
@@ -178,8 +177,9 @@ class scTGMVAE():
             weight,
             plot_every_num_epoch
             )
-        if self.save_weights:
-            self.save_model(self.path_to_weights_train)
+            
+        if path_to_weights is not None:
+            self.save_model(path_to_weights)
           
 
     # inference for trajectory

@@ -352,7 +352,7 @@ class VariationalAutoEncoder(tf.keras.Model):
     """
     Combines the encoder, decoder and GMM into an end-to-end model for training.
     """
-    def __init__(self, dim_origin, dimensions, dim_latent, L, data_type = 'UMI',
+    def __init__(self, dim_origin, dimensions, dim_latent, data_type = 'UMI',
                  Gaussian_input = False, name = 'autoencoder', **kwargs):
         '''
         Args:
@@ -370,7 +370,6 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.data_type = data_type
         self.dim_origin = dim_origin
         self.dim_latent = dim_latent
-        self.L = L
         self.encoder = Encoder(dimensions, dim_latent)
         self.decoder = Decoder(dimensions[::-1], dim_origin, data_type, Gaussian_input)
         self.Gaussian_input = Gaussian_input
@@ -381,15 +380,12 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.GMM.initialize(mu, pi)
 
     def call(self, x_normalized, x = None, scale_factor = 1,
-             pre_train = False, L=None):
+             pre_train = False, L=1):
         # Feed forward through encoder, GMM layer and decoder.
         if not pre_train and self.GMM is None:
             raise ReferenceError('Have not initialized GMM.')
-        
-        if L is None:
-            L=self.L
             
-        z_mean, z_log_var, z = self.encoder(x_normalized, L)
+        _, z_log_var, z = self.encoder(x_normalized, L)
         
         if self.Gaussian_input:
             # Gaussian Log-Likelihood Loss function
@@ -456,12 +452,9 @@ class VariationalAutoEncoder(tf.keras.Model):
         '''
         return self.GMM.get_proj_z(c)
 
-    def inference(self, test_dataset, L):
+    def inference(self, test_dataset, L=1):
         if self.GMM is None:
             raise ReferenceError('Have not initialized GMM.')
-            
-        if L is None:
-            L=self.L
             
         pi_norm = tf.nn.softmax(self.GMM.pi).numpy()
         mu = self.GMM.mu.numpy()
