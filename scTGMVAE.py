@@ -31,10 +31,10 @@ class scTGMVAE():
             cell_names  - (optional) a list of cell names
             gene_names  - (optional) a list of gene names
         '''
-        self.X = X.astype(np.float32)
-        if sp.sparse.issparse(self.X):
-            self.X = self.X.toarray()
-        self.label_names = None if labels is None else np.array(labels, dtype = str)
+        self.raw_X = X.astype(np.float32)
+        if sp.sparse.issparse(self.raw_X):
+            self.raw_X = self.raw_X.toarray()
+        self.raw_label_names = None if labels is None else np.array(labels, dtype = str)
         self.raw_cell_names = None if cell_names is None else np.array(cell_names, dtype = str)
         self.raw_gene_names = None if gene_names is None else np.array(gene_names, dtype = str)
 
@@ -51,8 +51,8 @@ class scTGMVAE():
         self.X_normalized, self.X, self.cell_names, self.gene_names, \
         self.scale_factor, self.labels, self.label_names, \
         self.le, self.gene_scalar = preprocess.preprocess(
-            self.X.copy(),
-            self.label_names,
+            self.raw_X.copy(),
+            self.raw_label_names,
             self.raw_cell_names,
             self.raw_gene_names,
             K, gene_num, Gaussian_input, npc)
