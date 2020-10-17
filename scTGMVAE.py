@@ -18,7 +18,7 @@ import umap
 
 class scTGMVAE():
     """
-    class for Gaussian Mixture Model for trajectory analysis
+    class for single-cell Trajectory Variational Autoencoder.
     """
     def __init__(self):
         pass
@@ -103,12 +103,22 @@ class scTGMVAE():
         self.vae.load_weights(path_to_file)
 
 
-    # pre train the model with specified learning rate
     def pre_train(self, learning_rate = 1e-3, batch_size = 32, L = 1,
             num_epoch = 300, num_step_per_epoch = None,
             early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0, 
             path_to_weights = None):
-            
+        '''pre train the model with specified learning rate
+        Params:
+            learning_rate            - the initial learning rate for the Adam optimizer.
+            batch_size               - the batch size for pre-training.
+            L                        - the number of MC samples.
+            num_epoch                - the maximum number of epoches.
+            num_step_per_epoch       - the number of step per epoch, it will be inferred from number of cells and batch size if it is None
+            early_stopping_tolerance - the minimum change of loss to be considered as an improvement.
+            early_stopping_patience  - the maximum number of epoches if there is no improvement.
+            early_stopping_warmup    - the number of warmup epoches.
+            path_to_weights          - the path of weight file to be saved; not saving weight if None.
+        '''    
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
                 
