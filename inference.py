@@ -256,6 +256,8 @@ class Inferer(object):
                             edgecolors='white', # linewidths=10,
                             norm=norm,
                             s=250, marker='*', label=str(i))
+                ax.text(self.embed_mu[i,0], self.embed_mu[i,1], '%02d'%i, fontsize=12)
+                
             plt.setp(ax, xticks=[], yticks=[])
             box = ax.get_position()
             ax.set_position([box.x0, box.y0 + box.height * 0.1,
