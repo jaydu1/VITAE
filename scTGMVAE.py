@@ -3,7 +3,6 @@ import scipy as sp
 import pandas as pd
 import networkx as nx
 from sklearn.metrics.cluster import adjusted_rand_score
-from sklearn.preprocessing import LabelEncoder
 import warnings
 import os
 
