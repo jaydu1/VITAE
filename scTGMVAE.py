@@ -62,8 +62,6 @@ class scTGMVAE():
         dimensions = [16],
         dim_latent = 8,
         data_type = 'UMI',        
-        path_to_weights_pretrain = 'pre_train.checkpoint',
-        path_to_weights_train = 'train.checkpoint'
         ):
         ''' get parameters, wrap up training dataset and initialize the Variational Auto Encoder model
         Params:
@@ -79,9 +77,6 @@ class scTGMVAE():
         self.dimensions = dimensions
         self.dim_latent = dim_latent
         self.data_type = data_type
-        self.save_weights = save_weights
-        self.path_to_weights_pretrain = path_to_weights_pretrain
-        self.path_to_weights_train = path_to_weights_train
     
         self.vae = model.VariationalAutoEncoder(
             self.dim_origin,
