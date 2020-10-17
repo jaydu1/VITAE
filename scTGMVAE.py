@@ -143,10 +143,10 @@ class scTGMVAE():
         return self.vae.get_z(self.X_normalized)
 
 
-    def init_GMM(self, n_clusters, cluster_labels=None, mu=None, pi=None):
+    def init_GMM(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
         self.n_clusters = n_clusters
         self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
-        self.vae.init_GMM(n_clusters, mu, pi)
+        self.vae.init_GMM(n_clusters, mu, log_pi)
         self.inferer = Inferer(self.n_clusters)
 
 
