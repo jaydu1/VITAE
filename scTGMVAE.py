@@ -58,7 +58,7 @@ class scTGMVAE():
             self.raw_label_names,
             self.raw_cell_names,
             self.raw_gene_names,
-            K, gene_num, data_type, npc)
+            data_type, K, gene_num, npc)
         self.dim_origin = self.X.shape[1]
 
     def build_model(self,
