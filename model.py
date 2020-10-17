@@ -62,13 +62,13 @@ class Decoder(Layer):
     Decoder, model p(x|z).
     '''
     def __init__(self, dimensions, dim_origin, data_type = 'UMI', 
-                 Gaussian_input = False, name = 'decoder', **kwargs):
+                name = 'decoder', **kwargs):
         '''
         Input:
             dimensions      - list of dimensions of layers in dense layers of
                                 decoder expcept the output layer.
             dim_origin      - dimension of output layer.
-            Gaussian_input  - Output is subject to Gaussian
+            data_type       - 'UMI', 'non-UMI' and 'Gaussian'
         '''
         super(Decoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
@@ -77,9 +77,8 @@ class Decoder(Layer):
                              for (i,dim) in enumerate(dimensions)]
         self.batch_norm_layers = [BatchNormalization(center=False) \
                                     for _ in range(len((dimensions)))]
-        self.Gaussian_input = Gaussian_input
 
-        if Gaussian_input:
+        if data_type=='Gaussian':
             self.nu_z = Dense(dim_origin, name = 'nu_z')
             # common variance
             self.log_tau = tf.Variable(tf.zeros([1, dim_origin]),
@@ -110,7 +109,7 @@ class Decoder(Layer):
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             z = dense(z)
             z = bn(z, training=is_training)
-        if self.Gaussian_input:
+        if self.data_type=='Gaussian':
             nu_z = self.nu_z(z)
             tau = tf.exp(self.log_tau)
             return nu_z, tau
@@ -353,7 +352,7 @@ class VariationalAutoEncoder(tf.keras.Model):
     Combines the encoder, decoder and GMM into an end-to-end model for training.
     """
     def __init__(self, dim_origin, dimensions, dim_latent, data_type = 'UMI',
-                 Gaussian_input = False, name = 'autoencoder', **kwargs):
+                 name = 'autoencoder', **kwargs):
         '''
         Args:
             n_clusters      -   Number of clusters.
@@ -364,15 +363,13 @@ class VariationalAutoEncoder(tf.keras.Model):
             data_type       -   Type of count data.
                             'UMI' for negative binomial loss;
                             'non-UMI' for zero-inflated negative binomial loss.
-            Gaussian_input  - Whether the input and ouput of VAE are Gaussian
         '''
         super(VariationalAutoEncoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
         self.dim_origin = dim_origin
         self.dim_latent = dim_latent
         self.encoder = Encoder(dimensions, dim_latent)
-        self.decoder = Decoder(dimensions[::-1], dim_origin, data_type, Gaussian_input)
-        self.Gaussian_input = Gaussian_input
+        self.decoder = Decoder(dimensions[::-1], dim_origin, data_type, data_type)        
 
     def init_GMM(self, n_clusters, mu, Sigma=None, pi=None):
         self.n_clusters = n_clusters
@@ -387,7 +384,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             
         _, z_log_var, z = self.encoder(x_normalized, L)
         
-        if self.Gaussian_input:
+        if self.data_type=='Gaussian':
             # Gaussian Log-Likelihood Loss function
             nu_z, tau = self.decoder(z)
             x = tf.tile(tf.expand_dims(x, 1), (1,L,1))

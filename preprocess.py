@@ -67,18 +67,18 @@ def label_encoding(labels):
     return y, le
 
 
-def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4,
-                 gene_num = 2000, Gaussian_input = False, npc = 64):
+def preprocess(x, label_names, raw_cell_names, raw_gene_names, 
+                data_type, K = 1e4, gene_num = 2000,  npc = 64):
     '''
     Params: 
     x               - raw count matrix
-    cell_names      - names of cells
-    gene_names      - names of genes
+    label_names     - true or estimated cell types
+    raw_cell_names  - names of cells
+    raw_gene_names  - names of genes
     K               - sum number related to scale_factor
-    gene_num        - total number of genes to select
-    grouping        - true labels
-    Gaussian_input  - whether use PCs of normalized X with Gaussian assumption as VAE input
-    npc             - Number of PCs
+    gene_num        - total number of genes to select    
+    data_type       - 'UMI', 'non-UMI' and 'Gaussian'
+    npc             - Number of PCs, used if 'data_type' is 'Gaussian'
     '''
     # log-normalization
     x_normalized, scale_factor = log_norm(x, K)
@@ -88,7 +88,7 @@ def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4,
     x_normalized = x_normalized[expressed, :][:, index]
     scale_factor = scale_factor[expressed, :]
     
-    if Gaussian_input:
+    if data_type=='Gaussian':
         pca = PCA(n_components = npc)
         x_normalized = pca.fit_transform(x_normalized)
     
@@ -96,7 +96,7 @@ def preprocess(x, label_names, raw_cell_names, raw_gene_names, K = 1e4,
     gene_scalar = preprocessing.StandardScaler()
     x_normalized = gene_scalar.fit_transform(x_normalized)
     
-    if Gaussian_input:
+    if data_type=='Gaussian':
         x = x_normalized
     
     if label_names is None:

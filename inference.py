@@ -45,7 +45,7 @@ class Inferer(object):
                 for j in range(i+1,self.NUM_CLUSTER):
                     graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((self.w_tilde[:,i]>0.5)|(self.w_tilde[:,j]>0.5))+1e-16)
         else:
-            raise ValueError("Invalid method, must be either 'mean', 'modified_mean', 'map', or 'modified_map'.")
+            raise ValueError("Invalid method, must be one of 'mean', 'modified_mean', 'map', and 'modified_map'.")
                     
         G = nx.from_numpy_array(graph)
         
