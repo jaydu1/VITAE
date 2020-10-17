@@ -11,7 +11,7 @@ import model
 import preprocess
 import train
 from inference import Inferer
-from utils import get_igraph, louvain_igraph, plot_clusters, get_data
+from utils import get_igraph, louvain_igraph, plot_clusters, load_data
 from metric import topology, get_RI_continuous
 from scipy.spatial.distance import pdist as dist
 import umap

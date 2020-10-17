@@ -165,7 +165,7 @@ type_dict = {
     'tree':'UMI',
 }
 
-def get_data(path, file_name):   
+def load_data(path, file_name):   
     data = {}
     
     with h5py.File(os.path.join(path, file_name+'.h5'), 'r') as f:
