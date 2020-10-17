@@ -69,7 +69,7 @@ def train(train_dataset, test_dataset, vae,
     if weight is None:
         weight = np.ones(3, dtype=np.float32)
     else:
-        weight = np.array(weight, dtype=np.float32)
+        weight = np.array([1,weight,weight], dtype=np.float32)
     weight = tf.convert_to_tensor(weight)
     
     for epoch in range(NUM_EPOCH):
@@ -111,7 +111,7 @@ def train(train_dataset, test_dataset, vae,
         loss_E_qzx.reset_states()
 
         if plot_every_num_epoch is not None and (epoch%plot_every_num_epoch==0 or epoch==NUM_EPOCH-1):
-            pi,mu,c,_,w,var_w,wc,var_wc,_,_,z_mean = vae.inference(test_dataset, 1)
+            pi, mu, c, _, _, _, _, _, _, _, _, _, z_mean = vae.inference(test_dataset, 1)
 
             fit = umap.UMAP()
             u = fit.fit_transform(tf.concat((z_mean,tf.transpose(mu)),axis=0))
