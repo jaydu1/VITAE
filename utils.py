@@ -170,13 +170,13 @@ def load_data(path, file_name):
     
     with h5py.File(os.path.join(path, file_name+'.h5'), 'r') as f:
         data['count'] = np.array(f['count'], dtype=np.float32)
-        data['grouping'] = np.array(f['grouping']).astype('U')
+        data['grouping'] = np.array(f['grouping']).astype(object)
         if 'gene_names' in f:
-            data['gene_names'] = np.array(f['gene_names']) .astype('U')
+            data['gene_names'] = np.array(f['gene_names']) .astype(object)
         else:
             data['gene_names'] = None
         if 'cell_ids' in f:
-            data['cell_ids'] = np.array(f['cell_ids']) .astype('U')
+            data['cell_ids'] = np.array(f['cell_ids']) .astype(object)
         else:
             data['cell_ids'] = None
             
@@ -189,15 +189,15 @@ def load_data(path, file_name):
                             "bifurcating_1", "bifurcating_3", 
                             "converging_2"]:
                 data['milestone_network'] = pd.DataFrame(
-                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'), 
+                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype=object), 
                     columns=['from','to','w']
                 ).astype({'w':np.float32})
             else:
                 data['milestone_network'] = pd.DataFrame(
-                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype='U'), 
+                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype=object), 
                     columns=['from','to']
                 )
-            data['root_milestone_id'] = np.array(f['root_milestone_id']).astype('U')[0]            
+            data['root_milestone_id'] = np.array(f['root_milestone_id']).astype(object)[0]            
         else:
             data['milestone_net'] = None
             data['root_milestone_id'] = None
