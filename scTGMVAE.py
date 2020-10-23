@@ -22,21 +22,24 @@ class scTGMVAE():
     def __init__(self):
         pass
 
-    def get_data(self, X, labels = None, cell_names = None, gene_names = None):
+    def get_data(self, X, labels = None, covariate=None, cell_names = None, gene_names = None):
         ''' get data for model
         Params:
             X:          - 2-dimension np array, counts or expressions data
+            covariate   - 2-dimension np array, covariate data
             labels:     - (optional) a list of labelss for cells
             cell_names  - (optional) a list of cell names
             gene_names  - (optional) a list of gene names
         '''
         self.raw_X = X.astype(np.float32)
+        self.c_score = None if covariate is None else np.array(covariate, np.float32)
         if sp.sparse.issparse(self.raw_X):
             self.raw_X = self.raw_X.toarray()
         self.raw_label_names = None if labels is None else np.array(labels, dtype = str)
         self.raw_cell_names = None if cell_names is None else np.array(cell_names, dtype = str)
         self.raw_gene_names = None if gene_names is None else np.array(gene_names, dtype = str)
 
+        
     def preprocess_data(self, K = 1e4, gene_num = 2000, data_type = 'UMI', npc = 64):
         ''' data preprocessing, feature selection, log-normalization
             This step will transform both X and X_normalized into PCs and equal if Gaussian_input
@@ -50,16 +53,20 @@ class scTGMVAE():
             raise ValueError("Invalid data type, must be one of 'UMI', 'non-UMI', and 'Gaussian'.")
 
         self.data_type = data_type
-        self.X_normalized, self.X, self.cell_names, self.gene_names, \
+        self.X_normalized, self.X, self.c_score, self.cell_names, self.gene_names, \
         self.scale_factor, self.labels, self.label_names, \
         self.le, self.gene_scalar = preprocess.preprocess(
             self.raw_X.copy(),
+            self.c_score,
             self.raw_label_names,
             self.raw_cell_names,
             self.raw_gene_names,
             data_type, K, gene_num, npc)
         self.dim_origin = self.X.shape[1]
+        self.selected_cell_subset = self.cell_names
+        self.selected_cell_subset_id = np.arange(len(self.cell_names))
 
+        
     def build_model(self,
         dimensions = [16],
         dim_latent = 8,   
@@ -77,7 +84,8 @@ class scTGMVAE():
             self.dim_origin,
             self.dimensions,
             self.dim_latent,
-            self.data_type
+            self.data_type,
+            False if self.c_score is None else True
             )
         
         
@@ -122,7 +130,11 @@ class scTGMVAE():
             num_step_per_epoch = self.X.shape[0]//batch_size+1
                 
         train.clear_session()
-        self.train_dataset = train.warp_dataset(self.X_normalized, batch_size, self.X, self.scale_factor)
+        self.train_dataset = train.warp_dataset(self.X_normalized, 
+                                                self.c_score,
+                                                batch_size, 
+                                                self.X, 
+                                                self.scale_factor)
         self.vae = train.pre_train(
             self.train_dataset,
             self.vae,
@@ -139,14 +151,20 @@ class scTGMVAE():
           
 
     def get_latent_z(self):
-        return self.vae.get_z(self.X_normalized)
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+        return self.vae.get_z(self.X_normalized[self.selected_cell_subset_id,:], c)
 
 
+    def set_cell_subset(self, selected_cell_names):
+        self.selected_cell_subset = selected_cell_names
+        self.selected_cell_subset_id = np.sort(np.where(np.in1d(selected_cell_names, self.cell_names))[0])
+        
+    
     def init_GMM(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
         self.n_clusters = n_clusters
         self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
         self.vae.init_GMM(n_clusters, mu, log_pi)
-        self.inferer = Inferer(self.n_clusters)
+        self.inferer = Inferer(self.n_clusters)            
 
 
     # train the model with specified learning rate
@@ -157,10 +175,17 @@ class scTGMVAE():
             path_to_weights = None):
         
         if num_step_per_epoch is None:
-            num_step_per_epoch = self.X.shape[0]//batch_size+1
+            num_step_per_epoch = len(self.selected_cell_subset_id)//batch_size+1
             
-        self.train_dataset = train.warp_dataset(self.X_normalized, batch_size, self.X, self.scale_factor)
-        self.test_dataset = train.warp_dataset(self.X_normalized, batch_size)
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+        self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:],
+                                                c,
+                                                batch_size, 
+                                                self.X[self.selected_cell_subset_id,:], 
+                                                self.scale_factor[self.selected_cell_subset_id])
+        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+                                               c,
+                                               batch_size)
         self.vae = train.train(
             self.train_dataset,
             self.test_dataset,
@@ -172,7 +197,7 @@ class scTGMVAE():
             num_epoch,
             num_step_per_epoch,
             L,
-            self.labels,
+            self.labels[self.selected_cell_subset_id],
             weight,
             plot_every_num_epoch
             )
@@ -181,9 +206,14 @@ class scTGMVAE():
             self.save_model(path_to_weights)
           
 
-    # inference for trajectory
     def init_inference(self, batch_size=32, L=5):
-        self.test_dataset = train.warp_dataset(self.X_normalized, batch_size)
+        '''
+        Initialze trajectory inference by computing the posterior estimations.
+        '''
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+                                               c,
+                                               batch_size)
         self.pi, self.mu,self.c,self.pc_x,\
             self.p_wc_x,self.w,self.var_w,self.wc,self.var_wc,\
             self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
@@ -191,14 +221,13 @@ class scTGMVAE():
         return None
         
         
-    def comp_inference_score(self, thres=0.5, method='mean', no_loop=False, is_plot=True, path=None):
+    def comp_inference_score(self, method='modified_map', thres=0.5, no_loop=False, is_plot=True, path=None):
         '''
         Params:
             thres   - threshold used for filtering edges e_{ij} that
                       (n_{i}+n_{j}+e_{ij})/N<thres, only applied to
                       mean method.
-            method  - (string) either 'mean' for posterior mean estimation,
-                      or 'map' for maximum a priori estimation.
+            method  - (string) 'mean', 'modified_mean', 'map', and 'modified_map'
             no_loop - (boolean) if loops are allowed to exist in the graph.
             is_plot - (boolean) whether to plot or not.
             path    - (string) path to save figure, or don't save if it is None.
@@ -224,15 +253,21 @@ class scTGMVAE():
             w          - (numpy.array) modified w_tilde
             pseudotime - (numpy.array) pseudotime based on projected trajectory
         '''
-        G, w, pseudotime = self.inferer.infer_trajectory(init_node, self.label_names, cutoff, path=path, is_plot=is_plot)
+        G, w, pseudotime = self.inferer.infer_trajectory(init_node, 
+                                                         self.label_names[self.selected_cell_subset_id], 
+                                                         cutoff, 
+                                                         path=path, 
+                                                         is_plot=is_plot)
         return G, w, pseudotime
 
     
     def plot_marker_gene(self, gene_name: str, path=None):
         if gene_name not in self.gene_names:
             raise ValueError("Gene name '{}' not in selected genes!".format(gene_name))
-        expression = self.X_normalized[:,self.gene_names==gene_name].flatten()
-        self.inferer.plot_marker_gene(expression, gene_name, path)
+        expression = self.X_normalized[self.selected_cell_subset_id,:][:,self.gene_names==gene_name].flatten()
+        self.inferer.plot_marker_gene(expression, 
+                                      gene_name, 
+                                      path)
         return None
 
 
@@ -256,6 +291,10 @@ class scTGMVAE():
             begin_node_true - True begin node of the milestone.
             grouping        - For real data, grouping must be provided.
         '''
+        # Evaluate for the whole dataset will ignore selected_cell_subset.
+        if len(self.selected_cell_subset)!=len(self.cell_names):
+            warnings.warn("Evaluate for the whole dataset.")
+        
         # If the begin_node_true, need to encode it by self.le.
         if isinstance(begin_node_true, str):
             begin_node_true = self.le.transform([begin_node_true])[0]
@@ -350,26 +389,23 @@ class scTGMVAE():
         np.savetxt('dimred.csv', embed_z)
 
         # cell_ids
-        if self.cell_names is None:
-            cell_ids = ['C'+str(i) for i in range(len(z))]
-        else:
-            cell_ids = self.cell_names
+        cell_ids = self.cell_names[self.selected_cell_subset_id]
         np.savetxt('cell_ids.csv', cell_ids, fmt="%s")
 
         # feature_ids (gene)
-        if self.gene_names is None:
-            feature_ids = ['G'+str(i) for i in range(self.X_normalized.shape[1])]
-        else:
-            feature_ids = self.gene_names
+        feature_ids = self.gene_names
         np.savetxt('feature_ids.csv', feature_ids, fmt="%s")
 
         # grouping
-        np.savetxt('grouping.csv', self.label_names, fmt="%s")
+        np.savetxt('grouping.csv', self.label_names[self.selected_cell_subset_id], fmt="%s")
 
         # milestone_network
         self.init_inference(batch_size=batchsize, L=300)
         G = self.comp_inference_score(no_loop=True, method=method, thres=thres)
-        G, modified_w_tilde, pseudotime = self.inferer.infer_trajectory(init_node, self.label_names, cutoff, is_plot = False)
+        G, modified_w_tilde, pseudotime = self.inferer.infer_trajectory(init_node, 
+                                                                        self.label_names[self.selected_cell_subset_id], 
+                                                                        cutoff, 
+                                                                        is_plot = False)
         from_to = self.inferer.build_milestone_net(G, init_node)[:,:2]
         fromm = from_to[:,0][from_to[:,0] != None]
         to = from_to[:,1][from_to[:,0] != None]
@@ -402,4 +438,4 @@ class scTGMVAE():
 
         # gene_express
         if gene is not None:
-            np.savetxt('gene_express.csv', self.X_normalized[:,self.gene_names == gene])
+            np.savetxt('gene_express.csv', self.X_normalized[self.selected_cell_subset_id,:][:,self.gene_names == gene])

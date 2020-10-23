@@ -21,14 +21,16 @@ def log_norm(x, K = 1e4):
     return x_normalized, scale_factor
 
 
-def feature_select(x, gene_num = 2000):
+def feature_select(x, c, gene_num = 2000):
     # https://www.biorxiv.org/content/biorxiv/early/2018/11/02/460147.full.pdf
     # Page 12-13: Data preprocessing - Feature selection for individual datasets
 
     # no expression cell
     expressed = np.where(np.sum(x,axis=1) != 0)[0]
     x = x[expressed,:]
-
+    if c is not None:
+        c = c[expressed,:]
+    
     # mean and variance of each gene of the unnormalized data
     mean, var = np.mean(x, axis=0), np.var(x, axis=0)
     x = x[:, (mean > 0) & (var > 0)]
@@ -57,7 +59,7 @@ def feature_select(x, gene_num = 2000):
     plt.hlines(np.log(threshold), 1, p)
     plt.show()
     
-    return x[:, index], index, expressed
+    return x[:, index], c, index, expressed
     
 
 def label_encoding(labels):
@@ -67,11 +69,12 @@ def label_encoding(labels):
     return y, le
 
 
-def preprocess(x, label_names, raw_cell_names, raw_gene_names, 
+def preprocess(x, c, label_names, raw_cell_names, raw_gene_names, 
                 data_type, K = 1e4, gene_num = 2000,  npc = 64):
     '''
     Params: 
     x               - raw count matrix
+    c               - covariate matrix
     label_names     - true or estimated cell types
     raw_cell_names  - names of cells
     raw_gene_names  - names of genes
@@ -84,7 +87,7 @@ def preprocess(x, label_names, raw_cell_names, raw_gene_names,
     x_normalized, scale_factor = log_norm(x, K)
     
     # feature selection
-    x, index, expressed = feature_select(x, gene_num)
+    x, c, index, expressed = feature_select(x, c, gene_num)
     x_normalized = x_normalized[expressed, :][:, index]
     scale_factor = scale_factor[expressed, :]
     
@@ -92,6 +95,10 @@ def preprocess(x, label_names, raw_cell_names, raw_gene_names,
     gene_scalar = preprocessing.StandardScaler()
     x_normalized = gene_scalar.fit_transform(x_normalized)
 
+    if c is not None:
+        c_scalar = preprocessing.StandardScaler()
+        c = c_scalar.fit_transform(c)
+    
     if data_type=='Gaussian':
         pca = PCA(n_components = npc)
         x_normalized = x = pca.fit_transform(x_normalized)
@@ -111,9 +118,9 @@ def preprocess(x, label_names, raw_cell_names, raw_gene_names,
         table = table.sort_index()
         print(table)
         
-    cell_names = None if raw_cell_names is None else raw_cell_names[expressed]
-    gene_names = None if raw_gene_names is None else raw_gene_names[index]
+    cell_names = np.char.add('c_', expressed.astype(str)) if raw_cell_names is None else raw_cell_names[expressed]
+    gene_names = np.char.add('g_', index.astype(str)) if raw_gene_names is None else raw_gene_names[index]
 
-    return x_normalized, x, cell_names, gene_names, scale_factor, labels, label_names, le, gene_scalar
+    return x_normalized, x, c, cell_names, gene_names, scale_factor, labels, label_names, le, gene_scalar
 
 

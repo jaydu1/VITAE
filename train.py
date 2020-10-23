@@ -12,17 +12,25 @@ def clear_session():
     return None
 
     
-def warp_dataset(X_normalized, BATCH_SIZE, X=None, Scale_factor=None):
+def warp_dataset(X_normalized, c_score, BATCH_SIZE, X=None, Scale_factor=None):
+    # fake c_score
+    if c_score is None:
+        c_score = np.zeros((X_normalized.shape[0],1), np.float32)
+        
     if X is not None:
-        train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, Scale_factor))
-        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0], reshuffle_each_iteration=True).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
+        train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, c_score, Scale_factor))
+        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0],
+                                        reshuffle_each_iteration=True).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
         return train_dataset
     else:
-        test_dataset = tf.data.Dataset.from_tensor_slices(X_normalized).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
+        test_dataset = tf.data.Dataset.from_tensor_slices((X_normalized, 
+                                                          c_score)).batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
         return test_dataset
 
 
-def pre_train(train_dataset, vae, learning_rate, patience, tolerance, warmup, NUM_EPOCH_PRE, NUM_STEP_PER_EPOCH, L):
+def pre_train(train_dataset, vae,
+              learning_rate, patience, tolerance, warmup, 
+              NUM_EPOCH_PRE, NUM_STEP_PER_EPOCH, L):
     optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
     loss_metric = tf.keras.metrics.Mean()
     early_stopping = Early_Stopping(patience=patience, tolerance=tolerance, warmup=warmup)
@@ -32,9 +40,9 @@ def pre_train(train_dataset, vae, learning_rate, patience, tolerance, warmup, NU
         print('Pretrain - Start of epoch %d' % (epoch,))
 
         # Iterate over the batches of the dataset.
-        for step, (x_batch, x_norm_batch, x_scale_factor) in enumerate(train_dataset):
+        for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
-                _ = vae(x_norm_batch, x_batch, x_scale_factor, pre_train=True, L=L)
+                _ = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L)
                 # Compute reconstruction loss
                 loss = tf.reduce_sum(vae.losses[0])
                 
@@ -77,9 +85,9 @@ def train(train_dataset, test_dataset, vae,
         progbar = Progbar(NUM_STEP_PER_EPOCH)
         
         # Iterate over the batches of the dataset.
-        for step, (x_batch, x_norm_batch, x_scale_factor) in enumerate(train_dataset):
+        for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
-                _ = vae(x_norm_batch, x_batch, x_scale_factor, L=L)
+                _ = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
                 loss = tf.reduce_sum(vae.losses*weight)
         
             grads = tape.gradient(loss, vae.trainable_weights,

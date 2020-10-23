@@ -351,18 +351,20 @@ class VariationalAutoEncoder(tf.keras.Model):
     """
     Combines the encoder, decoder and GMM into an end-to-end model for training.
     """
-    def __init__(self, dim_origin, dimensions, dim_latent, data_type = 'UMI',
+    def __init__(self, dim_origin, dimensions, dim_latent,
+                 data_type = 'UMI', has_cov=False,
                  name = 'autoencoder', **kwargs):
         '''
         Args:
             n_clusters      -   Number of clusters.
             dim_origin      -   Dim of input.
             dimensions      -   List of dimensions of layers of the encoder. Assume
-                            symmetric network sturcture of encoder and decoder.
+                               symmetric network sturcture of encoder and decoder.
             dim_latent      -   Dimension of latent layer.
             data_type       -   Type of count data.
-                            'UMI' for negative binomial loss;
-                            'non-UMI' for zero-inflated negative binomial loss.
+                              'UMI' for negative binomial loss;
+                              'non-UMI' for zero-inflated negative binomial loss.
+            has_cov         - has covariate or not
         '''
         super(VariationalAutoEncoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
@@ -370,23 +372,27 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.dim_latent = dim_latent
         self.encoder = Encoder(dimensions, dim_latent)
         self.decoder = Decoder(dimensions[::-1], dim_origin, data_type, data_type)        
-
+        self.has_cov = has_cov
+        
     def init_GMM(self, n_clusters, mu, Sigma=None, pi=None):
         self.n_clusters = n_clusters
         self.GMM = GMM(self.n_clusters, self.dim_latent)
         self.GMM.initialize(mu, pi)
 
-    def call(self, x_normalized, x = None, scale_factor = 1,
+    def call(self, x_normalized, c_score, x = None, scale_factor = 1,
              pre_train = False, L=1):
         # Feed forward through encoder, GMM layer and decoder.
         if not pre_train and self.GMM is None:
             raise ReferenceError('Have not initialized GMM.')
-            
+                    
+        x_normalized = tf.concat([x_normalized, c_score], -1) if self.has_cov else x_normalized
         _, z_log_var, z = self.encoder(x_normalized, L)
+                
+        z_in = tf.concat([z, tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1) if self.has_cov else z
         
         if self.data_type=='Gaussian':
             # Gaussian Log-Likelihood Loss function
-            nu_z, tau = self.decoder(z)
+            nu_z, tau = self.decoder(z_in)
             x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
             neg_E_Gaus = 0.5 * tf.math.log(tau) + 0.5 * tf.math.square(x - nu_z) / tau
             neg_E_Gaus =  tf.reduce_mean(tf.reduce_sum(neg_E_Gaus, axis=-1))
@@ -394,9 +400,9 @@ class VariationalAutoEncoder(tf.keras.Model):
 
         else:
             if self.data_type == 'UMI':
-                x_hat, r = self.decoder(z)
+                x_hat, r = self.decoder(z_in)
             else:
-                x_hat, r, phi = self.decoder(z)
+                x_hat, r, phi = self.decoder(z_in)
 
             x_hat = x_hat*tf.expand_dims(tf.expand_dims(scale_factor, 1), 1)
             x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
@@ -438,7 +444,8 @@ class VariationalAutoEncoder(tf.keras.Model):
             self.add_loss(E_qzx)
             return None
     
-    def get_z(self, x_normalized):
+    def get_z(self, x_normalized, c_score):        
+        x_normalized = x_normalized if (not self.has_cov or c_score is None) else tf.concat([x_normalized, c_score], -1)
         z_mean, _, _ = self.encoder(x_normalized, 1, False)
         return z_mean.numpy()
     
@@ -461,7 +468,8 @@ class VariationalAutoEncoder(tf.keras.Model):
         p_wc_x = []
         w_tilde = []
         var_w_tilde = []
-        for x in test_dataset:
+        for x,c_score in test_dataset:
+            x = tf.concat([x, c_score], -1) if self.has_cov else x
             _z_mean, _, z = self.encoder(x, L, False)
             res = self.GMM(z, inference=True)
             result.append(np.c_[res['c'], res['w_x'], res['var_w_x'], res['w_xc'], res['var_w_xc'], res['D_JS']])
