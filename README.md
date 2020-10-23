@@ -9,26 +9,27 @@
 ┣		┣━━━ model.py
 ┣		┣━━━ train.py	
 ┣		┣━━━ inference.py
+┣		┣━━━ metric.py
 ┣		┗━━━ util.py	
 ┗━━━ 
 ```
 
 
 # Dependency
-Package|Version
----|---
-matplotlib | 3.2.1 
-scipy | 1.4.1  
-numpy | 1.18.5 
-pandas | 1.0.4 
-tensorflow | 2.2.0 
-localreg | 0.2.1 
-networkx | 2.4
-python-igraph | 0.8.2 
-sklearn | 0.22.2 
-louvain | 0.7.0 
-umap-learn | 0.4.4 
-netrd | 
 
+We recommend to use `conda` or `miniconda` to manage Python environment. For Mac and Linux users, you can use the following codes to create a new environment with all required packages.
+
+```
+>>> conda create --name scTrajVAE python=3.6 -y
+>>> conda activate scTrajVAE
+>>> conda install pandas jupyter umap-learn matplotlib numba seaborn scikit-learn -y
+>>> yes | pip3 install tensorflow==2.2 louvain localreg networkx python-igraph
+```
+
+We use `pip` to install tensorflow2.2 since currently it is not available for Mac and Win users via conda. After installing all required packages, one can open the Jupyter Notebook via terminal:
+
+```
+>>> jupyter notebook
+```
 
 
