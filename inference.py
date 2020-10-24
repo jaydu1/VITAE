@@ -101,7 +101,7 @@ class Inferer(object):
         mapper = umap.UMAP().fit(concate_z)
         self.embed_z = mapper.embedding_[:-self.NUM_CLUSTER,:].copy()
         self.embed_mu = mapper.embedding_[-self.NUM_CLUSTER:,:].copy()
-        return None
+        return self.embed_z.copy()
         
         
     def plot_clusters(self, labels, path=None):
@@ -111,10 +111,12 @@ class Inferer(object):
             n_labels = len(np.unique(labels))
             colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
             
-            fig, ax = plt.subplots(1,1, figsize=(10, 5))
+            fig, ax = plt.subplots(1,1, figsize=(20, 10))
             for i,x in enumerate(np.unique(labels)):
                 ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
                     s=3, alpha=0.8, label=str(x))
+                ax.text(np.mean(self.embed_z[labels==x,0]), 
+                        np.mean(self.embed_z[labels==x,1]), str(x), fontsize=12)
             box = ax.get_position()
             ax.set_position([box.x0, box.y0 + box.height * 0.1,
                              box.width, box.height * 0.9])
@@ -229,7 +231,7 @@ class Inferer(object):
         pseudotime = self.comp_pseudotime(G, init_node, w)
         
         if is_plot:
-            fig, ax = plt.subplots(1,1, figsize=(10, 5))
+            fig, ax = plt.subplots(1,1, figsize=(20, 10))
                 
             cmap = matplotlib.cm.get_cmap('viridis')
             colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
@@ -270,15 +272,4 @@ class Inferer(object):
                 plt.savefig(path, dpi=300)
             plt.show()
         return G, w, pseudotime
-        
-        
-    def plot_marker_gene(self, expression, gene_name, path=None):
-        fig, ax = plt.subplots(1,1, figsize=(10, 5))
-        cmap = matplotlib.cm.get_cmap('Reds')
-        sc = ax.scatter(*self.embed_z.T, cmap=cmap, c=expression, s=1)
-        plt.colorbar(sc, ax=[ax], location='right')
-        ax.set_title('Normalized expression of {}'.format(gene_name))
-        if path is not None:
-            plt.savefig(path, dpi=300)
-        plt.show()
-        return None
+            

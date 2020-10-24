@@ -10,7 +10,7 @@ import model
 import preprocess
 import train
 from inference import Inferer
-from utils import get_igraph, louvain_igraph, plot_clusters, load_data
+from utils import get_igraph, louvain_igraph, plot_clusters, load_data, plot_marker_gene
 from metric import topology, get_RI_continuous
 from scipy.spatial.distance import pdist as dist
 import umap
@@ -214,10 +214,10 @@ class scTGMVAE():
         self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
                                                c,
                                                batch_size)
-        self.pi, self.mu,self.c,self.pc_x,\
+        self.pi, self.mu, self.c, self.pc_x,\
             self.p_wc_x,self.w,self.var_w,self.wc,self.var_wc,\
             self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
-        self.inferer.init_embedding(self.z, self.mu)
+        self.embed_z = self.inferer.init_embedding(self.z, self.mu)
         return None
         
         
@@ -265,9 +265,14 @@ class scTGMVAE():
         if gene_name not in self.gene_names:
             raise ValueError("Gene name '{}' not in selected genes!".format(gene_name))
         expression = self.X_normalized[self.selected_cell_subset_id,:][:,self.gene_names==gene_name].flatten()
-        self.inferer.plot_marker_gene(expression, 
-                                      gene_name, 
-                                      path)
+        
+        if not hasattr(self, 'embed_z'):
+            self.z = self.get_latent_z()            
+            self.embed_z = umap.UMAP().fit_transform(self.z)
+        plot_marker_gene(expression, 
+                         gene_name, 
+                         self.embed_z,
+                         path)
         return None
 
 

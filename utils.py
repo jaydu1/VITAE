@@ -1,4 +1,21 @@
 # -*- coding: utf-8 -*-
+from umap.umap_ import nearest_neighbors
+from sklearn.utils import check_random_state
+from umap.umap_ import fuzzy_simplicial_set
+from scipy.sparse import coo_matrix
+import igraph as ig
+import louvain
+import matplotlib.pyplot as plt
+import matplotlib
+import os     
+import numpy as np
+import pandas as pd
+import h5py
+
+
+#------------------------------------------------------------------------------
+# Early stopping
+#------------------------------------------------------------------------------
 
 class Early_Stopping():
     def __init__(self, warmup=0, patience=10, tolerance=1e-3, is_minimize=True):
@@ -35,15 +52,11 @@ class Early_Stopping():
                 print('Best Epoch: %d. Best Metric: %f.'%(self.best_step, self.best_metric))
                 return True
 
-
-from umap.umap_ import nearest_neighbors
-from sklearn.utils import check_random_state
-from umap.umap_ import fuzzy_simplicial_set
-from scipy.sparse import coo_matrix
-import igraph as ig
-import louvain
-import numpy as np
-import matplotlib.pyplot as plt
+            
+            
+#------------------------------------------------------------------------------
+# Utils functions
+#------------------------------------------------------------------------------
 
 
 def get_igraph(z):
@@ -101,15 +114,17 @@ def louvain_igraph(g, res):
     return labels
     
 
-def plot_clusters(embed_z, labels, path=None):
+def plot_clusters(embed_z, labels, plot_labels=False, path=None):
     n_labels = len(np.unique(labels))
     colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
     
-    fig, ax = plt.subplots(1,1, figsize=(10, 5))
+    fig, ax = plt.subplots(1,1, figsize=(20, 10))
     for i,l in enumerate(np.unique(labels)):
         ax.scatter(*embed_z[labels==l].T,
                     c=[colors[i]], label=str(l),
-                    s=1, alpha=0.6)
+                    s=1, alpha=0.4)
+        if plot_labels:
+            ax.text(np.mean(embed_z[labels==l,0]), np.mean(embed_z[labels==l,1]), str(l), fontsize=12)
     plt.setp(ax, xticks=[], yticks=[])
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.1,
@@ -121,11 +136,24 @@ def plot_clusters(embed_z, labels, path=None):
         plt.savefig(path, dpi=300)
     plt.plot()
 
-import os     
-import numpy as np
-import pandas as pd
-import h5py
-import pickle as pk
+    
+def plot_marker_gene(expression, gene_name, embed_z, path=None):
+    fig, ax = plt.subplots(1,1, figsize=(20, 10))
+    cmap = matplotlib.cm.get_cmap('Reds')
+    sc = ax.scatter(*embed_z.T, c='yellow', s=8)
+    sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=5)
+    sc.set_clim(0,1) 
+    plt.colorbar(sc, ax=[ax], location='right')
+    ax.set_title('Normalized expression of {}'.format(gene_name))
+    if path is not None:
+        plt.savefig(path, dpi=300)
+    plt.show()
+    return None
+    
+    
+#------------------------------------------------------------------------------
+# Data loader
+#------------------------------------------------------------------------------
 
 type_dict = {
     # dyno
