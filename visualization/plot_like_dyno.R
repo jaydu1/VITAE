@@ -82,7 +82,7 @@ prepare_traj = function(path, root_milestone_id, gene_name = NULL) {
 }
 
 gene_name = 'G15'
-trajectory = prepare_traj('', root_milestone_id = 'M1', gene_name, pos_var = T)
+trajectory = prepare_traj('', root_milestone_id = 'M1', gene_name)
 
 pdf('dimred.pdf', width = 16, height = 8, onefile = F)
 patchwork::wrap_plots(
