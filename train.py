@@ -28,12 +28,28 @@ def warp_dataset(X_normalized, c_score, BATCH_SIZE, X=None, Scale_factor=None):
         return test_dataset
 
 
+
+
+
 def pre_train(train_dataset, vae,
               learning_rate, patience, tolerance, warmup, 
               NUM_EPOCH_PRE, NUM_STEP_PER_EPOCH, L):
+
+    @tf.function
+    def train_step(x_norm_batch, c_score, x_batch, x_scale_factor, L):
+        with tf.GradientTape() as tape:
+            losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L)
+            # Compute reconstruction loss
+            loss = tf.reduce_sum(losses[0])
+        grads = tape.gradient(loss, vae.trainable_weights,
+                    unconnected_gradients=tf.UnconnectedGradients.ZERO)
+        optimizer.apply_gradients(zip(grads, vae.trainable_weights))
+        return loss
+
     optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
     loss_metric = tf.keras.metrics.Mean()
     early_stopping = Early_Stopping(patience=patience, tolerance=tolerance, warmup=warmup)
+
     for epoch in range(NUM_EPOCH_PRE):
         progbar = Progbar(NUM_STEP_PER_EPOCH)
         
@@ -41,14 +57,7 @@ def pre_train(train_dataset, vae,
 
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
-            with tf.GradientTape() as tape:
-                _ = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L)
-                # Compute reconstruction loss
-                loss = tf.reduce_sum(vae.losses[0])
-                
-            grads = tape.gradient(loss, vae.trainable_weights,
-                                  unconnected_gradients=tf.UnconnectedGradients.ZERO)
-            optimizer.apply_gradients(zip(grads, vae.trainable_weights))
+            loss = train_step(x_norm_batch, c_score, x_batch, x_scale_factor, L)                                      
             loss_metric(loss)
             
             if (step+1)%10==0 or step+1==NUM_STEP_PER_EPOCH:
@@ -67,12 +76,25 @@ def pre_train(train_dataset, vae,
 def train(train_dataset, test_dataset, vae,
         learning_rate, patience, tolerance, warmup, NUM_EPOCH, NUM_STEP_PER_EPOCH, L,
         labels, weight, plot_every_num_epoch=None):
+
+    @tf.function
+    def train_step(x_norm_batch, c_score, x_batch, x_scale_factor, L, weight):
+        with tf.GradientTape() as tape:
+            losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
+            # Compute reconstruction loss
+            loss = tf.reduce_sum(losses*weight)
+        grads = tape.gradient(loss, vae.trainable_weights,
+                    unconnected_gradients=tf.UnconnectedGradients.ZERO)
+        optimizer.apply_gradients(zip(grads, vae.trainable_weights))
+        return losses, loss
+
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()
     loss_neg_E_pz = tf.keras.metrics.Mean()
     loss_E_qzx = tf.keras.metrics.Mean()
     early_stopping = Early_Stopping(patience = patience, tolerance = tolerance, warmup=warmup)
+
     print('Warmup:%d'%warmup)
     if weight is None:
         weight = np.ones(3, dtype=np.float32)
@@ -86,23 +108,17 @@ def train(train_dataset, test_dataset, vae,
         
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
-            with tf.GradientTape() as tape:
-                _ = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
-                loss = tf.reduce_sum(vae.losses*weight)
-        
-            grads = tape.gradient(loss, vae.trainable_weights,
-                                  unconnected_gradients=tf.UnconnectedGradients.ZERO)
-            optimizer.apply_gradients(zip(grads, vae.trainable_weights))
+            losses, loss = train_step(x_norm_batch, c_score, x_batch, x_scale_factor, L, weight)
             loss_total(loss)
-            loss_neg_E_nb(vae.losses[0])
-            loss_neg_E_pz(vae.losses[1])
-            loss_E_qzx(vae.losses[2])
+            loss_neg_E_nb(losses[0])
+            loss_neg_E_pz(losses[1])
+            loss_E_qzx(losses[2])
 
             if (step+1)%10==0 or step+1==NUM_STEP_PER_EPOCH:
                 progbar.update(step+1, [
-                        ('loss_neg_E_nb'    ,   float(vae.losses[0])),
-                        ('loss_neg_E_pz'    ,   float(vae.losses[1])),
-                        ('loss_E_qzx   '    ,   float(vae.losses[2])),
+                        ('loss_neg_E_nb'    ,   float(losses[0])),
+                        ('loss_neg_E_pz'    ,   float(losses[1])),
+                        ('loss_E_qzx   '    ,   float(losses[2])),
                         ('loss_total'       ,   float(loss_total.result()))
                         ])
         

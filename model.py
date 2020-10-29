@@ -394,7 +394,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             # Gaussian Log-Likelihood Loss function
             nu_z, tau = self.decoder(z_in)
             x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
-            neg_E_Gaus = 0.5 * tf.math.log(tau) + 0.5 * tf.math.square(x - nu_z) / tau
+            neg_E_Gaus = 0.5 * tf.math.log(tau + 1e-12) + 0.5 * tf.math.square(x - nu_z) / tau
             neg_E_Gaus =  tf.reduce_mean(tf.reduce_sum(neg_E_Gaus, axis=-1))
             self.add_loss(neg_E_Gaus)
 
@@ -427,9 +427,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             neg_E_nb =  tf.reduce_mean(tf.reduce_sum(neg_E_nb, axis=-1))
             self.add_loss(neg_E_nb)
 
-        if pre_train:
-            return None
-        else:
+        if not pre_train:            
             pi_norm, mu, log_p_z = self.GMM(z, inference=False)
 
             # - E_q[log p(z)]
@@ -442,7 +440,7 @@ class VariationalAutoEncoder(tf.keras.Model):
                             0.5 * tf.reduce_sum(z_log_var, axis=-1)
                             )
             self.add_loss(E_qzx)
-            return None
+        return self.losses
     
     def get_z(self, x_normalized, c_score):        
         x_normalized = x_normalized if (not self.has_cov or c_score is None) else tf.concat([x_normalized, c_score], -1)
