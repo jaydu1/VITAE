@@ -122,9 +122,9 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
     for i,l in enumerate(np.unique(labels)):
         ax.scatter(*embed_z[labels==l].T,
                     c=[colors[i]], label=str(l),
-                    s=1, alpha=0.4)
+                    s=8, alpha=0.4)
         if plot_labels:
-            ax.text(np.mean(embed_z[labels==l,0]), np.mean(embed_z[labels==l,1]), str(l), fontsize=12)
+            ax.text(np.mean(embed_z[labels==l,0]), np.mean(embed_z[labels==l,1]), str(l), fontsize=16)
     plt.setp(ax, xticks=[], yticks=[])
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.1,
@@ -140,8 +140,8 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
 def plot_marker_gene(expression, gene_name, embed_z, path=None):
     fig, ax = plt.subplots(1,1, figsize=(20, 10))
     cmap = matplotlib.cm.get_cmap('Reds')
-    sc = ax.scatter(*embed_z.T, c='yellow', s=8)
-    sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=5)
+    sc = ax.scatter(*embed_z.T, c='yellow', s=15)
+    sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=10)
     sc.set_clim(0,1) 
     plt.colorbar(sc, ax=[ax], location='right')
     ax.set_title('Normalized expression of {}'.format(gene_name))
