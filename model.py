@@ -374,7 +374,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.decoder = Decoder(dimensions[::-1], dim_origin, data_type, data_type)        
         self.has_cov = has_cov
         
-    def init_GMM(self, n_clusters, mu, Sigma=None, pi=None):
+    def init_GMM(self, n_clusters, mu, pi=None):
         self.n_clusters = n_clusters
         self.GMM = GMM(self.n_clusters, self.dim_latent)
         self.GMM.initialize(mu, pi)
