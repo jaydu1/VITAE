@@ -186,7 +186,7 @@ class Inferer(object):
                 _from, _to = milestone_net[i,:2]
                 _from, _to = int(_from), int(_to)
 
-                idc = (w[:,_from]>0)&(w[:,_to]>0)
+                idc = ((w[:,_from]>0)&(w[:,_to]>0)) | (w[:,_to]==1)
                 pseudotime[idc] = w[idc,_to] + milestone_net[i,-1] - 1
         
         return pseudotime
