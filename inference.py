@@ -175,7 +175,7 @@ class Inferer(object):
     
     def comp_pseudotime(self, G, init_node, w):
         pseudotime = - np.ones(w.shape[0])
-        pseudotime[w[:,init_node]>0] = 0
+        pseudotime[w[:,node]==1] = 0
         
         if len(G.edges)>0:
             connected_comps = nx.node_connected_component(G, init_node)
