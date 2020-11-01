@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import localreg
+from skmisc import loess
 from sklearn import preprocessing
 import warnings
 from sklearn.decomposition import PCA
@@ -38,8 +38,10 @@ def feature_select(x, c, gene_num = 2000):
     mean, var = np.mean(x, axis=0), np.var(x, axis=0)
 
     # model log10(var)~log10(mean) by local fitting of polynomials of degree 2
-    fitted = localreg.localreg(np.log10(mean), np.log10(var), frac = 0.3,
-                               degree = 2, kernel = localreg.gaussian)
+    fitted = loess.loess(np.log10(mean), np.log10(var), 
+                        frac = 0.3, degree = 2, family='gaussian'
+                        ).predict(np.log10(mean)).values
+
     # standardized feature
     z = (x - mean)/np.sqrt(10**fitted)
 
