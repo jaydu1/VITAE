@@ -32,25 +32,26 @@ def feature_select(x, c, gene_num = 2000):
         c = c[expressed,:]
     
     # mean and variance of each gene of the unnormalized data
-    mean, var = np.mean(x, axis=0), np.var(x, axis=0)
-    x = x[:, (mean > 0) & (var > 0)]
     n, p = x.shape
-    mean, var = np.mean(x, axis=0), np.var(x, axis=0)
+    mean, var = np.mean(x, axis=0), np.var(x, axis=0, ddof=1)
 
     # model log10(var)~log10(mean) by local fitting of polynomials of degree 2
-    fitted = loess.loess(np.log10(mean), np.log10(var), 
-                        frac = 0.3, degree = 2, family='gaussian'
-                        ).predict(np.log10(mean)).values
+    loess_model = loess.loess(np.log10(mean[var>0]), np.log10(var[var>0]), 
+                    span = 0.3, degree = 2, family='gaussian'
+                    )
+    loess_model.fit()
+    fitted = loess_model.outputs.fitted_values
 
     # standardized feature
-    z = (x - mean)/np.sqrt(10**fitted)
+    z = (x[:,var>0] - mean[var>0])/np.sqrt(10**fitted)
 
     # clipped the standardized features to remove outliers
-    z = np.clip(z, -np.sqrt(n), np.sqrt(n))
+    z = np.clip(z, -np.inf, np.sqrt(n))
 
     # the variance of standardized features across all cells represents a measure of
     # single cell dispersion after controlling for mean expression
-    feature_score = np.var(z, axis=0)
+    feature_score = np.zeros(p, np.float32)
+    feature_score[var>0] = np.sum(z**2, axis=0)/(n-1)
     
     # feature selection
     index = feature_score.argsort()[::-1][0:gene_num]
