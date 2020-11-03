@@ -221,7 +221,7 @@ class GMM(Layer):
         log_p_z = tf.reduce_mean(log_p_z_L) - tf.math.log(tf.cast(self.M, tf.float32))
                             
         if not inference:
-            return tf.nn.softmax(self.pi), self.mu, log_p_z
+            return log_p_z
         else:
             # log_p_c_x     -   predicted probability distribution
             # [batch_size, n_states]
@@ -406,7 +406,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             else:
                 x_hat, r, phi = self.decoder(z_in)
 
-            x_hat = x_hat*tf.expand_dims(tf.expand_dims(scale_factor, 1), 1)
+            x_hat = x_hat*tf.expand_dims(scale_factor, -1)
             x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
             # Negative Log-Likelihood Loss function
 
@@ -430,7 +430,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             self.add_loss(neg_E_nb)
 
         if not pre_train:            
-            pi_norm, mu, log_p_z = self.GMM(z, inference=False)
+            log_p_z = self.GMM(z, inference=False)
 
             # - E_q[log p(z)]
             self.add_loss(- log_p_z)
