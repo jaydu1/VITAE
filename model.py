@@ -114,7 +114,9 @@ class Decoder(Layer):
             tau = tf.exp(self.log_tau)
             return nu_z, tau
         else:
-            lambda_z = tf.math.exp(self.log_lambda_z(z))
+            lambda_z = tf.math.exp(
+                tf.clip_by_value(self.log_lambda_z(z), -30., 6.)
+                )
             r = tf.exp(self.log_r)
             if self.data_type=='UMI':
                 return lambda_z, r
