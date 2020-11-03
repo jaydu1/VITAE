@@ -7,6 +7,7 @@ from skmisc import loess
 from sklearn import preprocessing
 import warnings
 from sklearn.decomposition import PCA
+from utils import _check_expression, _check_variability
 
 def log_norm(x, K = 1e4):
     """
@@ -21,37 +22,31 @@ def log_norm(x, K = 1e4):
     return x_normalized, scale_factor
 
 
-def feature_select(x, c, gene_num = 2000):
+def feature_select(x, gene_num = 2000):
     # https://www.biorxiv.org/content/biorxiv/early/2018/11/02/460147.full.pdf
     # Page 12-13: Data preprocessing - Feature selection for individual datasets
 
-    # no expression cell
-    expressed = np.where(np.sum(x,axis=1) != 0)[0]
-    x = x[expressed,:]
-    if c is not None:
-        c = c[expressed,:]
-    
-    # mean and variance of each gene of the unnormalized data
     n, p = x.shape
+
+    # mean and variance of each gene of the unnormalized data  
     mean, var = np.mean(x, axis=0), np.var(x, axis=0, ddof=1)
 
     # model log10(var)~log10(mean) by local fitting of polynomials of degree 2
-    loess_model = loess.loess(np.log10(mean[var>0]), np.log10(var[var>0]), 
+    loess_model = loess.loess(np.log10(mean), np.log10(var), 
                     span = 0.3, degree = 2, family='gaussian'
                     )
     loess_model.fit()
     fitted = loess_model.outputs.fitted_values
 
     # standardized feature
-    z = (x[:,var>0] - mean[var>0])/np.sqrt(10**fitted)
+    z = (x - mean)/np.sqrt(10**fitted)
 
     # clipped the standardized features to remove outliers
     z = np.clip(z, -np.inf, np.sqrt(n))
 
     # the variance of standardized features across all cells represents a measure of
-    # single cell dispersion after controlling for mean expression
-    feature_score = np.zeros(p, np.float32)
-    feature_score[var>0] = np.sum(z**2, axis=0)/(n-1)
+    # single cell dispersion after controlling for mean expression    
+    feature_score = np.sum(z**2, axis=0)/(n-1)
     
     # feature selection
     index = feature_score.argsort()[::-1][0:gene_num]
@@ -62,7 +57,7 @@ def feature_select(x, c, gene_num = 2000):
     plt.hlines(np.log(threshold), 1, p)
     plt.show()
     
-    return x[:, index], c, index, expressed
+    return x[:, index], index
     
 
 def label_encoding(labels):
@@ -75,24 +70,40 @@ def label_encoding(labels):
 def preprocess(x, c, label_names, raw_cell_names, raw_gene_names, 
                 data_type, K = 1e4, gene_num = 2000,  npc = 64):
     '''
+    Preprocess count data.
     Params: 
-    x               - raw count matrix
-    c               - covariate matrix
-    label_names     - true or estimated cell types
-    raw_cell_names  - names of cells
-    raw_gene_names  - names of genes
-    K               - sum number related to scale_factor
-    gene_num        - total number of genes to select    
-    data_type       - 'UMI', 'non-UMI' and 'Gaussian'
-    npc             - Number of PCs, used if 'data_type' is 'Gaussian'
+        x               - raw count matrix
+        c               - covariate matrix
+        label_names     - true or estimated cell types
+        raw_cell_names  - names of cells
+        raw_gene_names  - names of genes
+        K               - sum number related to scale_factor
+        gene_num        - total number of genes to select    
+        data_type       - 'UMI', 'non-UMI' and 'Gaussian'
+        npc             - Number of PCs, used if 'data_type' is 'Gaussian'
     '''
+    # remove cells that have no expression
+    expressed = _check_expression(x)
+    print('Removing %d cells without expression.'%(np.sum(expressed==0)))
+    x = x[expressed==1,:]    
+    if c is not None:
+        c = c[expressed==1,:]
+    if label_names is None:
+        label_names = label_names[expressed==1]        
+    
+    # remove genes without variability
+    variable = _check_variability(x)
+    print('Removing %d genes without variability.'%(np.sum(variable==0)))
+    x = x[:, variable==1]
+    if raw_gene_names is not None:
+        raw_gene_names = raw_gene_names[variable==1]
+
     # log-normalization
     x_normalized, scale_factor = log_norm(x, K)
     
     # feature selection
-    x, c, index, expressed = feature_select(x, c, gene_num)
-    x_normalized = x_normalized[expressed, :][:, index]
-    scale_factor = scale_factor[expressed, :]
+    x, index = feature_select(x, gene_num)
+    x_normalized = x_normalized[:, index]
     
     # per-gene standardization
     gene_scalar = preprocessing.StandardScaler()
@@ -111,7 +122,6 @@ def preprocess(x, c, label_names, raw_cell_names, raw_gene_names,
         labels = None
         le = None
     else:
-        label_names = label_names[expressed]
         le = preprocessing.LabelEncoder()
         labels = le.fit_transform(label_names)
         print('Number of cells in each class: ')
@@ -121,7 +131,7 @@ def preprocess(x, c, label_names, raw_cell_names, raw_gene_names,
         table = table.sort_index()
         print(table)
         
-    cell_names = np.char.add('c_', expressed.astype(str)) if raw_cell_names is None else raw_cell_names[expressed]
+    cell_names = np.char.add('c_', expressed.astype(str)) if raw_cell_names is None else raw_cell_names
     gene_names = np.char.add('g_', index.astype(str)) if raw_gene_names is None else raw_gene_names[index]
 
     return x_normalized, x, c, cell_names, gene_names, scale_factor, labels, label_names, le, gene_scalar

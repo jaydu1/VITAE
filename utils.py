@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 import os     
 import numpy as np
+import numba
+from numba import jit, float32, int32
 import pandas as pd
 import h5py
 
@@ -57,6 +59,31 @@ class Early_Stopping():
 #------------------------------------------------------------------------------
 # Utils functions
 #------------------------------------------------------------------------------
+
+@jit((float32[:,:],), nopython=True, nogil=True)
+def _check_expression(A):
+    n_rows = A.shape[0]
+    out = np.ones(n_rows, dtype=int32)
+    for i in range(n_rows):        
+        for j in A[i,:]:
+            if j>0.0:
+                break
+        else:
+            out[i] = 0
+    return out
+
+@jit((float32[:,:],), nopython=True, nogil=True)
+def _check_variability(A):
+    n_cols = A.shape[1]
+    out = np.ones(n_cols, dtype=int32)
+    for i in range(n_cols):
+        init = A[0, i]
+        for j in A[1:, i]:
+            if j != init:
+                break
+        else:
+            out[i] = 0
+    return out
 
 
 def get_igraph(z):
