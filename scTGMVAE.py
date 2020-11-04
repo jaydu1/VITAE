@@ -35,6 +35,8 @@ class scTGMVAE():
         '''
         if (adata is None) & (X is None):
             raise ValueError("Either X or adata should be given!")
+        if (adata is None) & (X is None):
+            warnings.warn("Both X and adata are given, will use adata!")
 
         self.adata = adata
         self.raw_X = None if X is None else X.astype(np.float32)
