@@ -258,7 +258,7 @@ def load_data(path, file_name):
             data['root_milestone_id'] = None
             
         if file_name in ['mouse_brain']:
-            data['grouping'] = np.array(['%02d'%int(i) for i in data['grouping']])
+            data['grouping'] = np.array(['%02d'%int(i) for i in data['grouping']], dtype=str)
             data['root_milestone_id'] = '06'
             data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
 
