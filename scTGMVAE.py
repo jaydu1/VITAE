@@ -22,16 +22,22 @@ class scTGMVAE():
     def __init__(self):
         pass
 
-    def get_data(self, X, labels = None, covariate=None, cell_names = None, gene_names = None):
+    def get_data(self, X = None, adata = None, labels = None,
+                 covariate=None, cell_names = None, gene_names = None):
         ''' get data for model
         Params:
+            adata       - a scanpy object
             X:          - 2-dimension np array, counts or expressions data
             covariate   - 2-dimension np array, covariate data
             labels:     - (optional) a list of labelss for cells
             cell_names  - (optional) a list of cell names
             gene_names  - (optional) a list of gene names
         '''
-        self.raw_X = X.astype(np.float32)
+        if (adata is None) & (X is None):
+            raise ValueError("Either X or adata should be given!")
+
+        self.adata = adata
+        self.raw_X = None if X is None else X.astype(np.float32)
         self.c_score = None if covariate is None else np.array(covariate, np.float32)
         if sp.sparse.issparse(self.raw_X):
             self.raw_X = self.raw_X.toarray()
@@ -40,10 +46,13 @@ class scTGMVAE():
         self.raw_gene_names = None if gene_names is None else np.array(gene_names, dtype = str)
 
         
-    def preprocess_data(self, K = 1e4, gene_num = 2000, data_type = 'UMI', npc = 64):
+    def preprocess_data(self, processed = False, dimred = False,
+                        K = 1e4, gene_num = 2000, data_type = 'UMI', npc = 64):
         ''' data preprocessing, feature selection, log-normalization
-            This step will transform both X and X_normalized into PCs and equal if Gaussian_input
+            If input with processed scanpy object, data type is set to Gaussian
         Params:
+            processed       - whether adata has been processed
+            dimred          - whether the processed adata is after dimension reduction
             K               - the constant summing gene expression in each cell up to
             gene_num        - number of feature to select
             data_type       - 'UMI', 'non-UMI' and 'Gaussian', default is 'UMI'
@@ -52,10 +61,17 @@ class scTGMVAE():
         if data_type not in set(['UMI', 'non-UMI', 'Gaussian']):
             raise ValueError("Invalid data type, must be one of 'UMI', 'non-UMI', and 'Gaussian'.")
 
-        self.data_type = data_type
+        if (self.adata is not None) & processed:
+            self.data_type = 'Gaussian'
+        else:
+            self.data_type = data_type
+
         self.X_normalized, self.X, self.c_score, self.cell_names, self.gene_names, \
         self.scale_factor, self.labels, self.label_names, \
         self.le, self.gene_scalar = preprocess.preprocess(
+            self.adata,
+            processed,,
+            dimred,
             self.raw_X.copy(),
             self.c_score,
             self.raw_label_names,
@@ -65,8 +81,9 @@ class scTGMVAE():
         self.dim_origin = self.X.shape[1]
         self.selected_cell_subset = self.cell_names
         self.selected_cell_subset_id = np.arange(len(self.cell_names))
+        self.adata = None
 
-        
+
     def build_model(self,
         dimensions = [16],
         dim_latent = 8,   

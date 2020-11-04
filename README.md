@@ -22,7 +22,7 @@ We recommend to use `conda` or `miniconda` to manage Python environment. For Mac
 ```
 >>> conda create --name scTrajVAE python=3.6 -y
 >>> conda activate scTrajVAE
->>> conda install pandas jupyter umap-learn matplotlib numba seaborn scikit-learn -y
+>>> conda install pandas jupyter umap-learn matplotlib numba seaborn scanpy scikit-learn -y
 >>> yes | pip3 install tensorflow==2.2 louvain scikit-misc networkx python-igraph
 ```
 

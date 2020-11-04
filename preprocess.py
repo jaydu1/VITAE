@@ -8,6 +8,7 @@ from sklearn import preprocessing
 import warnings
 from sklearn.decomposition import PCA
 from utils import _check_expression, _check_variability
+import scanpy as sc
 
 def log_norm(x, K = 1e4):
     """
@@ -67,11 +68,14 @@ def label_encoding(labels):
     return y, le
 
 
-def preprocess(x, c, label_names, raw_cell_names, raw_gene_names, 
-                data_type, K = 1e4, gene_num = 2000,  npc = 64):
+def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
+               raw_gene_names, data_type, K = 1e4, gene_num = 2000,  npc = 64):
     '''
     Preprocess count data.
-    Params: 
+    Params:
+        adata           - a scanpy object
+        processed       - whether adata has been processed
+        dimred          - whether the processed adata is after dimension reduction
         x               - raw count matrix
         c               - covariate matrix
         label_names     - true or estimated cell types
@@ -82,40 +86,72 @@ def preprocess(x, c, label_names, raw_cell_names, raw_gene_names,
         data_type       - 'UMI', 'non-UMI' and 'Gaussian'
         npc             - Number of PCs, used if 'data_type' is 'Gaussian'
     '''
-    # remove cells that have no expression
-    expressed = _check_expression(x)
-    print('Removing %d cells without expression.'%(np.sum(expressed==0)))
-    x = x[expressed==1,:]    
-    if c is not None:
-        c = c[expressed==1,:]
-    if label_names is None:
-        label_names = label_names[expressed==1]        
+    # if input is a scanpy data
+    if adata is not None:
+        # if the input scanpy is processed
+        if processed: 
+            x_normalized = x = adata.X
+            if dimred is False:
+                pca = PCA(n_components = npc)
+                x_normalized = x = pca.fit_transform(x_normalized)
+            scale_factor = None
+        # if the input scanpy is not processed
+        else: 
+            x = adata.X.copy()
+            adata, cell_mask, gene_mask, gene_mask2 = recipe_seurat(adata, gene_num)
+            x_normalized = adata.X.copy()
+            scale_factor = adata.obs.counts_per_cell.values / 1e4
+            x = x[cell_mask,:][:,gene_mask][:,gene_mask2]
+        try:
+            label_names = adata.obs.cell_types
+        except:
+            if label_names is not None:
+                label_names = label_names[cell_mask]
+        
+        cell_names = adata.obs_names.values
+        gene_names = adata.var_names.values
+        gene_scalar = None
     
-    # remove genes without variability
-    variable = _check_variability(x)
-    print('Removing %d genes without variability.'%(np.sum(variable==0)))
-    x = x[:, variable==1]
-    if raw_gene_names is not None:
-        raw_gene_names = raw_gene_names[variable==1]
+    # if input is a count matrix
+    else:
+        # remove cells that have no expression
+        expressed = _check_expression(x)
+        print('Removing %d cells without expression.'%(np.sum(expressed==0)))
+        x = x[expressed==1,:]    
+        if c is not None:
+            c = c[expressed==1,:]
+        if label_names is None:
+            label_names = label_names[expressed==1]        
+        
+        # remove genes without variability
+        variable = _check_variability(x)
+        print('Removing %d genes without variability.'%(np.sum(variable==0)))
+        x = x[:, variable==1]
+        if raw_gene_names is not None:
+            raw_gene_names = raw_gene_names[variable==1]
 
-    # log-normalization
-    x_normalized, scale_factor = log_norm(x, K)
+        # log-normalization
+        x_normalized, scale_factor = log_norm(x, K)
+        
+        # feature selection
+        x, index = feature_select(x, gene_num)
+        x_normalized = x_normalized[:, index]
+        
+        # per-gene standardization
+        gene_scalar = preprocessing.StandardScaler()
+        x_normalized = gene_scalar.fit_transform(x_normalized)
     
-    # feature selection
-    x, index = feature_select(x, gene_num)
-    x_normalized = x_normalized[:, index]
-    
-    # per-gene standardization
-    gene_scalar = preprocessing.StandardScaler()
-    x_normalized = gene_scalar.fit_transform(x_normalized)
+        cell_names = np.char.add('c_', expressed.astype(str)) if raw_cell_names is None else raw_cell_names
+        gene_names = np.char.add('g_', index.astype(str)) if raw_gene_names is None else raw_gene_names[index]
+
+
+    if (data_type=='Gaussian') & (processed is False):
+        pca = PCA(n_components = npc)
+        x_normalized = x = pca.fit_transform(x_normalized)
 
     if c is not None:
         c_scalar = preprocessing.StandardScaler()
         c = c_scalar.fit_transform(c)
-    
-    if data_type=='Gaussian':
-        pca = PCA(n_components = npc)
-        x_normalized = x = pca.fit_transform(x_normalized)
 
     if label_names is None:
         warnings.warn('No labels for cells!')
@@ -131,9 +167,23 @@ def preprocess(x, c, label_names, raw_cell_names, raw_gene_names,
         table = table.sort_index()
         print(table)
         
-    cell_names = np.char.add('c_', expressed.astype(str)) if raw_cell_names is None else raw_cell_names
-    gene_names = np.char.add('g_', index.astype(str)) if raw_gene_names is None else raw_gene_names[index]
-
     return x_normalized, x, c, cell_names, gene_names, scale_factor, labels, label_names, le, gene_scalar
 
 
+def recipe_seurat(adata, gene_num):
+    """
+    Normalization and filtering as of Seurat [Satija15]_.
+    This uses a particular preprocessing
+    """
+    cell_mask = sc.pp.filter_cells(adata, min_genes=200,inplace=False)[0]
+    adata = adata[cell_mask,:]
+    gene_mask = sc.pp.filter_genes(adata, min_cells=3,inplace=False)[0]
+    adata = adata[:,gene_mask]
+    sc.pp.normalize_total(adata, target_sum=1e4,key_added='counts_per_cell')
+    filter_result = sc.pp.filter_genes_dispersion(
+        adata.X, min_mean=0.0125, max_mean=3, min_disp=0.5, log=False, n_top_genes=gene_num)
+
+    adata._inplace_subset_var(filter_result.gene_subset)  # filter genes
+    sc.pp.log1p(adata)
+    sc.pp.scale(adata, max_value=10)
+    return adata, cell_mask, gene_mask, filter_result.gene_subset
