@@ -180,6 +180,24 @@ class scTGMVAE():
         
     
     def init_GMM(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
+        n_states = int((n_clusters + 1) * n_clusters / 2)
+        cluster_center = [int((n_clusters + (1-i)/2)*i) for i in range(n_clusters)]
+        if cluster_labels is None:
+            cluster_labels = model.labels
+
+        if (cluster_labels is None) and (mu is None | log_pi is None):
+            raise ValueError("Either cluster_labels or mu and log_pi should be given,\
+                                 otherwise cannot initialize GMM")
+        z = self.get_latent_z()
+        if mu is None:
+            mu = np.zeros((z.shape[1], n_clusters))
+            for i,l in enumerate(np.unique(cluster_labels)):
+                mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+        if log_pi is None:
+            log_pi = np.ones((1, n_states)) * (-16)
+            for i,l in enumerate(np.unique(cluster_labels)):
+                log_pi[0, cluster_center[i]] = np.log(np.mean(cluster_labels==l))
+
         self.n_clusters = n_clusters
         self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
         self.vae.init_GMM(n_clusters, mu, log_pi)
