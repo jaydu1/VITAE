@@ -120,7 +120,7 @@ def train(train_dataset, test_dataset, vae,
         loss_E_qzx.reset_states()
 
         if plot_every_num_epoch is not None and (epoch%plot_every_num_epoch==0 or epoch==NUM_EPOCH-1):
-            _, mu, _, _, _, _, _, _, w_tilde, _, _, z_mean = vae.inference(test_dataset, 1)
+            _, mu, _, w_tilde, _, _, z_mean = vae.inference(test_dataset, 1)
             c = np.argmax(w_tilde, axis=-1)
             
             fit = umap.UMAP()
