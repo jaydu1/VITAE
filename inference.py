@@ -1,12 +1,15 @@
+
+import os
+import warnings
+
 import pandas as pd
 import numpy as np
-import os
-import matplotlib
-import matplotlib.pyplot as plt
 from scipy.interpolate import splrep, splev
-import warnings
 import networkx as nx
 import umap
+import matplotlib
+import matplotlib.pyplot as plt
+
 
 class Inferer(object):
     def __init__(self, NUM_CLUSTER):
@@ -114,9 +117,9 @@ class Inferer(object):
             fig, ax = plt.subplots(1,1, figsize=(20, 10))
             for i,x in enumerate(np.unique(labels)):
                 ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                    s=8, alpha=0.8, label=str(x))
+                    s=8, alpha=0.6, label=str(x))
                 ax.text(np.mean(self.embed_z[labels==x,0]), 
-                        np.mean(self.embed_z[labels==x,1]), str(x), fontsize=12)
+                        np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
             box = ax.get_position()
             ax.set_position([box.x0, box.y0 + box.height * 0.1,
                              box.width, box.height * 0.9])
@@ -258,7 +261,7 @@ class Inferer(object):
                             edgecolors='white', # linewidths=10,
                             norm=norm,
                             s=250, marker='*', label=str(i))
-                ax.text(self.embed_mu[i,0], self.embed_mu[i,1], '%02d'%i, fontsize=12)
+                ax.text(self.embed_mu[i,0], self.embed_mu[i,1], '%02d'%i, fontsize=16)
                 
             plt.setp(ax, xticks=[], yticks=[])
             box = ax.get_position()

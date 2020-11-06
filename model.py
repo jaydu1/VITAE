@@ -1,14 +1,33 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Layer, Dense, BatchNormalization
-import numpy as np
-import math
+import tensorflow_probability as tfp
 
+ 
+class cdf_layer(Layer):
+    def __init__(self):
+        super(cdf_layer, self).__init__()
+        
+    @tf.function
+    def call(self, x):
+        return self.func(x)
+        
+    @tf.custom_gradient
+    def func(self, x):
+        dist = tfp.distributions.Normal(loc=0., scale=1., allow_nan_stats=False)
+        f = dist.cdf(x)
+        def grad(dy):
+            gradient = dist.prob(x)
+            return dy * gradient
+        return f, grad
+    
 
 class Sampling(Layer):
     """
     Sampling latent variable z by (z_mean, z_log_var).    
     Used in Encoder.
     """
+    @tf.function
     def call(self, z_mean, z_log_var):
         epsilon = tf.random.normal(shape = tf.shape(z_mean))
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
@@ -36,7 +55,8 @@ class Encoder(Layer):
         self.latent_mean = Dense(dim_latent, name = 'latent_mean')
         self.latent_log_var = Dense(dim_latent, name = 'latent_log_var')
         self.sampling = Sampling()
-
+    
+    @tf.function
     def call(self, x, L=1, is_training=True):
         '''
         Input :
@@ -94,7 +114,8 @@ class Decoder(Layer):
             
             if self.data_type == 'non-UMI':
                 self.phi = Dense(dim_origin, activation = 'sigmoid', name = "phi")
-            
+          
+    @tf.function  
     def call(self, z, is_training=True):
         '''
         Input :
@@ -124,19 +145,19 @@ class Decoder(Layer):
                 return lambda_z, r, self.phi(z)
 
 
-class GMM(Layer):
+class LatentSpace(Layer):
     '''
-    GMM layer.
-    It contains parameters related to model assumptions of GMM.
+    Layer for the Latent Space.
+    It contains parameters related to model assumptions.
     '''
-    def __init__(self, n_clusters, dim_latent, M = 100, name = 'GMM', **kwargs):
+    def __init__(self, n_clusters, dim_latent, M = 100, name = 'LatentSpace', **kwargs):
         '''
         Input:
           dim_latent   - dimension of latent layer.
           dim_origin - dimension of output layer.
           M            - number of samples for w.
         '''
-        super(GMM, self).__init__(name=name, **kwargs)
+        super(LatentSpace, self).__init__(name=name, **kwargs)
         self.dim_latent = dim_latent
         self.n_clusters = n_clusters
         self.n_states = int(n_clusters*(n_clusters+1)/2)
@@ -149,7 +170,6 @@ class GMM(Layer):
         self.B = tf.convert_to_tensor(self.B, tf.int32)
         self.clusters_ind = tf.boolean_mask(
             tf.range(0,self.n_states,1), self.A==self.B)
-
 
         # Uniform random variable
         self.M = tf.convert_to_tensor(M, tf.int32)
@@ -164,9 +184,11 @@ class GMM(Layer):
         self.mu = tf.Variable(tf.random.uniform([self.dim_latent, self.n_clusters],
                                                 minval = -1, maxval = 1),
                                 name = 'mu')
+        self.cdf_layer = cdf_layer()       
+        
 
     def initialize(self, mu, pi):
-        # Initialize parameters of GMM
+        # Initialize parameters of the latent space
         if mu is not None:
             self.mu.assign(mu)
         if pi is not None:
@@ -175,21 +197,49 @@ class GMM(Layer):
     def normalize(self):
         self.pi = tf.nn.softmax(self.pi)
 
-    def call(self, z, inference=False):
-        '''
-        Input :
-                z       - latent variables outputed by the encoder
-                          [batch_size, L, dim_latent]
-        Output:
-                p_z     - MC samples for p(z)=sum_{c,w}(p_zc_w)/M
-                          [batch_size, ]
-                p_zc_w  - MC samples for p(z,c|w)=p(z|w,c)p(c) (L=1)
-                          [batch_size, n_states, M]
-        '''
+    @tf.function
+    def _get_normal_params(self, z):
         batch_size = tf.shape(z)[0]
         L = tf.shape(z)[1]
         
-        res = {}
+        # [batch_size, L, n_states]
+        temp_pi = tf.tile(
+            tf.expand_dims(tf.nn.softmax(self.pi), 1),
+            (batch_size,L,1))
+                        
+        # [batch_size, L, d, n_states]
+        a1 = tf.expand_dims(tf.expand_dims(
+            tf.gather(self.mu, self.B, axis=1) - tf.gather(self.mu, self.A, axis=1), 0), 0)
+        a2 = tf.expand_dims(z,-1) - \
+            tf.expand_dims(tf.expand_dims(
+            tf.gather(self.mu, self.B, axis=1), 0), 0)
+            
+        # [batch_size, L, n_states]
+        _inv_sig = tf.reduce_sum(a1 * a1, axis=2)
+        _mu = - tf.reduce_sum(a1 * a2, axis=2)*tf.math.reciprocal_no_nan(_inv_sig)
+        _t = - tf.reduce_sum(a2 * a2, axis=2) + _mu**2*_inv_sig
+        return temp_pi, a2, _inv_sig, _mu, _t
+    
+    @tf.function
+    def _get_pz(self, temp_pi, _inv_sig, a2, log_p_z_c_L):
+        # [batch_size, L, n_states]
+        log_p_zc_L = - 0.5 * self.dim_latent * tf.math.log(2 * np.pi) + \
+            tf.math.log(temp_pi+1e-12) + \
+            tf.where(_inv_sig==0, 
+                    - 0.5 * tf.reduce_sum(a2**2, axis=2), 
+                    log_p_z_c_L)
+        
+        # [batch_size, L, 1]
+        log_p_z_L = tf.reduce_logsumexp(log_p_zc_L, axis=-1, keepdims=True)
+        
+        # [1, ]
+        log_p_z = tf.reduce_mean(log_p_z_L)
+        return log_p_zc_L, log_p_z_L, log_p_z
+    
+    @tf.function
+    def _get_inference(self, z, log_p_zc_L, log_p_z_L):
+        batch_size = tf.shape(z)[0]
+        L = tf.shape(z)[1]
         
         # [batch_size, L, dim_latent, n_states, M]
         temp_Z = tf.tile(tf.expand_dims(tf.expand_dims(z,-1), -1),
@@ -209,129 +259,94 @@ class GMM(Layer):
                         tf.expand_dims(tf.nn.softmax(self.pi), -1), 1),
                         (batch_size,L,1,self.M))
         
-        # [batch_size, L, M]
-        log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(2 * math.pi) + \
-                        tf.math.log(temp_pi+1e-30) - \
+        # [batch_size, L, n_states, M]
+        log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(2 * np.pi) + \
+                        tf.math.log(temp_pi+1e-12) - \
                         tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2  # this omits a term -logM for avoiding numerical issue
         
-        # [batch_size, L]
-        log_p_z_L = tf.reduce_logsumexp(log_p_zc_w, axis=[2,3]) # this omits a term -logM for avoiding numerical issue
+        # log_p_c_x     -   predicted probability distribution
+        # [batch_size, n_states]
+        log_p_c_x = tf.reduce_logsumexp(
+                        log_p_zc_L - log_p_z_L,
+                    axis=1) - tf.math.log(tf.cast(L, tf.float32))
                         
-        # [1, ]
-        log_p_z = tf.reduce_mean(log_p_z_L) - tf.math.log(tf.cast(self.M, tf.float32))
-                            
+        # [batch_size, L]
+        log_p_z_L = tf.expand_dims(tf.reduce_logsumexp(log_p_zc_w, axis=[2,3]), -1) # this omits a term -logM for avoiding numerical issue
+                    
+        # [batch_size, n_states, M]
+        p_wc_x = tf.exp(tf.reduce_logsumexp(
+                    log_p_zc_w -
+                    tf.expand_dims(log_p_z_L, -1),
+                    1) - tf.math.log(tf.cast(L, tf.float32)))
+                    
+        # [batch_size, n_states, n_clusters, M]
+        _w = tf.tile(tf.expand_dims(
+                tf.tile(tf.expand_dims(
+                    tf.one_hot(self.A, self.n_clusters),
+                    -1), (1,1,self.M)) * self.w +
+                tf.tile(tf.expand_dims(
+                    tf.one_hot(self.B, self.n_clusters),
+                    -1), (1,1,self.M)) * (1-self.w), 0), (batch_size,1,1,1))
+                    
+        # [batch_size, n_clusters]
+        w_tilde = tf.reduce_sum(
+            _w  * \
+            tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
+            (1,3))
+            
+        var_w_tilde = tf.reduce_sum(
+            tf.math.square(_w)  *
+            tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
+            (1,3)) - tf.square(w_tilde)    
+        
+        _wtilde = tf.expand_dims(tf.expand_dims(w_tilde, 1), -1)
+        D_JS = tf.reduce_sum(
+            tf.math.sqrt(
+                0.5 * tf.reduce_mean(
+                    _w * tf.math.log(
+                        _w/(0.5 * (_w + _wtilde) + 1e-12) + 1e-12) +
+                    _wtilde * tf.math.log(
+                        _wtilde/(0.5 * (_w + _wtilde) + 1e-12) + 1e-12),
+                    axis=2)) * \
+            p_wc_x, (1,2)) / tf.cast(self.M, tf.float32)
+        return log_p_c_x, w_tilde, var_w_tilde, D_JS
+    
+    def call(self, z, inference=False):
+        '''
+        Input :
+                z       - latent variables outputed by the encoder
+                          [batch_size, L, dim_latent]
+        Output:       
+            inference = True:     
+                log_p_z - MC samples for log p(z)=log sum_{c}p(z|c)*p(c)
+                          [batch_size, ]
+            inference = False:
+                res     - results contains estimations for 
+                            p(c|x), E(w|x), Var(w|x), E(w|x,c), Var(w|x,c), 
+                            c, E(w_tilde), Var(w_tilde), D_JS
+        '''   
+        temp_pi, a2, _inv_sig, _mu, _t = self._get_normal_params(z)
+        
+        log_p_z_c_L =  0.5 * (tf.math.log(2 * np.pi) - \
+                        tf.math.log(_inv_sig+1e-12) + \
+                        _t
+                        ) + \
+                        tf.math.log(self.cdf_layer((1-_mu)*tf.math.sqrt(_inv_sig+1e-12)) - 
+                                    self.cdf_layer(-_mu*tf.math.sqrt(_inv_sig+1e-12)) + 1e-12)
+        
+        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
+
         if not inference:
             return log_p_z
         else:
-            # log_p_c_x     -   predicted probability distribution
-            # [batch_size, n_states]
-            log_p_c_x = tf.reduce_logsumexp(
-                            tf.reduce_logsumexp(
-                                log_p_zc_w, axis=-1) -
-                            tf.expand_dims(log_p_z_L, -1),
-                        axis=1) - tf.math.log(tf.cast(L, tf.float32))
+            
+            log_p_c_x, w_tilde, var_w_tilde, D_JS = self._get_inference(z, log_p_zc_L, log_p_z_L)
+            
+            res = {}
             res['p_c_x'] = tf.exp(log_p_c_x).numpy()
-            
-            # c         -   predicted clusters
-            c = tf.math.argmax(log_p_c_x, axis=-1)
-            c = tf.cast(c, 'int32')
-
-            # w         -   E(w|x)
-            # [batch_size, M]
-            p_w_x = tf.reduce_mean(tf.exp(
-                        tf.reduce_logsumexp(log_p_zc_w, axis=2) -
-                        tf.expand_dims(log_p_z_L, -1)
-                        ), axis=1) # this omits a term M for avoiding numerical issue
-            
-            # [batch_size, ]
-            w =  tf.reduce_sum(
-                    tf.tile(self.w, (batch_size,1)) * p_w_x, axis=-1
-                    )
-            res['w_x'] = w.numpy()
-            
-            # var_w     -   Var(w|x)
-            var_w =  tf.reduce_sum(
-                        tf.square(
-                            tf.tile(self.w, (batch_size,1))
-                            ) * p_w_x, axis=-1
-                        ) - tf.square(w)
-            res['var_w_x'] = var_w.numpy()
-            
-            # w|c       -   E(w|x,c)
-            # [batch_size, L, M]
-            map_log_p_zc_w = tf.gather_nd(log_p_zc_w,
-                                tf.reshape(
-                                tf.stack([tf.repeat(tf.range(batch_size), L),
-                                        tf.tile(tf.range(L), [batch_size]),
-                                        tf.repeat(c, L)], 1), [batch_size, L, -1])) # this omits a term M for avoiding numerical issue
-            
-            # [batch_size, M]
-            p_w_xc = tf.exp(tf.reduce_logsumexp(
-                    map_log_p_zc_w -
-                    tf.expand_dims(log_p_z_L, -1), axis=1) -
-                    tf.expand_dims(tf.gather_nd(log_p_c_x,
-                                list(zip(np.arange(batch_size),
-                                        c.numpy()))), -1)) / tf.cast(L, tf.float32)
-                
-            wc = tf.reduce_sum(
-                        tf.tile(self.w, (batch_size,1)) * p_w_xc, axis=-1
-                    )
-            res['w_xc'] = wc.numpy()
-                        
-            # var_w|c   -   Var(w|x,c)
-            var_wc = tf.reduce_mean(
-                        tf.square(
-                            tf.tile(self.w, (batch_size,1))
-                            ) * p_w_xc, axis=-1
-                        ) - tf.square(wc)
-            res['var_w_xc'] = var_wc.numpy()
-            
-            c = tf.where(wc>1e-3, c,
-                        tf.gather(self.clusters_ind, tf.gather(self.B, c)))
-            c = tf.where(wc<1-1e-3, c,
-                        tf.gather(self.clusters_ind, tf.gather(self.A, c)))
-            res['c'] = c.numpy()
-            
-            # [batch_size, n_states, M]
-            p_wc_x = tf.exp(tf.reduce_logsumexp(
-                        log_p_zc_w -
-                        tf.expand_dims(tf.expand_dims(log_p_z_L, -1), -1),
-                        1) - tf.math.log(tf.cast(L, tf.float32)))
-            res['p_wc_x'] = p_wc_x.numpy()
-            
-            # [batch_size, n_states, n_clusters, M]
-            _w = tf.tile(tf.expand_dims(
-                    tf.tile(tf.expand_dims(
-                        tf.one_hot(self.A, self.n_clusters),
-                        -1), (1,1,self.M)) * self.w +
-                    tf.tile(tf.expand_dims(
-                        tf.one_hot(self.B, self.n_clusters),
-                        -1), (1,1,self.M)) * (1-self.w), 0), (batch_size,1,1,1))
-                        
-            # [batch_size, n_clusters]
-            w_tilde = tf.reduce_sum(
-                _w  * \
-                tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-                (1,3))
             res['w_tilde'] = w_tilde.numpy()
-            
-            var_w_tilde = tf.reduce_sum(
-                tf.math.square(_w)  *
-                tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-                (1,3)) - tf.square(w_tilde)
             res['var_w_tilde'] = var_w_tilde.numpy()
-            
-            # Jensen–Shannon divergence
-            _wtilde = tf.expand_dims(tf.expand_dims(w_tilde, 1), -1)
-            res['D_JS'] = tf.reduce_sum(
-                tf.math.sqrt(
-                    0.5 * tf.reduce_mean(
-                        _w * tf.math.log(
-                            _w/(0.5 * (_w + _wtilde) + 1e-12) + 1e-12) +
-                        _wtilde * tf.math.log(
-                            _wtilde/(0.5 * (_w + _wtilde) + 1e-12) + 1e-12),
-                        axis=2)) * \
-                p_wc_x, (1,2)) / tf.cast(self.M, tf.float32).numpy()
+            res['D_JS'] = D_JS.numpy()
             return res
 
     def get_proj_z(self, c):
@@ -351,7 +366,7 @@ class GMM(Layer):
             
 class VariationalAutoEncoder(tf.keras.Model):
     """
-    Combines the encoder, decoder and GMM into an end-to-end model for training.
+    Combines the encoder, decoder and LatentSpace into an end-to-end model for training.
     """
     def __init__(self, dim_origin, dimensions, dim_latent,
                  data_type = 'UMI', has_cov=False,
@@ -376,16 +391,16 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.decoder = Decoder(dimensions[::-1], dim_origin, data_type, data_type)        
         self.has_cov = has_cov
         
-    def init_GMM(self, n_clusters, mu, pi=None):
+    def init_latent_space(self, n_clusters, mu, pi=None):
         self.n_clusters = n_clusters
-        self.GMM = GMM(self.n_clusters, self.dim_latent)
-        self.GMM.initialize(mu, pi)
+        self.latent_space = LatentSpace(self.n_clusters, self.dim_latent)
+        self.latent_space.initialize(mu, pi)
 
     def call(self, x_normalized, c_score, x = None, scale_factor = 1,
              pre_train = False, L=1):
-        # Feed forward through encoder, GMM layer and decoder.
-        if not pre_train and self.GMM is None:
-            raise ReferenceError('Have not initialized GMM.')
+        # Feed forward through encoder, LatentSpace layer and decoder.
+        if not pre_train and self.latent_space is None:
+            raise ReferenceError('Have not initialized the latent space.')
                     
         x_normalized = tf.concat([x_normalized, c_score], -1) if self.has_cov else x_normalized
         _, z_log_var, z = self.encoder(x_normalized, L)
@@ -417,20 +432,20 @@ class VariationalAutoEncoder(tf.keras.Model):
             neg_E_nb = tf.math.lgamma(r) + tf.math.lgamma(x+1.0) \
                         - tf.math.lgamma(x+r) + \
                         (r+x) * tf.math.log(1.0 + (x_hat/r)) + \
-                        x * (tf.math.log(r) - tf.math.log(x_hat+1e-30))
+                        x * (tf.math.log(r) - tf.math.log(x_hat+1e-12))
             
             if self.data_type == 'non-UMI':
                 # Zero-Inflated Negative Binomial loss
-                nb_case = neg_E_nb - tf.math.log(1.0-phi+1e-30)
+                nb_case = neg_E_nb - tf.math.log(1.0-phi+1e-12)
                 zero_case = - tf.math.log(phi + (1.0-phi) *
-                                     tf.pow(r/(r + x_hat + 1e-30), r) + 1e-30)
+                                     tf.pow(r/(r + x_hat + 1e-12), r) + 1e-12)
                 neg_E_nb = tf.where(tf.less(x, 1e-8), zero_case, nb_case)
 
             neg_E_nb =  tf.reduce_mean(tf.reduce_sum(neg_E_nb, axis=-1))
             self.add_loss(neg_E_nb)
 
-        if not pre_train:            
-            log_p_z = self.GMM(z, inference=False)
+        if not pre_train:        
+            log_p_z = self.latent_space(z, inference=False)
 
             # - E_q[log p(z)]
             self.add_loss(- log_p_z)
@@ -438,7 +453,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             # - Eq[log q(z|x)]
             E_qzx = - tf.reduce_mean(
                             0.5 * self.dim_latent *
-                            (tf.math.log(2 * math.pi) + 1) +
+                            (tf.math.log(2 * np.pi) + 1) +
                             0.5 * tf.reduce_sum(z_log_var, axis=-1)
                             )
             self.add_loss(E_qzx)
@@ -454,40 +469,33 @@ class VariationalAutoEncoder(tf.keras.Model):
         Args:
             c - List of indexes of edges
         '''
-        return self.GMM.get_proj_z(c)
+        return self.latent_space.get_proj_z(c)
 
     def inference(self, test_dataset, L=1):
-        if self.GMM is None:
-            raise ReferenceError('Have not initialized GMM.')
+        if self.latent_space is None:
+            raise ReferenceError('Have not initialized the latent space.')
             
-        pi_norm = tf.nn.softmax(self.GMM.pi).numpy()
-        mu = self.GMM.mu.numpy()
+        pi_norm = tf.nn.softmax(self.latent_space.pi).numpy()
+        mu = self.latent_space.mu.numpy()
         z_mean = []
-        result = []
         p_c_x = []
-        p_wc_x = []
         w_tilde = []
         var_w_tilde = []
+        D_JS = []
         for x,c_score in test_dataset:
             x = tf.concat([x, c_score], -1) if self.has_cov else x
             _z_mean, _, z = self.encoder(x, L, False)
-            res = self.GMM(z, inference=True)
-            result.append(np.c_[res['c'], res['w_x'], res['var_w_x'], res['w_xc'], res['var_w_xc'], res['D_JS']])
-            p_c_x.append(res['p_c_x'])
+            res = self.latent_space(z, inference=True)
+            
             z_mean.append(_z_mean.numpy())
+            p_c_x.append(res['p_c_x'])            
             w_tilde.append(res['w_tilde'])
             var_w_tilde.append(res['var_w_tilde'])
-            p_wc_x.append(res['p_wc_x'])
-        c, w_x, var_w_x, w_xc, var_w_xc, D_JS = np.hsplit(np.concatenate(result), 6)
-        c = c[:,0].astype(np.int32)
-        w_x = w_x[:,0]
-        var_w_x = var_w_x[:,0]
-        w_xc = w_xc[:,0]
-        var_w_xc = var_w_xc[:,0]
-        D_JS = D_JS[:,0]
+            D_JS.append(res['D_JS'])
+        
+        D_JS = np.concatenate(D_JS)
         z_mean = np.concatenate(z_mean)
         p_c_x = np.concatenate(p_c_x)
         w_tilde = np.concatenate(w_tilde)
         var_w_tilde = np.concatenate(var_w_tilde)
-        p_wc_x = np.concatenate(p_wc_x)
-        return pi_norm, mu, c, p_c_x, p_wc_x, w_x, var_w_x, w_xc, var_w_xc, w_tilde, var_w_tilde, D_JS, z_mean
+        return pi_norm, mu, p_c_x, w_tilde, var_w_tilde, D_JS, z_mean

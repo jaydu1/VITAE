@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 import os     
 import numpy as np
-import numba
 from numba import jit, float32, int32
 import pandas as pd
 import h5py
@@ -26,9 +25,9 @@ class Early_Stopping():
         self.tolerance = tolerance
         self.is_minimize = is_minimize
 
-        self.step = 0
-        self.best_step = 0
-        self.best_metric = 0
+        self.step = -1
+        self.best_step = -1
+        self.best_metric = np.inf
 
         if not self.is_minimize:
             self.factor = -1.0
@@ -36,24 +35,19 @@ class Early_Stopping():
             self.factor = 1.0
 
     def __call__(self, metric):
-        if self.step == 0:
-            self.best_step = 1
-            self.best_metric = metric
-            self.step += 1
-            return False
-
         self.step += 1
-
-        if self.factor*metric<self.factor*self.best_metric-self.tolerance:
+        
+        if self.step < self.warmup:
+            return False
+        elif self.factor*metric<self.factor*self.best_metric-self.tolerance:
             self.best_metric = metric
             self.best_step = self.step
+            return False
         elif self.step - self.best_step>self.patience:
-            if self.step < self.warmup:
-                return False
-            else:
-                print('Best Epoch: %d. Best Metric: %f.'%(self.best_step, self.best_metric))
-                return True
-
+            print('Best Epoch: %d. Best Metric: %f.'%(self.best_step, self.best_metric))
+            return True
+        else:
+            return False
             
             
 #------------------------------------------------------------------------------

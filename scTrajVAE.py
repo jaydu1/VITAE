@@ -1,8 +1,3 @@
-import numpy as np
-import scipy as sp
-import pandas as pd
-import networkx as nx
-from sklearn.metrics.cluster import adjusted_rand_score
 import warnings
 import os
 
@@ -12,10 +7,17 @@ import train
 from inference import Inferer
 from utils import get_igraph, louvain_igraph, plot_clusters, load_data, plot_marker_gene
 from metric import topology, get_RI_continuous
+
+from sklearn.metrics.cluster import adjusted_rand_score
 from scipy.spatial.distance import pdist as dist
 import umap
+import numpy as np
+import scipy as sp
+import pandas as pd
+import networkx as nx
 
-class scTGMVAE():
+
+class scTrajVAE():
     """
     class for single-cell Trajectory Variational Autoencoder.
     """
@@ -91,7 +93,7 @@ class scTGMVAE():
         dimensions = [16],
         dim_latent = 8,   
         ):
-        ''' get parameters, wrap up training dataset and initialize the Variational Auto Encoder model
+        ''' Initialize the Variational Auto Encoder model.
         Params:
             dimensions          - a list of dimensions of layers of autoencoder between latent 
                                   space and original space
@@ -120,13 +122,13 @@ class scTGMVAE():
         Params:
             path_to_file - path to weight files of pre trained or
                            trained model
-            n_clusters   - if n_cluster is provided, then the GMM layer
+            n_clusters   - if n_cluster is provided, then the LatentSpace layer
                            will be initialized or re-initialized. For loading
-                           a trained model when the GMM layer is not
+                           a trained model when the LatentSpace layer is not
                            initialized, n_cluster is required.
         '''
         if n_clusters is not None:
-            self.init_GMM(n_clusters)
+            self.init_latent_space(n_clusters)
         self.vae.load_weights(path_to_file)
 
 
@@ -180,11 +182,7 @@ class scTGMVAE():
         self.selected_cell_subset_id = np.sort(np.where(np.in1d(selected_cell_names, self.cell_names))[0])
         
     
-    def init_GMM(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
-        n_states = int((n_clusters + 1) * n_clusters / 2)
-        cluster_center = [int((n_clusters + (1-i)/2)*i) for i in range(n_clusters)]
-        if cluster_labels is None:
-            cluster_labels = model.labels
+    def init_latent_space(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
         z = self.get_latent_z()
         if (mu is None) & (cluster_labels is not None):
             mu = np.zeros((z.shape[1], n_clusters))
@@ -193,7 +191,7 @@ class scTGMVAE():
 
         self.n_clusters = n_clusters
         self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
-        self.vae.init_GMM(n_clusters, mu, log_pi)
+        self.vae.init_latent_space(n_clusters, mu, log_pi)
         self.inferer = Inferer(self.n_clusters)            
 
 
@@ -244,8 +242,7 @@ class scTGMVAE():
         self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
                                                c,
                                                batch_size)
-        self.pi, self.mu, self.c, self.pc_x,\
-            self.p_wc_x,self.w,self.var_w,self.wc,self.var_wc,\
+        self.pi, self.mu, self.pc_x,\
             self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
         self.embed_z = self.inferer.init_embedding(self.z, self.mu)
         return None

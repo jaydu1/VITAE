@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+from utils import Early_Stopping
 
-import tensorflow as tf
-from tensorflow.keras.utils import Progbar
 import numpy as np
 import umap
 import matplotlib.pyplot as plt
-from utils import Early_Stopping
+import tensorflow as tf
+from tensorflow.keras.utils import Progbar
+
 
 def clear_session():
     tf.keras.backend.clear_session()
@@ -28,24 +29,9 @@ def warp_dataset(X_normalized, c_score, BATCH_SIZE, X=None, Scale_factor=None):
         return test_dataset
 
 
-
-
-
 def pre_train(train_dataset, vae,
               learning_rate, patience, tolerance, warmup, 
               NUM_EPOCH_PRE, NUM_STEP_PER_EPOCH, L):
-
-    @tf.function
-    def train_step(x_norm_batch, c_score, x_batch, x_scale_factor, L):
-        with tf.GradientTape() as tape:
-            losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L)
-            # Compute reconstruction loss
-            loss = tf.reduce_sum(losses[0])
-        grads = tape.gradient(loss, vae.trainable_weights,
-                    unconnected_gradients=tf.UnconnectedGradients.ZERO)
-        optimizer.apply_gradients(zip(grads, vae.trainable_weights))
-        return loss
-
     optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
     loss_metric = tf.keras.metrics.Mean()
     early_stopping = Early_Stopping(patience=patience, tolerance=tolerance, warmup=warmup)
@@ -57,7 +43,13 @@ def pre_train(train_dataset, vae,
 
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
-            loss = train_step(x_norm_batch, c_score, x_batch, x_scale_factor, L)                                      
+            with tf.GradientTape() as tape:
+                losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L)
+                # Compute reconstruction loss
+                loss = tf.reduce_sum(losses[0])
+            grads = tape.gradient(loss, vae.trainable_weights,
+                        unconnected_gradients=tf.UnconnectedGradients.ZERO)
+            optimizer.apply_gradients(zip(grads, vae.trainable_weights))                                
             loss_metric(loss)
             
             if (step+1)%10==0 or step+1==NUM_STEP_PER_EPOCH:
@@ -72,22 +64,9 @@ def pre_train(train_dataset, vae,
     return vae
 
 
-
 def train(train_dataset, test_dataset, vae,
         learning_rate, patience, tolerance, warmup, NUM_EPOCH, NUM_STEP_PER_EPOCH, L,
         labels, weight, plot_every_num_epoch=None):
-
-    @tf.function
-    def train_step(x_norm_batch, c_score, x_batch, x_scale_factor, L, weight):
-        with tf.GradientTape() as tape:
-            losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
-            # Compute reconstruction loss
-            loss = tf.reduce_sum(losses*weight)
-        grads = tape.gradient(loss, vae.trainable_weights,
-                    unconnected_gradients=tf.UnconnectedGradients.ZERO)
-        optimizer.apply_gradients(zip(grads, vae.trainable_weights))
-        return losses, loss
-
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()
@@ -108,7 +87,13 @@ def train(train_dataset, test_dataset, vae,
         
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
-            losses, loss = train_step(x_norm_batch, c_score, x_batch, x_scale_factor, L, weight)
+            with tf.GradientTape() as tape:
+                losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
+                # Compute reconstruction loss
+                loss = tf.reduce_sum(losses*weight)
+            grads = tape.gradient(loss, vae.trainable_weights,
+                        unconnected_gradients=tf.UnconnectedGradients.ZERO)
+            optimizer.apply_gradients(zip(grads, vae.trainable_weights))
             loss_total(loss)
             loss_neg_E_nb(losses[0])
             loss_neg_E_pz(losses[1])
@@ -135,7 +120,7 @@ def train(train_dataset, test_dataset, vae,
         loss_E_qzx.reset_states()
 
         if plot_every_num_epoch is not None and (epoch%plot_every_num_epoch==0 or epoch==NUM_EPOCH-1):
-            _, mu, _, _, _, _, _, _, _, w_tilde, _, _, z_mean = vae.inference(test_dataset, 1)
+            _, mu, _, _, _, _, _, _, w_tilde, _, _, z_mean = vae.inference(test_dataset, 1)
             c = np.argmax(w_tilde, axis=-1)
             
             fit = umap.UMAP()

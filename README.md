@@ -1,21 +1,10 @@
-# Gaussian Mixture Variation Auto-Encoder for single-cell trajectory inference
+# Trajectory Inference for Single-Cell RNA Sequencing Data Using A Mixture Model with Variational Deep Autoencoder
 
 
-```
-┣━━━ sct_gmvae
-┣		┣━━━ __init__.py
-┣		┣━━━ scTGMVAE.py
-┣		┣━━━ preprocess.py
-┣		┣━━━ model.py
-┣		┣━━━ train.py	
-┣		┣━━━ inference.py
-┣		┣━━━ metric.py
-┣		┗━━━ util.py	
-┗━━━ 
-```
 
 
-# Dependency
+
+## Dependency
 
 We recommend to use `conda` or `miniconda` to manage Python environment. For Mac and Linux users, you can use the following codes to create a new environment with all required packages (without gpu).
 
@@ -23,7 +12,7 @@ We recommend to use `conda` or `miniconda` to manage Python environment. For Mac
 >>> conda create --name scTrajVAE python=3.6 -y
 >>> conda activate scTrajVAE
 >>> conda install pandas jupyter umap-learn matplotlib numba seaborn scanpy==1.6.0 scikit-learn -y
->>> yes | pip3 install tensorflow==2.2 louvain scikit-misc networkx python-igraph
+>>> yes | pip3 install tensorflow==2.2 tensorflow-probability==0.10.1 louvain scikit-misc networkx python-igraph
 ```
 
 To enable gpu acceleration, you will need to install `cuda` and `tensorflow-gpu`. Please refer the Tensorflow website for more information.
