@@ -150,7 +150,7 @@ class LatentSpace(Layer):
     Layer for the Latent Space.
     It contains parameters related to model assumptions.
     '''
-    def __init__(self, n_clusters, dim_latent, M = 100, name = 'LatentSpace', **kwargs):
+    def __init__(self, n_clusters, dim_latent, M = 50, name = 'LatentSpace', **kwargs):
         '''
         Input:
           dim_latent   - dimension of latent layer.
