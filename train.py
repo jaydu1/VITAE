@@ -87,13 +87,23 @@ def train(train_dataset, test_dataset, vae,
         
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
-            with tf.GradientTape() as tape:
-                losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
-                # Compute reconstruction loss
-                loss = tf.reduce_sum(losses*weight)
-            grads = tape.gradient(loss, vae.trainable_weights,
-                        unconnected_gradients=tf.UnconnectedGradients.ZERO)
-            optimizer.apply_gradients(zip(grads, vae.trainable_weights))
+            if epoch<warmup:
+                with tf.GradientTape() as tape:
+                    losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
+                    # Compute reconstruction loss
+                    loss = tf.reduce_sum(losses[1:])
+                grads = tape.gradient(loss, vae.GMM.trainable_weights,
+                            unconnected_gradients=tf.UnconnectedGradients.ZERO)
+                optimizer.apply_gradients(zip(grads, vae.GMM.trainable_weights))
+            else:
+                with tf.GradientTape() as tape:
+                    losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
+                    # Compute reconstruction loss
+                    loss = tf.reduce_sum(losses*weight)
+                grads = tape.gradient(loss, vae.trainable_weights,
+                            unconnected_gradients=tf.UnconnectedGradients.ZERO)
+                optimizer.apply_gradients(zip(grads, vae.trainable_weights))
+
             loss_total(loss)
             loss_neg_E_nb(losses[0])
             loss_neg_E_pz(losses[1])
