@@ -426,7 +426,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             # - Eq[log q(z|x)]
             E_qzx = - tf.reduce_mean(
                             0.5 * self.dim_latent *
-                            (tf.math.log(2 * math.pi) + 1) +
+                            (tf.math.log(2 * np.pi) + 1) +
                             0.5 * tf.reduce_sum(z_log_var, axis=-1)
                             )
             self.add_loss(E_qzx)
