@@ -411,8 +411,8 @@ class VariationalAutoEncoder(tf.keras.Model):
         reconstruction_z_loss = self.get_reconstruction_loss(x, z_in, scale_factor, L)
         
         if self.has_cov and alpha>0.0:
-            zero_in = tf.concat([tf.zeros_like(z), tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1)
-            reconstruction_zero_loss = self.get_reconstruction_loss(x, zero_in, scale_factor, L)
+            zero_in = tf.concat([tf.zeros([z.shape[0],1,z.shape[2]]), tf.tile(tf.expand_dims(c_score,1), (1,1,1))], -1)
+            reconstruction_zero_loss = self.get_reconstruction_loss(x, zero_in, scale_factor, 1)
             reconstruction_z_loss = (1-alpha)*reconstruction_z_loss + alpha*reconstruction_zero_loss
         
         self.add_loss(reconstruction_z_loss)
