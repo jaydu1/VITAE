@@ -92,9 +92,9 @@ def train(train_dataset, test_dataset, vae,
                     losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha)
                     # Compute reconstruction loss
                     loss = tf.reduce_sum(losses[1:])
-                grads = tape.gradient(loss, vae.GMM.trainable_weights,
+                grads = tape.gradient(loss, vae.latent_space.trainable_weights,
                             unconnected_gradients=tf.UnconnectedGradients.ZERO)
-                optimizer.apply_gradients(zip(grads, vae.GMM.trainable_weights))
+                optimizer.apply_gradients(zip(grads, vae.latent_space.trainable_weights))
             else:
                 with tf.GradientTape() as tape:
                     losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
