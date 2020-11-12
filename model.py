@@ -418,7 +418,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.add_loss(reconstruction_z_loss)
 
         if not pre_train:        
-            log_p_z = self.GMM(z, inference=False)
+            log_p_z = self.latent_space(z, inference=False)
 
             # - E_q[log p(z)]
             self.add_loss(- log_p_z)
