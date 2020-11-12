@@ -397,7 +397,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.latent_space.initialize(mu, pi)
 
     def call(self, x_normalized, c_score, x = None, scale_factor = 1,
-             pre_train = False, L=1):
+             pre_train = False, L=1, alpha=0.0):
         # Feed forward through encoder, LatentSpace layer and decoder.
         if not pre_train and self.latent_space is None:
             raise ReferenceError('Have not initialized the latent space.')
@@ -407,14 +407,40 @@ class VariationalAutoEncoder(tf.keras.Model):
                 
         z_in = tf.concat([z, tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1) if self.has_cov else z
         
+        x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
+        reconstruction_z_loss = self.get_reconstruction_loss(x, z_in, scale_factor, L)
+        
+        if self.has_cov and alpha>0.0:
+            zero_in = tf.concat([tf.zeros_like(z), tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1)
+            reconstruction_zero_loss = self.get_reconstruction_loss(x, zero_in, scale_factor, L)
+            reconstruction_z_loss = (1-alpha)*reconstruction_z_loss + alpha*reconstruction_zero_loss
+        
+        self.add_loss(reconstruction_z_loss)
+
+        if not pre_train:        
+            log_p_z = self.GMM(z, inference=False)
+
+            # - E_q[log p(z)]
+            self.add_loss(- log_p_z)
+
+            # - Eq[log q(z|x)]
+            E_qzx = - tf.reduce_mean(
+                            0.5 * self.dim_latent *
+                            (tf.math.log(2 * math.pi) + 1) +
+                            0.5 * tf.reduce_sum(z_log_var, axis=-1)
+                            )
+            self.add_loss(E_qzx)
+        return self.losses
+    
+    @tf.function
+    def get_reconstruction_loss(self, x, z_in, scale_factor, L):
         if self.data_type=='Gaussian':
             # Gaussian Log-Likelihood Loss function
             nu_z, tau = self.decoder(z_in)
-            x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
             neg_E_Gaus = 0.5 * tf.math.log(tau + 1e-12) + 0.5 * tf.math.square(x - nu_z) / tau
             neg_E_Gaus =  tf.reduce_mean(tf.reduce_sum(neg_E_Gaus, axis=-1))
-            self.add_loss(neg_E_Gaus)
-
+            
+            return neg_E_Gaus
         else:
             if self.data_type == 'UMI':
                 x_hat, r = self.decoder(z_in)
@@ -422,7 +448,7 @@ class VariationalAutoEncoder(tf.keras.Model):
                 x_hat, r, phi = self.decoder(z_in)
 
             x_hat = x_hat*tf.expand_dims(scale_factor, -1)
-            x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
+
             # Negative Log-Likelihood Loss function
 
             # Ref for NB & ZINB loss functions:
@@ -442,22 +468,8 @@ class VariationalAutoEncoder(tf.keras.Model):
                 neg_E_nb = tf.where(tf.less(x, 1e-8), zero_case, nb_case)
 
             neg_E_nb =  tf.reduce_mean(tf.reduce_sum(neg_E_nb, axis=-1))
-            self.add_loss(neg_E_nb)
-
-        if not pre_train:        
-            log_p_z = self.latent_space(z, inference=False)
-
-            # - E_q[log p(z)]
-            self.add_loss(- log_p_z)
-
-            # - Eq[log q(z|x)]
-            E_qzx = - tf.reduce_mean(
-                            0.5 * self.dim_latent *
-                            (tf.math.log(2 * np.pi) + 1) +
-                            0.5 * tf.reduce_sum(z_log_var, axis=-1)
-                            )
-            self.add_loss(E_qzx)
-        return self.losses
+            
+            return neg_E_nb
     
     def get_z(self, x_normalized, c_score):        
         x_normalized = x_normalized if (not self.has_cov or c_score is None) else tf.concat([x_normalized, c_score], -1)

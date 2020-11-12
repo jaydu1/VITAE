@@ -132,7 +132,7 @@ class scTrajVAE():
         self.vae.load_weights(path_to_file)
 
 
-    def pre_train(self, learning_rate = 1e-3, batch_size = 32, L = 1,
+    def pre_train(self, learning_rate = 1e-3, batch_size = 32, L = 1, alpha=0.01,
             num_epoch = 300, num_step_per_epoch = None,
             early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0, 
             path_to_weights = None):
@@ -166,7 +166,7 @@ class scTrajVAE():
             early_stopping_warmup,
             num_epoch,
             num_step_per_epoch,
-            L)
+            L, alpha)
 
         if path_to_weights is not None:
             self.save_model(path_to_weights)
@@ -196,7 +196,7 @@ class scTrajVAE():
 
 
     # train the model with specified learning rate
-    def train(self, learning_rate = 1e-3, batch_size = 32, L = 1,
+    def train(self, learning_rate = 1e-3, batch_size = 32, L = 1, alpha=0.01,
             num_epoch = 300, num_step_per_epoch = None,
             early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0,
             weight=None, plot_every_num_epoch=None,
@@ -225,6 +225,7 @@ class scTrajVAE():
             num_epoch,
             num_step_per_epoch,
             L,
+            alpha,
             self.labels[self.selected_cell_subset_id],
             weight,
             plot_every_num_epoch
