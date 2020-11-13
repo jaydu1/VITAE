@@ -97,7 +97,7 @@ def train(train_dataset, test_dataset, vae,
                 optimizer.apply_gradients(zip(grads, vae.latent_space.trainable_weights))
             else:
                 with tf.GradientTape() as tape:
-                    losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L)
+                    losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha)
                     # Compute reconstruction loss
                     loss = tf.reduce_sum(losses*weight)
                 grads = tape.gradient(loss, vae.trainable_weights,
