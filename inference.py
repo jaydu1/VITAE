@@ -1,4 +1,3 @@
-
 import os
 import warnings
 
@@ -10,6 +9,7 @@ import umap
 import matplotlib
 import matplotlib.pyplot as plt
 
+from utils import get_embedding
 
 class Inferer(object):
     def __init__(self, NUM_CLUSTER):
@@ -96,14 +96,13 @@ class Inferer(object):
         return self.G, self.edges
         
     
-    def init_embedding(self, z, mu):
+    def init_embedding(self, z, mu, dimred='umap', **kwargs):
         self.mu = mu.copy()
-        
-        # Umap
         concate_z = np.concatenate((z, mu.T), axis=0)
-        mapper = umap.UMAP().fit(concate_z)
-        self.embed_z = mapper.embedding_[:-self.NUM_CLUSTER,:].copy()
-        self.embed_mu = mapper.embedding_[-self.NUM_CLUSTER:,:].copy()
+        embed = get_embedding(concate_z, dimred, **kwargs)
+        
+        self.embed_z = embed[:-self.NUM_CLUSTER,:]
+        self.embed_mu = embed[-self.NUM_CLUSTER:,:]
         return self.embed_z.copy()
         
         

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from umap.umap_ import nearest_neighbors
-from sklearn.utils import check_random_state
 from umap.umap_ import fuzzy_simplicial_set
+import umap
+from sklearn.utils import check_random_state
 from scipy.sparse import coo_matrix
 import igraph as ig
 import louvain
@@ -78,6 +81,21 @@ def _check_variability(A):
         else:
             out[i] = 0
     return out
+
+
+def get_embedding(z, dimred='umap', **kwargs):
+    if dimred=='umap':
+        # umap has some bugs that it may change the original matrix when doing transform
+        mapper = umap.UMAP(**kwargs).fit(z.copy())
+        embed = mapper.embedding_
+    elif dimred=='pca':
+        kwargs['n_components'] = 2
+        embed = PCA(**kwargs).fit_transform(z)
+    elif dimred=='tsne':
+        embed = TSNE(**kwargs).fit_transform(z)
+    else:
+        raise ValueError("Dimension reduction method can only be 'umap', 'pca' or 'tsne'!")
+    return embed
 
 
 def get_igraph(z):

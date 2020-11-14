@@ -48,6 +48,20 @@ def topology(G_true, G_pred):
 
 
 def IM_dist(G1, G2):
+    '''
+    The Ipsen-Mikailov distance is a global (spectral) metric, 
+    corresponding to the square-root of the squared difference of the
+    Laplacian spectrum for each graph.
+
+    Implementation adapt from
+    https://netrd.readthedocs.io/en/latest/_modules/netrd/distance/hamming_ipsen_mikhailov.html
+
+    Params:
+        G1 - networkx.Graph
+        G2 - networkx.Graph
+    Returns:
+        IM(G1,G2)
+    '''
     adj1 = nx.to_numpy_array(G1)
     adj2 = nx.to_numpy_array(G2)
     hwhm = 0.08

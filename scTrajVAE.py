@@ -5,7 +5,7 @@ import model
 import preprocess
 import train
 from inference import Inferer
-from utils import get_igraph, louvain_igraph, plot_clusters, load_data, plot_marker_gene
+from utils import load_data, get_embedding, get_igraph, louvain_igraph, plot_clusters, plot_marker_gene
 from metric import topology, get_RI_continuous
 
 from sklearn.metrics.cluster import adjusted_rand_score
@@ -138,15 +138,16 @@ class scTrajVAE():
             path_to_weights = None):
         '''pre train the model with specified learning rate
         Params:
-            learning_rate            - the initial learning rate for the Adam optimizer.
-            batch_size               - the batch size for pre-training.
-            L                        - the number of MC samples.
-            num_epoch                - the maximum number of epoches.
-            num_step_per_epoch       - the number of step per epoch, it will be inferred from number of cells and batch size if it is None
-            early_stopping_tolerance - the minimum change of loss to be considered as an improvement.
-            early_stopping_patience  - the maximum number of epoches if there is no improvement.
-            early_stopping_warmup    - the number of warmup epoches.
-            path_to_weights          - the path of weight file to be saved; not saving weight if None.
+            learning_rate            - (float) the initial learning rate for the Adam optimizer.
+            batch_size               - (int) the batch size for pre-training.
+            L                        - (int) the number of MC samples.
+            num_epoch                - (int) the maximum number of epoches.
+            num_step_per_epoch       - (int) the number of step per epoch, it will be inferred from 
+                                            number of cells and batch size if it is None.            
+            early_stopping_patience  - (int) the maximum number of epoches if there is no improvement.
+            early_stopping_tolerance - (float) the minimum change of loss to be considered as an improvement.
+            early_stopping_warmup    - (int) the number of warmup epoches.
+            path_to_weights          - (str) the path of weight file to be saved; not saving weight if None.
         '''    
         if num_step_per_epoch is None:
             num_step_per_epoch = self.X.shape[0]//batch_size+1
@@ -196,12 +197,36 @@ class scTrajVAE():
 
 
     # train the model with specified learning rate
-    def train(self, learning_rate = 1e-3, batch_size = 32, L = 1, alpha=0.01,
+    def train(self, learning_rate = 1e-3, batch_size = 32, 
+            L = 1, alpha=0.01, beta=1, 
             num_epoch = 300, num_step_per_epoch = None,
             early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0,
-            weight=None, plot_every_num_epoch=None,
-            path_to_weights = None):
-        
+            path_to_weights = None, plot_every_num_epoch=None, dimred='umap', **kwargs):
+        '''
+        Training the model.
+        Params:
+            learning_rate            - (float) the initial learning rate for the Adam optimizer.
+            batch_size               - (int) the batch size for training.
+            L                        - (int) the number of MC samples.
+            alpha                    - (float) the value of alpha in [0,1] to encourage covariate 
+                                            adjustment. Not used if there is no covariates.
+            beta                     - (float) the value of beta in beta-VAE.
+            num_epoch                - (int) the number of epoch.
+            num_step_per_epoch       - (int) the number of step per epoch, it will be inferred from 
+                                            number of cells and batch size if it is None.
+            early_stopping_patience  - (int) the maximum number of epoches if there is no improvement.
+            early_stopping_tolerance - (float) the minimum change of loss to be considered as an 
+                                            improvement.
+            early_stopping_warmup    - (int) the number of warmup epoches.            
+            path_to_weights          - (str) the path of weight file to be saved; not saving weight 
+                                            if None.
+            plot_every_num_epoch     - (int) plot the intermediate result every few epoches, or not 
+                                            plotting if it is None.            
+            dimred                   - (str) the name of dimension reduction algorithms, can be 'umap', 
+                                            'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
+            **kwargs                 - extra key-value arguments for dimension reduction algorithms.        
+        Retruns:
+        '''
         if num_step_per_epoch is None:
             num_step_per_epoch = len(self.selected_cell_subset_id)//batch_size+1
             
@@ -226,18 +251,25 @@ class scTrajVAE():
             num_step_per_epoch,
             L,
             alpha,
-            self.labels[self.selected_cell_subset_id],
-            weight,
-            plot_every_num_epoch
+            beta,
+            self.labels[self.selected_cell_subset_id],            
+            plot_every_num_epoch,
+            dimred='umap', 
+            **kwargs            
             )
             
         if path_to_weights is not None:
             self.save_model(path_to_weights)
           
 
-    def init_inference(self, batch_size=32, L=5):
+    def init_inference(self, batch_size=32, L=5, dimred='umap', **kwargs):
         '''
-        Initialze trajectory inference by computing the posterior estimations.
+        Initialze trajectory inference by computing the posterior estimations.        
+        Params:
+            batch_size   - (int) batch size when doing inference
+            L            - (int) number of MC samples when doing inference
+            dimred       - (str) name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
+            **kwargs     - extra key-value arguments for dimension reduction algorithms.              
         '''
         c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
         self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
@@ -245,7 +277,7 @@ class scTrajVAE():
                                                batch_size)
         self.pi, self.mu, self.pc_x,\
             self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
-        self.embed_z = self.inferer.init_embedding(self.z, self.mu)
+        self.embed_z = self.inferer.init_embedding(self.z, self.mu, **kwargs)
         return None
         
         
@@ -289,19 +321,30 @@ class scTrajVAE():
         return G, w, pseudotime
 
     
-    def plot_marker_gene(self, gene_name: str, path=None):
+    def plot_marker_gene(self, gene_name: str, refit_dimred=False, dimred='umap', path=None, **kwargs):
+        '''
+        Plot expression of the given marker gene.
+        Params:
+            gene_name    - (str) name of the marker gene.
+            refit_dimred - (boolean) whether to refit dimension reduction or use the existing embedding 
+                                after inference.
+            dimred       - (str) name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
+            path         - (str) path to save the figure, or not saving if it is None.
+            **kwargs     - extra key-value arguments for dimension reduction algorithms.
+        Returns:
+        '''
         if gene_name not in self.gene_names:
             raise ValueError("Gene name '{}' not in selected genes!".format(gene_name))
-        elif self.expression is None:
-            raise AssertionError("Unable to plot marker genes for processed input!")
         expression = self.expression[self.selected_cell_subset_id,:][:,self.gene_names==gene_name].flatten()
         
-        if not hasattr(self, 'embed_z'):
-            self.z = self.get_latent_z()            
-            self.embed_z = umap.UMAP().fit_transform(self.z)
+        if not hasattr(self, 'embed_z') or refit_dimred:
+            z = self.get_latent_z()       
+            embed_z = get_embedding(z, dimred, **kwargs)
+        else:
+            embed_z = self.embed_z
         plot_marker_gene(expression, 
                          gene_name, 
-                         self.embed_z,
+                         embed_z,
                          path)
         return None
 

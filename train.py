@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from utils import Early_Stopping
+from utils import Early_Stopping, get_embedding
 
 import numpy as np
-import umap
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.utils import Progbar
@@ -65,8 +64,9 @@ def pre_train(train_dataset, vae,
 
 
 def train(train_dataset, test_dataset, vae,
-        learning_rate, patience, tolerance, warmup, NUM_EPOCH, NUM_STEP_PER_EPOCH, L, alpha,
-        labels, weight, plot_every_num_epoch=None):
+        learning_rate, patience, tolerance, warmup, NUM_EPOCH, NUM_STEP_PER_EPOCH, 
+        L, alpha, beta,
+        labels, plot_every_num_epoch=None, dimred='umap', **kwargs):
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_total = tf.keras.metrics.Mean()
     loss_neg_E_nb = tf.keras.metrics.Mean()
@@ -75,10 +75,7 @@ def train(train_dataset, test_dataset, vae,
     early_stopping = Early_Stopping(patience = patience, tolerance = tolerance, warmup=warmup)
 
     print('Warmup:%d'%warmup)
-    if weight is None:
-        weight = np.ones(3, dtype=np.float32)
-    else:
-        weight = np.array([1,weight,weight], dtype=np.float32)
+    weight = np.array([1,beta,beta], dtype=np.float32)
     weight = tf.convert_to_tensor(weight)
     
     for epoch in range(NUM_EPOCH):
@@ -133,10 +130,10 @@ def train(train_dataset, test_dataset, vae,
             _, mu, _, w_tilde, _, _, z_mean = vae.inference(test_dataset, 1)
             c = np.argmax(w_tilde, axis=-1)
             
-            fit = umap.UMAP()
-            u = fit.fit_transform(tf.concat((z_mean,tf.transpose(mu)),axis=0))
+            concate_z = np.concatenate((z_mean, mu.T), axis=0)
+            u = get_embedding(concate_z, dimred, **kwargs)
             uz = u[:len(z_mean),:]
-            um = u[len(z_mean):,:]
+            um = u[len(z_mean):,:]            
             
             if labels is None:
                 fig, ax1 = plt.subplots(1, figsize=(7, 6))
