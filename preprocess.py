@@ -91,14 +91,13 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         # if the input scanpy is processed
         if processed: 
             x_normalized = x = adata.X
-            if dimred is False:
-                pca = PCA(n_components = npc)
-                x_normalized = x = pca.fit_transform(x_normalized)
+            expression = None
             scale_factor = None
         # if the input scanpy is not processed
         else: 
+            dimred = False
             x = adata.X.copy()
-            adata, cell_mask, gene_mask, gene_mask2 = recipe_seurat(adata, gene_num)
+            adata, expression, cell_mask, gene_mask, gene_mask2 = recipe_seurat(adata, gene_num)
             x_normalized = adata.X.copy()
             scale_factor = adata.obs.counts_per_cell.values / 1e4
             x = x[cell_mask,:][:,gene_mask][:,gene_mask2]
@@ -131,21 +130,21 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
             raw_gene_names = raw_gene_names[variable==1]
 
         # log-normalization
-        x_normalized, scale_factor = log_norm(x, K)
+        expression, scale_factor = log_norm(x, K)
         
         # feature selection
         x, index = feature_select(x, gene_num)
-        x_normalized = x_normalized[:, index]
+        expression = expression[:, index]
         
         # per-gene standardization
         gene_scalar = preprocessing.StandardScaler()
-        x_normalized = gene_scalar.fit_transform(x_normalized)
+        x_normalized = gene_scalar.fit_transform(expression)
     
         cell_names = np.char.add('c_', expressed.astype(str)) if raw_cell_names is None else raw_cell_names
         gene_names = np.char.add('g_', index.astype(str)) if raw_gene_names is None else raw_gene_names[index]
 
 
-    if (data_type=='Gaussian') & (processed is False):
+    if (data_type=='Gaussian') or (dimred is False):
         pca = PCA(n_components = npc)
         x_normalized = x = pca.fit_transform(x_normalized)
 
@@ -167,7 +166,7 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         table = table.sort_index()
         print(table)
         
-    return x_normalized, x, c, cell_names, gene_names, scale_factor, labels, label_names, le, gene_scalar
+    return x_normalized, expression, x, c, cell_names, gene_names, scale_factor, labels, label_names, le, gene_scalar
 
 
 def recipe_seurat(adata, gene_num):
@@ -185,5 +184,6 @@ def recipe_seurat(adata, gene_num):
 
     adata._inplace_subset_var(filter_result.gene_subset)  # filter genes
     sc.pp.log1p(adata)
+    expression = adata.X.copy()
     sc.pp.scale(adata, max_value=10)
-    return adata, cell_mask, gene_mask, filter_result.gene_subset
+    return adata, expression, cell_mask, gene_mask, filter_result.gene_subset

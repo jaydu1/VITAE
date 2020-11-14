@@ -71,7 +71,7 @@ class scTrajVAE():
             self.data_type = data_type
 
         raw_X = self.raw_X.copy() if self.raw_X is not None else None
-        self.X_normalized, self.X, self.c_score, self.cell_names, self.gene_names, \
+        self.X_normalized, self.expression, self.X, self.c_score, self.cell_names, self.gene_names, \
         self.scale_factor, self.labels, self.label_names, \
         self.le, self.gene_scalar = preprocess.preprocess(
             self.adata,
@@ -292,7 +292,9 @@ class scTrajVAE():
     def plot_marker_gene(self, gene_name: str, path=None):
         if gene_name not in self.gene_names:
             raise ValueError("Gene name '{}' not in selected genes!".format(gene_name))
-        expression = self.X_normalized[self.selected_cell_subset_id,:][:,self.gene_names==gene_name].flatten()
+        elif self.expression is None:
+            raise AssertionError("Unable to plot marker genes for processed input!")
+        expression = self.expression[self.selected_cell_subset_id,:][:,self.gene_names==gene_name].flatten()
         
         if not hasattr(self, 'embed_z'):
             self.z = self.get_latent_z()            
@@ -471,4 +473,4 @@ class scTrajVAE():
 
         # gene_express
         if gene is not None:
-            np.savetxt('gene_express.csv', self.X_normalized[self.selected_cell_subset_id,:][:,self.gene_names == gene])
+            np.savetxt('gene_express.csv', self.expression[self.selected_cell_subset_id,:][:,self.gene_names == gene])
