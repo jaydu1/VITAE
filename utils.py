@@ -201,6 +201,7 @@ type_dict = {
     'neonatal':'UMI', 
     'mouse_brain':'UMI', 
     'mouse_brain_miller':'UMI',
+    'mouse_brain_merged':'UMI',
     'planaria_full':'UMI', 
     'planaria_muscle':'UMI',
     'aging':'non-UMI', 
@@ -270,14 +271,11 @@ def load_data(path, file_name):
             data['milestone_net'] = None
             data['root_milestone_id'] = None
             
-        if file_name in ['mouse_brain']:
+        if file_name in ['mouse_brain', 'mouse_brain_miller', 'mouse_brain_merged']:
             data['grouping'] = np.array(['%02d'%int(i) for i in data['grouping']], dtype=object)
-            data['root_milestone_id'] = '06'
+            data['root_milestone_id'] = dict(zip(['mouse_brain', 'mouse_brain_miller', 'mouse_brain_merged'], ['06', '05', '10']))[file_name]
             data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
-        elif file_name in ['mouse_brain_miller']:
-            data['grouping'] = np.array(['%02d'%int(i) for i in data['grouping']], dtype=object)
-            data['root_milestone_id'] = '05'
-            data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
+
 
     data['type'] = type_dict[file_name]
     if data['type']=='non-UMI':
