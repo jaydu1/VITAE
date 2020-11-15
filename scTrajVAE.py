@@ -103,32 +103,60 @@ class scTrajVAE():
         self.dim_latent = dim_latent
     
         self.vae = model.VariationalAutoEncoder(
-            self.dim_origin,
-            self.dimensions,
-            self.dim_latent,
-            self.data_type,
+            self.dim_origin, self.dimensions,
+            self.dim_latent, self.data_type,
             False if self.c_score is None else True
             )
         
-        
-    # save and load trained model parameters
-    # path: path of checkpoints files
+
     def save_model(self, path_to_file='model.checkpoint'):
-        self.vae.save_weights(path_to_file)
-    
-    
-    def load_model(self, path_to_file='model.checkpoint', n_clusters=None):
+        '''Saving model weights.
+        Params:
+            path_to_file - path to weight files of pre-trained or
+                           trained model           
         '''
+        self.vae.save_weights(path_to_file)
+        if hasattr(self, 'cluster_labels') and self.cluster_labels is not None:
+            with open(path_to_file+'.label', 'wb') as f:
+                np.save(f, self.cluster_labels)
+        with open(path_to_file+'.config', 'wb') as f:
+            np.save(f, [self.dim_origin,
+                        self.dimensions,
+                        self.dim_latent,
+                        self.data_type,
+                        False if self.c_score is None else True])
+    
+
+    def load_model(self, path_to_file='model.checkpoint', load_labels=False):
+        '''Loading model weights, called after the model is built.
         Params:
             path_to_file - path to weight files of pre trained or
                            trained model
-            n_clusters   - if n_cluster is provided, then the LatentSpace layer
-                           will be initialized or re-initialized. For loading
-                           a trained model when the LatentSpace layer is not
-                           initialized, n_cluster is required.
-        '''
-        if n_clusters is not None:
-            self.init_latent_space(n_clusters)
+            load_labels  - whether to load clustering labels or not.
+                           If load_labels is True, then the LatentSpace layer
+                           will be initialized basd on the model. 
+                           If load_labels is False, then the LatentSpace layer
+                           will not be initialized.
+        ''' 
+        if not os.path.exists(path_to_file+'.config'):
+            raise AssertionError('Label file note exist!')               
+        if load_labels and not os.path.exists(path_to_file+'.label'):
+            raise AssertionError('Label file note exist!')
+
+        with open(path_to_file+'.config', 'rb') as f:
+            [self.dim_origin, self.dimensions,
+            self.dim_latent, self.data_type, has_c] = np.load(f, allow_pickle=True)
+        self.vae = model.VariationalAutoEncoder(
+            self.dim_origin, self.dimensions, 
+            self.dim_latent, self.data_type, has_c
+            )
+
+        if load_labels:            
+            with open(path_to_file+'.label', 'rb') as f:
+                cluster_labels = np.load(f, allow_pickle=True)
+            n_clusters = len(np.unique(cluster_labels))
+            self.init_latent_space(n_clusters, cluster_labels)
+
         self.vae.load_weights(path_to_file)
 
 
