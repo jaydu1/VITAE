@@ -139,9 +139,9 @@ class scTrajVAE():
                            will not be initialized.
         ''' 
         if not os.path.exists(path_to_file+'.config'):
-            raise AssertionError('Label file note exist!')               
+            raise AssertionError('Config file not exist!')               
         if load_labels and not os.path.exists(path_to_file+'.label'):
-            raise AssertionError('Label file note exist!')
+            raise AssertionError('Label file not exist!')
 
         with open(path_to_file+'.config', 'rb') as f:
             [self.dim_origin, self.dimensions,
