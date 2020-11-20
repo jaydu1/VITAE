@@ -129,7 +129,7 @@ class scTrajVAE():
             with open(path_to_file+'.inference', 'wb') as f:
                 np.save(f, [self.pi, self.mu, self.pc_x,
                             self.w_tilde, self.var_w_tilde,
-                            self.D_JS, self.z, self.embed_z])
+                            self.D_JS, self.z, self.embed_z, self.inferer.embed_mu])
     
 
     def load_model(self, path_to_file='model.checkpoint', load_labels=False):
@@ -164,7 +164,11 @@ class scTrajVAE():
             if os.path.exists(path_to_file+'.inference'):
                 with open(path_to_file+'.inference', 'rb') as f:
                     [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                        self.D_JS, self.z, self.embed_z] = np.load(f, allow_pickle=True)
+                        self.D_JS, self.z, self.embed_z, embed_mu] = np.load(f, allow_pickle=True)
+                self.inferer.mu = self.mu
+                self.inferer.embed_z = self.embed_z
+                self.inferer.embed_mu = embed_mu
+
         self.vae.load_weights(path_to_file)
 
 
