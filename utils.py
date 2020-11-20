@@ -189,7 +189,38 @@ def plot_marker_gene(expression, gene_name, embed_z, path=None):
     plt.show()
     return None
     
-    
+
+def polyfit_with_fixed_points(n, x, y, xf, yf):
+    mat = np.empty((n + 1 + len(xf),) * 2)
+    vec = np.empty((n + 1 + len(xf),))
+    x_n = x**np.arange(2 * n + 1)[:, None]
+    yx_n = np.sum(x_n[:n + 1] * y, axis=1)
+    x_n = np.sum(x_n, axis=1)
+    idx = np.arange(n + 1) + np.arange(n + 1)[:, None]
+    mat[:n + 1, :n + 1] = np.take(x_n, idx)
+    xf_n = xf**np.arange(n + 1)[:, None]
+    mat[:n + 1, n + 1:] = xf_n / 2
+    mat[n + 1:, :n + 1] = xf_n.T
+    mat[n + 1:, n + 1:] = 0
+    vec[:n + 1] = yx_n
+    vec[n + 1:] = yf
+    params = np.linalg.solve(mat, vec)
+
+    return params[:n + 1]
+
+
+def get_smooth_curve(xy, xy_fixed):
+    params = polyfit_with_fixed_points(
+        3, 
+        xy[:,0], xy[:,1], 
+        xy_fixed[:,0], xy_fixed[:,1]
+        )
+    poly = np.polynomial.Polynomial(params)
+    xx = np.linspace(xy_fixed[0,0], xy_fixed[-1,0], 100)
+
+    return xx, poly(xx)
+
+
 #------------------------------------------------------------------------------
 # Data loader
 #------------------------------------------------------------------------------

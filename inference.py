@@ -8,8 +8,9 @@ import networkx as nx
 import umap
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 
-from utils import get_embedding
+from utils import get_embedding, get_smooth_curve
 
 class Inferer(object):
     def __init__(self, NUM_CLUSTER):
@@ -175,15 +176,11 @@ class Inferer(object):
             return np.array(milestone_net)
     
     
-    def comp_pseudotime(self, G, init_node, w):
+    def comp_pseudotime(self, milestone_net, init_node, w):
         pseudotime = - np.ones(w.shape[0])
         pseudotime[w[:,init_node]==1] = 0
         
-        if len(G.edges)>0:
-            connected_comps = nx.node_connected_component(G, init_node)
-            subG = G.subgraph(connected_comps)
-            milestone_net = self.build_milestone_net(subG,init_node)
-
+        if len(milestone_net)>0:
             for i in range(len(milestone_net)):
                 _from, _to = milestone_net[i,:2]
                 _from, _to = int(_from), int(_to)
@@ -224,13 +221,21 @@ class Inferer(object):
             graph = nx.to_numpy_matrix(G)
             graph[graph<=cutoff] = 0
             G = nx.from_numpy_array(graph)
-            select_edges = np.array(list(G.edges))
+            if len(G.edges)>0:
+                connected_comps = nx.node_connected_component(G, init_node)
+                subG = G.subgraph(connected_comps)
+                milestone_net = self.build_milestone_net(subG,init_node)
+                select_edges = milestone_net[:,:2]
+                select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
+                select_edges_score = (select_edges_score - select_edges_score.min())/(select_edges_score.max() - select_edges_score.min())*3
+            else:
+                milestone_net = select_edges = []                    
         
         # modify w_tilde
         w = self.modify_wtilde(self.w_tilde, select_edges)
         
         # compute pseudotime
-        pseudotime = self.comp_pseudotime(G, init_node, w)
+        pseudotime = self.comp_pseudotime(milestone_net, init_node, w)
         
         if is_plot:
             fig, ax = plt.subplots(1,1, figsize=(20, 10))
@@ -252,8 +257,32 @@ class Inferer(object):
                             c='gray', s=8, alpha=0.4)
             
             for i in range(len(select_edges)):
-                ax.plot(self.embed_mu[select_edges[i,:], 0],
-                        self.embed_mu[select_edges[i,:], 1], '-', color="black", alpha=0.5)
+                points = self.embed_z[np.sum(w[:,select_edges[i,:]]>0, axis=-1)==2,:]
+                points = points[points[:,0].argsort()]                
+                x_smooth, y_smooth = get_smooth_curve(
+                    points, 
+                    self.embed_mu[select_edges[i,:], :]
+                    )
+                ax.plot(x_smooth, y_smooth, 
+                    '-', 
+                    linewidth= 1 + select_edges_score[0,i],
+                    color="black", 
+                    alpha=0.8, 
+                    path_effects=[pe.Stroke(linewidth=1+select_edges_score[0,i]+1.5, 
+                                            foreground='white'), pe.Normal()],
+                    zorder=1
+                    )
+
+                delta_x = self.embed_mu[select_edges[i,1], 0]-x_smooth[-2]
+                delta_y = self.embed_mu[select_edges[i,1], 1]-y_smooth[-2]
+                length = np.sqrt(delta_x**2 + delta_y**2) * 1.5                
+                ax.arrow(
+                        self.embed_mu[select_edges[i,1], 0]-delta_x/length, 
+                        self.embed_mu[select_edges[i,1], 1]-delta_y/length, 
+                        delta_x/length,
+                        delta_y/length,
+                        color='black', alpha=1.0,
+                        shape='full', lw=0, length_includes_head=True, head_width=0.4, zorder=2)
             
             for i in range(len(self.CLUSTER_CENTER)):
                 ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
