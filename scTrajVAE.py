@@ -109,7 +109,7 @@ class scTrajVAE():
             )
         
 
-    def save_model(self, path_to_file='model.checkpoint'):
+    def save_model(self, path_to_file='model.checkpoint':
         '''Saving model weights.
         Params:
             path_to_file - path to weight files of pre-trained or
@@ -125,6 +125,11 @@ class scTrajVAE():
                         self.dim_latent,
                         self.data_type,
                         False if self.c_score is None else True])
+        if hasattr(self, 'pi'):
+            with open(path_to_file+'.inference', 'wb') as f:
+            np.save(f, [self.pi, self.mu, self.pc_x,
+                        self.w_tilde, self.var_w_tilde,
+                        self.D_JS, self.z, self.embed_z])
     
 
     def load_model(self, path_to_file='model.checkpoint', load_labels=False):
@@ -156,7 +161,10 @@ class scTrajVAE():
                 cluster_labels = np.load(f, allow_pickle=True)
             n_clusters = len(np.unique(cluster_labels))
             self.init_latent_space(n_clusters, cluster_labels)
-
+            if os.path.exists(path_to_file+'.inference'):
+                with open(path_to_file+'.config', 'rb') as f:
+                    [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                        self.D_JS, self.z, self.embed_z] = np.load(f, allow_pickle=True)
         self.vae.load_weights(path_to_file)
 
 
@@ -224,7 +232,6 @@ class scTrajVAE():
         self.inferer = Inferer(self.n_clusters)            
 
 
-    # train the model with specified learning rate
     def train(self, learning_rate = 1e-3, batch_size = 32, 
             L = 1, alpha=0.01, beta=1, 
             num_epoch = 300, num_step_per_epoch = None,
@@ -312,10 +319,10 @@ class scTrajVAE():
     def comp_inference_score(self, method='modified_map', thres=0.5, no_loop=False, is_plot=True, path=None):
         '''
         Params:
+            method  - (string) 'mean', 'modified_mean', 'map', and 'modified_map'
             thres   - threshold used for filtering edges e_{ij} that
                       (n_{i}+n_{j}+e_{ij})/N<thres, only applied to
-                      mean method.
-            method  - (string) 'mean', 'modified_mean', 'map', and 'modified_map'
+                      mean method.            
             no_loop - (boolean) if loops are allowed to exist in the graph.
             is_plot - (boolean) whether to plot or not.
             path    - (string) path to save figure, or don't save if it is None.
