@@ -127,9 +127,9 @@ class scTrajVAE():
                         False if self.c_score is None else True])
         if hasattr(self, 'pi'):
             with open(path_to_file+'.inference', 'wb') as f:
-            np.save(f, [self.pi, self.mu, self.pc_x,
-                        self.w_tilde, self.var_w_tilde,
-                        self.D_JS, self.z, self.embed_z])
+                np.save(f, [self.pi, self.mu, self.pc_x,
+                            self.w_tilde, self.var_w_tilde,
+                            self.D_JS, self.z, self.embed_z])
     
 
     def load_model(self, path_to_file='model.checkpoint', load_labels=False):
