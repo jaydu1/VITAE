@@ -109,7 +109,7 @@ class scTrajVAE():
             )
         
 
-    def save_model(self, path_to_file='model.checkpoint':
+    def save_model(self, path_to_file='model.checkpoint'):
         '''Saving model weights.
         Params:
             path_to_file - path to weight files of pre-trained or
