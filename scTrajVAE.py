@@ -162,7 +162,7 @@ class scTrajVAE():
             n_clusters = len(np.unique(cluster_labels))
             self.init_latent_space(n_clusters, cluster_labels)
             if os.path.exists(path_to_file+'.inference'):
-                with open(path_to_file+'.config', 'rb') as f:
+                with open(path_to_file+'.inference', 'rb') as f:
                     [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
                         self.D_JS, self.z, self.embed_z] = np.load(f, allow_pickle=True)
         self.vae.load_weights(path_to_file)
