@@ -243,20 +243,18 @@ type_dict = {
     'mesoderm':'non-UMI',
     
     # dyngen
-    'bifurcating_1000_2000_2':'non-UMI',
-    'linear_1':'non-UMI',
+    "linear_1":'non-UMI', 
+    "linear_2":'non-UMI', 
+    "linear_3":'non-UMI',
     'bifurcating_1':'non-UMI',
+    'bifurcating_2':'non-UMI',
+    "bifurcating_3":'non-UMI', 
     "cycle_1":'non-UMI', 
     "cycle_2":'non-UMI', 
     "cycle_3":'non-UMI',
-    "linear_1":'non-UMI', 
-    "linear_2":'non-UMI', 
-    "linear_3":'non-UMI', 
     "trifurcating_1":'non-UMI', 
-    "trifurcating_2":'non-UMI', 
-    "bifurcating_1":'non-UMI', 
-    "bifurcating_3":'non-UMI', 
-    "converging_2":'non-UMI',
+    "trifurcating_2":'non-UMI',         
+    "converging_1":'non-UMI',
     
     # our model
     'linear':'UMI',
