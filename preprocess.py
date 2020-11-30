@@ -90,13 +90,14 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         # if the input scanpy is processed
         if processed: 
             x_normalized = x = adata.X
+            gene_names = adata.var_names.values
             expression = None
             scale_factor = None
         # if the input scanpy is not processed
         else: 
             dimred = False
             x = adata.X.copy()
-            adata, expression, cell_mask, gene_mask, gene_mask2 = recipe_seurat(adata, gene_num)
+            adata, expression, gene_names, cell_mask, gene_mask, gene_mask2 = recipe_seurat(adata, gene_num)
             x_normalized = adata.X.copy()
             scale_factor = adata.obs.counts_per_cell.values / 1e4
             x = x[cell_mask,:][:,gene_mask][:,gene_mask2]
@@ -107,7 +108,7 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
                 label_names = label_names[cell_mask]
         
         cell_names = adata.obs_names.values
-        gene_names = adata.var_names.values
+        selected_gene_names = adata.var_names.values
         gene_scalar = None
     
     # if input is a count matrix
@@ -164,7 +165,9 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         table = table.sort_index()
         print(table)
         
-    return x_normalized, expression, x, c, cell_names, gene_names, selected_gene_names, scale_factor, labels, label_names, le, gene_scalar
+    return (x_normalized, expression, x, c, 
+        cell_names, gene_names, selected_gene_names, 
+        scale_factor, labels, label_names, le, gene_scalar)
 
 
 def recipe_seurat(adata, gene_num):
@@ -172,16 +175,18 @@ def recipe_seurat(adata, gene_num):
     Normalization and filtering as of Seurat [Satija15]_.
     This uses a particular preprocessing
     """
-    cell_mask = sc.pp.filter_cells(adata, min_genes=200,inplace=False)[0]
+    cell_mask = sc.pp.filter_cells(adata, min_genes=200, inplace=False)[0]
     adata = adata[cell_mask,:]
-    gene_mask = sc.pp.filter_genes(adata, min_cells=3,inplace=False)[0]
+    gene_mask = sc.pp.filter_genes(adata, min_cells=3, inplace=False)[0]
     adata = adata[:,gene_mask]
-    sc.pp.normalize_total(adata, target_sum=1e4,key_added='counts_per_cell')
+    gene_names = adata.var_names.values
+
+    sc.pp.normalize_total(adata, target_sum=1e4, key_added='counts_per_cell')
     filter_result = sc.pp.filter_genes_dispersion(
         adata.X, min_mean=0.0125, max_mean=3, min_disp=0.5, log=False, n_top_genes=gene_num)
-
-    adata._inplace_subset_var(filter_result.gene_subset)  # filter genes
+    
     sc.pp.log1p(adata)
     expression = adata.X.copy()
+    adata._inplace_subset_var(filter_result.gene_subset)  # filter genes
     sc.pp.scale(adata, max_value=10)
-    return adata, expression, cell_mask, gene_mask, filter_result.gene_subset
+    return adata, expression, gene_names, cell_mask, gene_mask, filter_result.gene_subset

@@ -35,19 +35,25 @@ class scTrajVAE():
             cell_names  - (optional) a list of cell names
             gene_names  - (optional) a list of gene names
         '''
-        if (adata is None) & (X is None):
+        if adata is None and X is None:
             raise ValueError("Either X or adata should be given!")
-        if (adata is None) & (X is None):
+        if adata is None and X is None:
             warnings.warn("Both X and adata are given, will use adata!")
 
-        self.adata = adata
+        self.adata = adata        
         self.raw_X = None if X is None else X.astype(np.float32)
         self.c_score = None if covariate is None else np.array(covariate, np.float32)
         if sp.sparse.issparse(self.raw_X):
             self.raw_X = self.raw_X.toarray()
         self.raw_label_names = None if labels is None else np.array(labels, dtype = str)
-        self.raw_cell_names = np.array(['c_%d'%i for i in range(self.raw_X.shape[0])]) if cell_names is None else np.array(cell_names, dtype = str)
-        self.raw_gene_names = np.array(['g_%d'%i for i in range(self.raw_X.shape[1])]) if gene_names is None else np.array(gene_names, dtype = str)
+        if X is None:
+            self.raw_cell_names = None
+            self.raw_gene_names = None
+        else:            
+            self.raw_cell_names = np.array(['c_%d'%i for i in range(self.raw_X.shape[0])]) if \
+                cell_names is None else np.array(cell_names, dtype = str)
+            self.raw_gene_names = np.array(['g_%d'%i for i in range(self.raw_X.shape[1])]) if \
+                gene_names is None else np.array(gene_names, dtype = str)
 
         
     def preprocess_data(self, processed = False, dimred = False,
