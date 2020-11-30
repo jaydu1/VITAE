@@ -46,8 +46,8 @@ class scTrajVAE():
         if sp.sparse.issparse(self.raw_X):
             self.raw_X = self.raw_X.toarray()
         self.raw_label_names = None if labels is None else np.array(labels, dtype = str)
-        self.raw_cell_names = None if cell_names is None else np.array(cell_names, dtype = str)
-        self.raw_gene_names = None if gene_names is None else np.array(gene_names, dtype = str)
+        self.raw_cell_names = np.array(['c_%d'%i for i in range(self.raw_X.shape[0])]) if cell_names is None else np.array(cell_names, dtype = str)
+        self.raw_gene_names = np.array(['g_%d'%i for i in range(self.raw_X.shape[1])]) if gene_names is None else np.array(gene_names, dtype = str)
 
         
     def preprocess_data(self, processed = False, dimred = False,
@@ -71,7 +71,8 @@ class scTrajVAE():
             self.data_type = data_type
 
         raw_X = self.raw_X.copy() if self.raw_X is not None else None
-        self.X_normalized, self.expression, self.X, self.c_score, self.cell_names, self.gene_names, \
+        self.X_normalized, self.expression, self.X, self.c_score, \
+        self.cell_names, self.gene_names, self.selected_gene_names, \
         self.scale_factor, self.labels, self.label_names, \
         self.le, self.gene_scalar = preprocess.preprocess(
             self.adata,
@@ -323,10 +324,10 @@ class scTrajVAE():
     def comp_inference_score(self, method='modified_map', thres=0.5, no_loop=False, is_plot=True, path=None):
         '''
         Params:
-            method  - (string) 'mean', 'modified_mean', 'map', and 'modified_map'
             thres   - threshold used for filtering edges e_{ij} that
                       (n_{i}+n_{j}+e_{ij})/N<thres, only applied to
                       mean method.            
+            method  - (string) 'mean', 'modified_mean', 'map', and 'modified_map'
             no_loop - (boolean) if loops are allowed to exist in the graph.
             is_plot - (boolean) whether to plot or not.
             path    - (string) path to save figure, or don't save if it is None.
@@ -373,7 +374,9 @@ class scTrajVAE():
         Returns:
         '''
         if gene_name not in self.gene_names:
-            raise ValueError("Gene name '{}' not in selected genes!".format(gene_name))
+            raise ValueError("Gene '{}' does not exist!".format(gene_name))
+        if self.expression is None:
+            raise ReferenceError("The expression matrix does not exist!")
         expression = self.expression[self.selected_cell_subset_id,:][:,self.gene_names==gene_name].flatten()
         
         if not hasattr(self, 'embed_z') or refit_dimred:
@@ -510,7 +513,7 @@ class scTrajVAE():
         np.savetxt('cell_ids.csv', cell_ids, fmt="%s")
 
         # feature_ids (gene)
-        feature_ids = self.gene_names
+        feature_ids = self.selected_gene_names
         np.savetxt('feature_ids.csv', feature_ids, fmt="%s")
 
         # grouping
@@ -555,4 +558,4 @@ class scTrajVAE():
 
         # gene_express
         if gene is not None:
-            np.savetxt('gene_express.csv', self.expression[self.selected_cell_subset_id,:][:,self.gene_names == gene])
+            np.savetxt('gene_express.csv', self.expression[self.selected_cell_subset_id,:][:,self.selected_gene_names == gene])

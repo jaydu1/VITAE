@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -116,7 +115,7 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         # remove cells that have no expression
         expressed = _check_expression(x)
         print('Removing %d cells without expression.'%(np.sum(expressed==0)))
-        x = x[expressed==1,:]    
+        x = x[expressed==1,:]
         if c is not None:
             c = c[expressed==1,:]
         if label_names is None:
@@ -126,22 +125,21 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         variable = _check_variability(x)
         print('Removing %d genes without variability.'%(np.sum(variable==0)))
         x = x[:, variable==1]
-        if raw_gene_names is not None:
-            raw_gene_names = raw_gene_names[variable==1]
+        gene_names = raw_gene_names[variable==1]
 
         # log-normalization
         expression, scale_factor = log_norm(x, K)
         
         # feature selection
         x, index = feature_select(x, gene_num)
-        expression = expression[:, index]
+        selected_expression = expression[:, index]
         
         # per-gene standardization
         gene_scalar = preprocessing.StandardScaler()
-        x_normalized = gene_scalar.fit_transform(expression)
+        x_normalized = gene_scalar.fit_transform(selected_expression)
     
-        cell_names = np.char.add('c_', expressed.astype(str)) if raw_cell_names is None else raw_cell_names
-        gene_names = np.char.add('g_', index.astype(str)) if raw_gene_names is None else raw_gene_names[index]
+        cell_names = raw_cell_names[expressed==1]
+        selected_gene_names = gene_names[index]
 
 
     if (data_type=='Gaussian') or (dimred is False):
@@ -166,7 +164,7 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         table = table.sort_index()
         print(table)
         
-    return x_normalized, expression, x, c, cell_names, gene_names, scale_factor, labels, label_names, le, gene_scalar
+    return x_normalized, expression, x, c, cell_names, gene_names, selected_gene_names, scale_factor, labels, label_names, le, gene_scalar
 
 
 def recipe_seurat(adata, gene_num):
