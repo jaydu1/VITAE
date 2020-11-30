@@ -227,7 +227,7 @@ class scTrajVAE():
 
     def set_cell_subset(self, selected_cell_names):
         self.selected_cell_subset = selected_cell_names
-        self.selected_cell_subset_id = np.sort(np.where(np.in1d(selected_cell_names, self.cell_names))[0])
+        self.selected_cell_subset_id = np.sort(np.where(np.in1d(self.cell_names, selected_cell_names))[0])
         
     
     def init_latent_space(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
@@ -392,7 +392,7 @@ class scTrajVAE():
             embed_z = self.embed_z
         plot_marker_gene(expression, 
                          gene_name, 
-                         embed_z,
+                         embed_z[self.selected_cell_subset_id,:],
                          path)
         return None
 

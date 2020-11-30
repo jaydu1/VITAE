@@ -179,8 +179,8 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
 def plot_marker_gene(expression, gene_name, embed_z, path=None):
     fig, ax = plt.subplots(1,1, figsize=(20, 10))
     cmap = matplotlib.cm.get_cmap('Reds')
-    sc = ax.scatter(*embed_z.T, c='yellow', s=15)
-    sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=10)
+    sc = ax.scatter(*embed_z.T, c='yellow', s=15, alpha=0.1)
+    sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=10, alpha=0.5)
     sc.set_clim(0,1) 
     plt.colorbar(sc, ax=[ax], location='right')
     ax.set_title('Normalized expression of {}'.format(gene_name))
