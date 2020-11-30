@@ -37,7 +37,7 @@ class scTrajVAE():
         '''
         if adata is None and X is None:
             raise ValueError("Either X or adata should be given!")
-        if adata is None and X is None:
+        if adata is not None and X is not None:
             warnings.warn("Both X and adata are given, will use adata!")
 
         self.adata = adata        
