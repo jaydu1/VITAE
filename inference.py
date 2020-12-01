@@ -227,7 +227,10 @@ class Inferer(object):
                 milestone_net = self.build_milestone_net(subG,init_node)
                 select_edges = milestone_net[:,:2]
                 select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
-                select_edges_score = (select_edges_score - select_edges_score.min())/(select_edges_score.max() - select_edges_score.min())*3
+                if select_edges_score.max() - select_edges_score.min() == 0:
+                    select_edges_score = select_edges_score/select_edges_score.max()
+                else:
+                    select_edges_score = (select_edges_score - select_edges_score.min())/(select_edges_score.max() - select_edges_score.min())*3                    
             else:
                 milestone_net = select_edges = []                    
         
