@@ -230,6 +230,33 @@ class scTrajVAE():
         self.selected_cell_subset_id = np.sort(np.where(np.in1d(self.cell_names, selected_cell_names))[0])
         
     
+    def refine_pi(self, batch_size=64):  
+        '''
+        Refine pi by the its posterior. This function will be effected if 
+        'selected_cell_subset_id' is set.
+        Params:
+            batch_size  - (int) the batch size when computing p(c|Y).
+        Returns:
+            pi          - (2d array) the original pi.
+            post_pi     - (2d array) the posterior estimate of pi.
+        '''      
+        if len(self.selected_cell_subset_id)!=len(self.cell_names):
+            warnings.warn("Only using a subset of genes to refine pi.")
+
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+        self.test_dataset = train.warp_dataset(
+            self.X_normalized[self.selected_cell_subset_id,:], 
+            c,
+            batch_size)
+        pi, p_c_x = self.vae.get_pc_x(self.test_dataset)
+
+        post_pi = np.zeros_like(pi)
+        c, c_counts = np.unique(np.argmax(p_c_x, -1), return_counts=True)
+        post_pi[0,c] += c_counts        
+        self.vae.latent_space.pi.assign(np.log(post_pi+1e-16))
+        return pi, post_pi
+
+
     def init_latent_space(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
         z = self.get_latent_z()
         if (mu is None) & (cluster_labels is not None):
@@ -312,8 +339,8 @@ class scTrajVAE():
         '''
         Initialze trajectory inference by computing the posterior estimations.        
         Params:
-            batch_size   - (int) batch size when doing inference
-            L            - (int) number of MC samples when doing inference
+            batch_size   - (int) batch size when doing inference.
+            L            - (int) number of MC samples when doing inference.
             dimred       - (str) name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
             **kwargs     - extra key-value arguments for dimension reduction algorithms.              
         '''

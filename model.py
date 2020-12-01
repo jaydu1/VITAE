@@ -186,7 +186,6 @@ class LatentSpace(Layer):
                                 name = 'mu')
         self.cdf_layer = cdf_layer()       
         
-
     def initialize(self, mu, pi):
         # Initialize parameters of the latent space
         if mu is not None:
@@ -237,6 +236,17 @@ class LatentSpace(Layer):
         return log_p_zc_L, log_p_z_L, log_p_z
     
     @tf.function
+    def _get_posterior_c(self, log_p_zc_L, log_p_z_L):
+        L = tf.shape(log_p_z_L)[1]
+
+        # log_p_c_x     -   predicted probability distribution
+        # [batch_size, n_states]
+        log_p_c_x = tf.reduce_logsumexp(
+                        log_p_zc_L - log_p_z_L,
+                    axis=1) - tf.math.log(tf.cast(L, tf.float32))
+        return log_p_c_x
+
+    @tf.function
     def _get_inference(self, z, log_p_zc_L, log_p_z_L):
         batch_size = tf.shape(z)[0]
         L = tf.shape(z)[1]
@@ -263,12 +273,6 @@ class LatentSpace(Layer):
         log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(2 * np.pi) + \
                         tf.math.log(temp_pi+1e-12) - \
                         tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2  # this omits a term -logM for avoiding numerical issue
-        
-        # log_p_c_x     -   predicted probability distribution
-        # [batch_size, n_states]
-        log_p_c_x = tf.reduce_logsumexp(
-                        log_p_zc_L - log_p_z_L,
-                    axis=1) - tf.math.log(tf.cast(L, tf.float32))
                         
         # [batch_size, L]
         log_p_z_L = tf.expand_dims(tf.reduce_logsumexp(log_p_zc_w, axis=[2,3]), -1) # this omits a term -logM for avoiding numerical issue
@@ -309,8 +313,21 @@ class LatentSpace(Layer):
                         _wtilde/(0.5 * (_w + _wtilde) + 1e-12) + 1e-12),
                     axis=2)) * \
             p_wc_x, (1,2)) / tf.cast(self.M, tf.float32)
-        return log_p_c_x, w_tilde, var_w_tilde, D_JS
+        return w_tilde, var_w_tilde, D_JS
     
+    def get_pz(self, z):
+        temp_pi, a2, _inv_sig, _mu, _t = self._get_normal_params(z)
+        
+        log_p_z_c_L =  0.5 * (tf.math.log(2 * np.pi) - \
+                        tf.math.log(_inv_sig+1e-12) + \
+                        _t
+                        ) + \
+                        tf.math.log(self.cdf_layer((1-_mu)*tf.math.sqrt(_inv_sig+1e-12)) - 
+                                    self.cdf_layer(-_mu*tf.math.sqrt(_inv_sig+1e-12)) + 1e-12)
+        
+        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
+        return log_p_zc_L, log_p_z_L, log_p_z
+
     def call(self, z, inference=False):
         '''
         Input :
@@ -324,23 +341,14 @@ class LatentSpace(Layer):
                 res     - results contains estimations for 
                             p(c|x), E(w|x), Var(w|x), E(w|x,c), Var(w|x,c), 
                             c, E(w_tilde), Var(w_tilde), D_JS
-        '''   
-        temp_pi, a2, _inv_sig, _mu, _t = self._get_normal_params(z)
-        
-        log_p_z_c_L =  0.5 * (tf.math.log(2 * np.pi) - \
-                        tf.math.log(_inv_sig+1e-12) + \
-                        _t
-                        ) + \
-                        tf.math.log(self.cdf_layer((1-_mu)*tf.math.sqrt(_inv_sig+1e-12)) - 
-                                    self.cdf_layer(-_mu*tf.math.sqrt(_inv_sig+1e-12)) + 1e-12)
-        
-        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
+        '''               
+        log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
         if not inference:
             return log_p_z
         else:
-            
-            log_p_c_x, w_tilde, var_w_tilde, D_JS = self._get_inference(z, log_p_zc_L, log_p_z_L)
+            log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
+            w_tilde, var_w_tilde, D_JS = self._get_inference(z, log_p_zc_L, log_p_z_L)
             
             res = {}
             res['p_c_x'] = tf.exp(log_p_c_x).numpy()
@@ -348,6 +356,12 @@ class LatentSpace(Layer):
             res['var_w_tilde'] = var_w_tilde.numpy()
             res['D_JS'] = D_JS.numpy()
             return res
+
+    def get_posterior_c(self, z):
+        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
+        log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
+        p_c_x = tf.exp(log_p_c_x).numpy()
+        return p_c_x
 
     def get_proj_z(self, c):
         '''
@@ -482,6 +496,20 @@ class VariationalAutoEncoder(tf.keras.Model):
             c - List of indexes of edges
         '''
         return self.latent_space.get_proj_z(c)
+
+    def get_pc_x(self, test_dataset):
+        if self.latent_space is None:
+            raise ReferenceError('Have not initialized the latent space.')
+        
+        pi_norm = tf.nn.softmax(self.latent_space.pi).numpy()
+        p_c_x = []
+        for x,c_score in test_dataset:
+            x = tf.concat([x, c_score], -1) if self.has_cov else x
+            _, _, z = self.encoder(x, 1, False)
+            _p_c_x = self.latent_space.get_posterior_c(z)            
+            p_c_x.append(_p_c_x)
+        p_c_x = np.concatenate(p_c_x)         
+        return pi_norm, p_c_x
 
     def inference(self, test_dataset, L=1):
         if self.latent_space is None:
