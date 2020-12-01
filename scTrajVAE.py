@@ -241,7 +241,7 @@ class scTrajVAE():
             post_pi     - (2d array) the posterior estimate of pi.
         '''      
         if len(self.selected_cell_subset_id)!=len(self.cell_names):
-            warnings.warn("Only using a subset of genes to refine pi.")
+            warnings.warn("Only using a subset of cells to refine pi.")
 
         c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
         self.test_dataset = train.warp_dataset(
