@@ -252,7 +252,8 @@ class scTrajVAE():
 
         post_pi = np.zeros_like(pi)
         c, c_counts = np.unique(np.argmax(p_c_x, -1), return_counts=True)
-        post_pi[0,c] += c_counts        
+        post_pi[0,c] += c_counts  
+        post_pi /= np.sum(post_pi)      
         self.vae.latent_space.pi.assign(np.log(post_pi+1e-16))
         return pi, post_pi
 
