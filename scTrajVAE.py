@@ -250,10 +250,7 @@ class scTrajVAE():
             batch_size)
         pi, p_c_x = self.vae.get_pc_x(self.test_dataset)
 
-        post_pi = np.zeros_like(pi)
-        c, c_counts = np.unique(np.argmax(p_c_x, -1), return_counts=True)
-        post_pi[0,c] += c_counts  
-        post_pi /= np.sum(post_pi)      
+        post_pi = np.mean(p_c_x, axis=0, keepdims=True)        
         self.vae.latent_space.pi.assign(np.log(post_pi+1e-16))
         return pi, post_pi
 
