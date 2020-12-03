@@ -221,9 +221,9 @@ class Inferer(object):
             graph = nx.to_numpy_matrix(G)
             graph[graph<=cutoff] = 0
             G = nx.from_numpy_array(graph)
-            if len(G.edges)>0:
-                connected_comps = nx.node_connected_component(G, init_node)
-                subG = G.subgraph(connected_comps)
+            connected_comps = nx.node_connected_component(G, init_node)
+            subG = G.subgraph(connected_comps)
+            if len(subG.edges)>0:                
                 milestone_net = self.build_milestone_net(subG,init_node)
                 select_edges = milestone_net[:,:2]
                 select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
