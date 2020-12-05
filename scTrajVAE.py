@@ -333,13 +333,15 @@ class scTrajVAE():
             self.save_model(path_to_weights)
           
 
-    def init_inference(self, batch_size=32, L=5, dimred='umap', **kwargs):
+    def init_inference(self, batch_size=32, L=5, 
+            dimred='umap', refit_dimred=True, **kwargs):
         '''
         Initialze trajectory inference by computing the posterior estimations.        
         Params:
             batch_size   - (int) batch size when doing inference.
             L            - (int) number of MC samples when doing inference.
             dimred       - (str) name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
+            refit_dimred - (boolean) if refit the dimension reduction algorithm or not.
             **kwargs     - extra key-value arguments for dimension reduction algorithms.              
         '''
         c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
@@ -348,7 +350,10 @@ class scTrajVAE():
                                                batch_size)
         self.pi, self.mu, self.pc_x,\
             self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
-        self.embed_z = self.inferer.init_embedding(self.z, self.mu, **kwargs)
+        if refit_dimred or not hasattr(self.inferer, 'embed_z'):
+            self.embed_z = self.inferer.init_embedding(self.z, self.mu, **kwargs)
+        else:
+            self.embed_z = self.inferer.embed_z
         return None
         
         
