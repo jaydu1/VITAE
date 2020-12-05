@@ -89,7 +89,7 @@ def get_embedding(z, dimred='umap', **kwargs):
         mapper = umap.UMAP(**kwargs).fit(z.copy())
         embed = mapper.embedding_
     elif dimred=='pca':
-        kwargs['n_components'] = 2
+        kwargs['n_components'] = 2            
         embed = PCA(**kwargs).fit_transform(z)
     elif dimred=='tsne':
         embed = TSNE(**kwargs).fit_transform(z)
@@ -98,12 +98,12 @@ def get_embedding(z, dimred='umap', **kwargs):
     return embed
 
 
-def get_igraph(z):
+def get_igraph(z, random_state=0):
     # Find knn
     n_neighbors = 15
-    random_state = check_random_state(None)
     knn_indices, knn_dists, forest = nearest_neighbors(
-        z, n_neighbors, random_state=random_state,
+        z, n_neighbors, 
+        random_state=np.random.RandomState(random_state),
         metric='euclidean', metric_kwds={},
         angular=False, verbose=False,
     )
@@ -132,19 +132,20 @@ def get_igraph(z):
     return g
 
 
-def louvain_igraph(g, res):
+def louvain_igraph(g, res, random_state=0):
     '''
     Params:
-        g      - igraph object
-        res    - resolution parameter
+        g            - igraph object
+        res          - resolution parameter
+        random_state - random seed
     Returns:
-        labels - clustered labels
+        labels       - clustered labels
     '''
     # Louvain
     partition_kwargs = {}
     partition_type = louvain.RBConfigurationVertexPartition
     partition_kwargs["resolution_parameter"] = res
-    partition_kwargs["seed"] = 0
+    partition_kwargs["seed"] = random_state
     part = louvain.find_partition(
                     g, partition_type,
                     **partition_kwargs,
@@ -300,11 +301,14 @@ def load_data(path, file_name):
             data['milestone_net'] = None
             data['root_milestone_id'] = None
             
-        if file_name in ['mouse_brain', 'mouse_brain_miller', 'mouse_brain_merged']:
+        if file_name in ['mouse_brain', 'mouse_brain_miller']:
             data['grouping'] = np.array(['%02d'%int(i) for i in data['grouping']], dtype=object)
-            data['root_milestone_id'] = dict(zip(['mouse_brain', 'mouse_brain_miller', 'mouse_brain_merged'], ['06', '05', '10']))[file_name]
+            data['root_milestone_id'] = dict(zip(['mouse_brain', 'mouse_brain_miller'], ['06', '05']))[file_name]
             data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
-
+        if file_name in ['mouse_brain_merged']:
+            data['grouping'] = np.array(data['grouping'], dtype=object)
+            data['root_milestone_id'] = 'NEC'
+            data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
 
     data['type'] = type_dict[file_name]
     if data['type']=='non-UMI':
