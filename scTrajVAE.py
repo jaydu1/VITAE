@@ -226,7 +226,7 @@ class scTrajVAE():
 
 
     def set_cell_subset(self, selected_cell_names):
-        self.selected_cell_subset = selected_cell_names
+        self.selected_cell_subset = np.unique(selected_cell_names)
         self.selected_cell_subset_id = np.sort(np.where(np.in1d(self.cell_names, selected_cell_names))[0])
         
     
