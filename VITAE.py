@@ -271,7 +271,7 @@ class VITAE():
     def train(self, learning_rate = 1e-3, batch_size = 32, 
             L = 1, alpha=0.01, beta=1, 
             num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0,
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 5,
             path_to_weights = None, plot_every_num_epoch=None, dimred='umap', **kwargs):
         '''
         Training the model.
