@@ -17,9 +17,9 @@ import pandas as pd
 import networkx as nx
 
 
-class scTrajVAE():
+class VITAE():
     """
-    class for single-cell Trajectory Variational Autoencoder.
+    Variational Inference for Trajectory by AutoEncoder.
     """
     def __init__(self):
         pass
