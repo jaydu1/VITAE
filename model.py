@@ -452,7 +452,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             # Gaussian Log-Likelihood Loss function
             nu_z, tau = self.decoder(z_in)
             neg_E_Gaus = 0.5 * tf.math.log(tau + 1e-12) + 0.5 * tf.math.square(x - nu_z) / tau
-            neg_E_Gaus =  tf.reduce_mean(tf.reduce_sum(neg_E_Gaus, axis=-1))
+            neg_E_Gaus = tf.reduce_mean(tf.reduce_sum(neg_E_Gaus, axis=-1))
             
             return neg_E_Gaus
         else:

@@ -143,7 +143,7 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         selected_gene_names = gene_names[index]
 
 
-    if (data_type=='Gaussian') or (dimred is False):
+    if (data_type=='Gaussian') and (dimred is False):
         pca = PCA(n_components = npc)
         x_normalized = x = pca.fit_transform(x_normalized)
 
