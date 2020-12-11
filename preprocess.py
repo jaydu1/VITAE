@@ -7,7 +7,6 @@ from sklearn import preprocessing
 import warnings
 from sklearn.decomposition import PCA
 from utils import _check_expression, _check_variability
-import scanpy as sc
 
 def log_norm(x, K = 1e4):
     """
@@ -87,6 +86,8 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
     '''
     # if input is a scanpy data
     if adata is not None:
+        import scanpy as sc
+        
         # if the input scanpy is processed
         if processed: 
             x_normalized = x = adata.X
