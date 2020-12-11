@@ -211,6 +211,10 @@ def polyfit_with_fixed_points(n, x, y, xf, yf):
 
 
 def get_smooth_curve(xy, xy_fixed):
+    xy = np.r_[xy, xy_fixed]
+    _, idx = np.unique(xy[:,0], return_index=True)
+    xy = xy[idx,:]
+    
     params = polyfit_with_fixed_points(
         3, 
         xy[:,0], xy[:,1], 
