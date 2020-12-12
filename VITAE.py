@@ -505,16 +505,16 @@ class VITAE():
             milestones_true = grouping
         milestones_true = milestones_true[pseudotime!=-1]
         milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
-        res['ARI score'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
+        res['ARI'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
         
         if grouping is None:
             n_samples = len(milestone_net)
             prop = np.zeros((n_samples,n_samples))
             prop[np.arange(n_samples), milestone_net['to']] = 1-milestone_net['w']
             prop[np.arange(n_samples), milestone_net['from']] = np.where(np.isnan(milestone_net['w']), 1, milestone_net['w'])
-            res['GRI score'] = get_GRI(prop, w)
+            res['GRI'] = get_GRI(prop, w)
         else:
-            res['GRI score'] = get_GRI(grouping, w)
+            res['GRI'] = get_GRI(grouping, w)
         
         # 3. Correlation between geodesic distances / Pseudotime
         if no_loop:
@@ -525,7 +525,7 @@ class VITAE():
                 pseudotime_true = - np.ones(len(grouping))
                 nx.set_edge_attributes(G_true, values = 1, name = 'weight')
                 connected_comps = nx.node_connected_component(G_true, begin_node_true)
-                subG = G.subgraph(connected_comps)
+                subG = G_true.subgraph(connected_comps)
                 milestone_net_true = self.inferer.build_milestone_net(subG, begin_node_true)
                 if len(milestone_net_true)>0:
                     pseudotime_true[grouping==int(milestone_net_true[0,0])] = 0
