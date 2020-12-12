@@ -6,7 +6,7 @@ import preprocess
 import train
 from inference import Inferer
 from utils import load_data, get_embedding, get_igraph, louvain_igraph, plot_clusters, plot_marker_gene
-from metric import topology, get_RI_continuous
+from metric import topology, get_GRI
 
 from sklearn.metrics.cluster import adjusted_rand_score
 from scipy.spatial.distance import pdist as dist
@@ -505,36 +505,49 @@ class VITAE():
             milestones_true = grouping
         milestones_true = milestones_true[pseudotime!=-1]
         milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
-        res['score_ARI_discrete'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
+        res['ARI score'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
         
         if grouping is None:
             n_samples = len(milestone_net)
             prop = np.zeros((n_samples,n_samples))
             prop[np.arange(n_samples), milestone_net['to']] = 1-milestone_net['w']
             prop[np.arange(n_samples), milestone_net['from']] = np.where(np.isnan(milestone_net['w']), 1, milestone_net['w'])
-            res['score_RI_continuous'] = get_RI_continuous(prop, w)
+            res['GRI score'] = get_GRI(prop, w)
         else:
-            res['score_RI_continuous'] = get_RI_continuous(grouping, w)
+            res['GRI score'] = get_GRI(grouping, w)
         
         # 3. Correlation between geodesic distances / Pseudotime
-        if grouping is None:
-            pseudotime_ture = milestone_net['from'].values + 1 - milestone_net['w'].values
-            pseudotime_ture[np.isnan(pseudotime_ture)] = milestone_net[pd.isna(milestone_net['w'])]['from'].values
-            pseudotime_ture = pseudotime_ture[pseudotime>-1]
+        if no_loop:
+            if grouping is None:
+                pseudotime_true = milestone_net['from'].values + 1 - milestone_net['w'].values
+                pseudotime_true[np.isnan(pseudotime_true)] = milestone_net[pd.isna(milestone_net['w'])]['from'].values            
+            else:
+                pseudotime_true = - np.ones(len(grouping))
+                nx.set_edge_attributes(G_true, values = 1, name = 'weight')
+                connected_comps = nx.node_connected_component(G_true, begin_node_true)
+                subG = G.subgraph(connected_comps)
+                milestone_net_true = self.inferer.build_milestone_net(subG, begin_node_true)
+                if len(milestone_net_true)>0:
+                    pseudotime_true[grouping==int(milestone_net_true[0,0])] = 0
+                    for i in range(len(milestone_net_true)):
+                        pseudotime_true[grouping==int(milestone_net_true[i,1])] = milestone_net_true[i,-1]
+            pseudotime_true = pseudotime_true[pseudotime>-1]
             pseudotime_pred = pseudotime[pseudotime>-1]
-            res['score_cor'] = np.corrcoef(pseudotime_ture,pseudotime_pred)[0,1]
-        
+            res['PDT score'] = np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]
+        else:
+            res['PDT score'] = np.nan
+            
         # 4. Shape
-        score_cos_theta = 0
-        for (_from,_to) in G.edges:
-            _z = self.z[(w[:,_from]>0) & (w[:,_to]>0),:]
-            v_1 = _z - self.mu[:,_from]
-            v_2 = _z - self.mu[:,_to]
-            cos_theta = np.sum(v_1*v_2, -1)/(np.linalg.norm(v_1,axis=-1)*np.linalg.norm(v_2,axis=-1)+1e-12)
+        # score_cos_theta = 0
+        # for (_from,_to) in G.edges:
+        #     _z = self.z[(w[:,_from]>0) & (w[:,_to]>0),:]
+        #     v_1 = _z - self.mu[:,_from]
+        #     v_2 = _z - self.mu[:,_to]
+        #     cos_theta = np.sum(v_1*v_2, -1)/(np.linalg.norm(v_1,axis=-1)*np.linalg.norm(v_2,axis=-1)+1e-12)
 
-            score_cos_theta += np.sum((1-cos_theta)/2)
+        #     score_cos_theta += np.sum((1-cos_theta)/2)
 
-        res['score_cos_theta'] = score_cos_theta/(np.sum(np.sum(w>0, axis=-1)==2)+1e-12)
+        # res['score_cos_theta'] = score_cos_theta/(np.sum(np.sum(w>0, axis=-1)==2)+1e-12)
         return res
 
 

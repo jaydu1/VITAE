@@ -22,20 +22,20 @@ def topology(G_true, G_pred):
         else:
             return True
     score_isomorphism = int(nx.is_isomorphic(G_true, G_pred, node_match=comparison))
-    res['score_isomorphism'] = score_isomorphism
+    res['ISO score'] = score_isomorphism
     
     # 2. GED (graph edit distance)
     if len(G_true)>10:
         warnings.warn("Didn't calculate graph edit distances for large graphs.")
-        res['score_GED'] = np.nan
+        res['GED score'] = np.nan
     elif len(G_pred)>10:
         warnings.warn("Didn't calculate graph edit distances for large predition graphs.")
-        res['score_GED'] = np.nan
+        res['GED score'] = np.nan
     else:
         max_num_oper = len(G_true)
         score_GED = 1 - np.min([nx.graph_edit_distance(G_pred, G_true, node_match=comparison),
                             max_num_oper]) / max_num_oper
-        res['score_GED'] = score_GED
+        res['GED score'] = score_GED
         
     # 3. Ipsen-Mikhailov distance
     if len(G_true)==len(G_pred):
@@ -43,7 +43,7 @@ def topology(G_true, G_pred):
         score_IM = np.maximum(0, score_IM)
     else:
         score_IM = 0
-    res['score_IM'] = score_IM
+    res['IM score'] = score_IM
     return res
 
 
@@ -104,7 +104,7 @@ def _rand_index(true, pred):
     return RI / (n*(n-1)/2.0)
 
 
-def get_RI_continuous(true, pred):
+def get_GRI(true, pred):
     '''
     Params:
         ture - [n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping
