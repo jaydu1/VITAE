@@ -262,10 +262,13 @@ class Inferer(object):
             for i in range(len(select_edges)):
                 points = self.embed_z[np.sum(w[:,select_edges[i,:]]>0, axis=-1)==2,:]
                 points = points[points[:,0].argsort()]                
-                x_smooth, y_smooth = get_smooth_curve(
-                    points, 
-                    self.embed_mu[select_edges[i,:], :]
-                    )
+                try:
+                    x_smooth, y_smooth = get_smooth_curve(
+                        points, 
+                        self.embed_mu[select_edges[i,:], :]
+                        )
+                except:
+                    x_smooth, y_smooth = self.embed_mu[select_edges[i,:], 0], self.embed_mu[select_edges[i,:], 1]
                 ax.plot(x_smooth, y_smooth, 
                     '-', 
                     linewidth= 1 + select_edges_score[0,i],
