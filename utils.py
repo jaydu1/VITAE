@@ -244,7 +244,7 @@ type_dict = {
     'cell_cycle':'non-UMI',
     'fibroblast':'non-UMI', 
     'germline':'non-UMI',    
-    'human':'non-UMI', 
+    'human_embryos':'non-UMI', 
     'mesoderm':'non-UMI',
     
     # dyngen
@@ -284,12 +284,11 @@ def load_data(path, file_name):
             data['cell_ids'] = None
             
         if 'milestone_network' in f:
-            if file_name in ['linear','bifurcation','multifurcating','tree',
-                             'bifurcating_2', 'linear_1', 'bifurcating_1',
+            if file_name in ['linear','bifurcation','multifurcating','tree',                              
                             "cycle_1", "cycle_2", "cycle_3",
                             "linear_1", "linear_2", "linear_3", 
                             "trifurcating_1", "trifurcating_2", 
-                            "bifurcating_1", "bifurcating_3", 
+                            "bifurcating_1", 'bifurcating_2', "bifurcating_3", 
                             "converging_1"]:
                 data['milestone_network'] = pd.DataFrame(
                     np.array(np.array(list(f['milestone_network'])).tolist(), dtype=str), 
