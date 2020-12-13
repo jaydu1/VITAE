@@ -25,15 +25,19 @@ def topology(G_true, G_pred):
     res['ISO score'] = score_isomorphism
     
     # 2. GED (graph edit distance)
-    max_num_oper = len(G_true)
-    GED = nx.graph_edit_distance(G_pred, G_true, 
-                               node_match=comparison,
-                               upper_bound=max_num_oper)
-    if GED is None:
-        res['GED score'] = 0
-    else:            
-        score_GED = 1 - GED / max_num_oper
-        res['GED score'] = score_GED
+    if len(G_true)>10:
+        warnings.warn("Didn't calculate graph edit distances for large graphs.")
+        res['GED score'] = np.nan  
+    else:
+        max_num_oper = len(G_true)
+        GED = nx.graph_edit_distance(G_pred, G_true, 
+                                node_match=comparison,
+                                upper_bound=max_num_oper)
+        if GED is None:
+            res['GED score'] = 0
+        else:            
+            score_GED = 1 - GED / max_num_oper
+            res['GED score'] = score_GED
         
     # 3. Ipsen-Mikhailov distance
     if len(G_true)==len(G_pred):
