@@ -72,7 +72,7 @@ class Inferer(object):
             idc = np.tile(np.arange(w.shape[0]), (2,1)).T
             ide = edges[np.argmax(np.sum(w_tilde[:,edges], axis=-1)**2 -
                                   4 * np.prod(w_tilde[:,edges], axis=-1) +
-                                  2*np.sum(w_tilde[:,edges], axis=-1), axis=-1)]
+                                  2 * np.sum(w_tilde[:,edges], axis=-1), axis=-1)]
             w[idc, ide] = w_tilde[idc, ide] + (1-np.sum(w_tilde[idc, ide], axis=-1, keepdims=True))/2
             best_proj_err_edge = np.sum(w_tilde**2, axis=-1) - np.sum(w_tilde[idc, ide]**2, axis=-1) + (1-np.sum(w_tilde[idc, ide], axis=-1))**2/2
                          
