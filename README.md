@@ -6,7 +6,7 @@
 
 ## Dependency
 
-Our Python package is available on PyPi and the user can install the CPU version with the following command. To enable GPU for Tensorflow, one should install CUDA dependencies and `tensorflow-gpu` package. We also recommend to use `conda`, `miniconda` or `virtualenv` to manage Python environment and install the package in the new environment.
+Our Python package is available on PyPI and the user can install the CPU version with the following command. To enable GPU for Tensorflow, one should install CUDA dependencies and `tensorflow-gpu` package. We also recommend to use `conda`, `miniconda` or `virtualenv` to manage Python environment and install the package in a new environment.
 
 ```
 >> pip install pyvitae
