@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.1" />
+<title>VITAE.utils API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>VITAE.utils</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python"># -*- coding: utf-8 -*-
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from umap.umap_ import nearest_neighbors
+from umap.umap_ import fuzzy_simplicial_set
+import umap
+from sklearn.utils import check_random_state
+from scipy.sparse import coo_matrix
+import igraph as ig
+import louvain
+import matplotlib.pyplot as plt
+import matplotlib
+import os     
+import numpy as np
+from numba import jit, float32, int32
+import pandas as pd
+import h5py
+
+
+#------------------------------------------------------------------------------
+# Early stopping
+#------------------------------------------------------------------------------
+
+class Early_Stopping():
+    def __init__(self, warmup=0, patience=10, tolerance=1e-3, is_minimize=True):
+        self.warmup = warmup
+        self.patience = patience
+        self.tolerance = tolerance
+        self.is_minimize = is_minimize
+
+        self.step = -1
+        self.best_step = -1
+        self.best_metric = np.inf
+
+        if not self.is_minimize:
+            self.factor = -1.0
+        else:
+            self.factor = 1.0
+
+    def __call__(self, metric):
+        self.step += 1
+        
+        if self.step &lt; self.warmup:
+            return False
+        elif self.factor*metric&lt;self.factor*self.best_metric-self.tolerance:
+            self.best_metric = metric
+            self.best_step = self.step
+            return False
+        elif self.step - self.best_step&gt;self.patience:
+            print(&#39;Best Epoch: %d. Best Metric: %f.&#39;%(self.best_step, self.best_metric))
+            return True
+        else:
+            return False
+            
+            
+#------------------------------------------------------------------------------
+# Utils functions
+#------------------------------------------------------------------------------
+
+@jit((float32[:,:],), nopython=True, nogil=True)
+def _check_expression(A):
+    n_rows = A.shape[0]
+    out = np.ones(n_rows, dtype=int32)
+    for i in range(n_rows):        
+        for j in A[i,:]:
+            if j&gt;0.0:
+                break
+        else:
+            out[i] = 0
+    return out
+
+@jit((float32[:,:],), nopython=True, nogil=True)
+def _check_variability(A):
+    n_cols = A.shape[1]
+    out = np.ones(n_cols, dtype=int32)
+    for i in range(n_cols):
+        init = A[0, i]
+        for j in A[1:, i]:
+            if j != init:
+                break
+        else:
+            out[i] = 0
+    return out
+
+
+def get_embedding(z, dimred=&#39;umap&#39;, **kwargs):
+    if dimred==&#39;umap&#39;:
+        # umap has some bugs that it may change the original matrix when doing transform
+        mapper = umap.UMAP(**kwargs).fit(z.copy())
+        embed = mapper.embedding_
+    elif dimred==&#39;pca&#39;:
+        kwargs[&#39;n_components&#39;] = 2            
+        embed = PCA(**kwargs).fit_transform(z)
+    elif dimred==&#39;tsne&#39;:
+        embed = TSNE(**kwargs).fit_transform(z)
+    else:
+        raise ValueError(&#34;Dimension reduction method can only be &#39;umap&#39;, &#39;pca&#39; or &#39;tsne&#39;!&#34;)
+    return embed
+
+
+def get_igraph(z, random_state=0):
+    # Find knn
+    n_neighbors = 15
+    knn_indices, knn_dists, forest = nearest_neighbors(
+        z, n_neighbors, 
+        random_state=np.random.RandomState(random_state),
+        metric=&#39;euclidean&#39;, metric_kwds={},
+        angular=False, verbose=False,
+    )
+
+    # Build graph
+    n_obs = z.shape[0]
+    X = coo_matrix(([], ([], [])), shape=(n_obs, 1))
+    connectivities = fuzzy_simplicial_set(
+        X,
+        n_neighbors,
+        None,
+        None,
+        knn_indices=knn_indices,
+        knn_dists=knn_dists,
+        set_op_mix_ratio=1.0,
+        local_connectivity=1.0,
+    )[0].tocsr()
+
+    # Get igraph graph from adjacency matrix
+    sources, targets = connectivities.nonzero()
+    weights = connectivities[sources, targets].A1
+    g = ig.Graph(directed=None)
+    g.add_vertices(connectivities.shape[0])
+    g.add_edges(list(zip(sources, targets)))
+    g.es[&#39;weight&#39;] = weights
+    return g
+
+
+def louvain_igraph(g, res, random_state=0):
+    &#39;&#39;&#39;
+    Params:
+        g            - igraph object
+        res          - resolution parameter
+        random_state - random seed
+    Returns:
+        labels       - clustered labels
+    &#39;&#39;&#39;
+    # Louvain
+    partition_kwargs = {}
+    partition_type = louvain.RBConfigurationVertexPartition
+    partition_kwargs[&#34;resolution_parameter&#34;] = res
+    partition_kwargs[&#34;seed&#34;] = random_state
+    part = louvain.find_partition(
+                    g, partition_type,
+                    **partition_kwargs,
+                )
+    labels = np.array(part.membership)
+    return labels
+    
+
+def plot_clusters(embed_z, labels, plot_labels=False, path=None):
+    n_labels = len(np.unique(labels))
+    colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
+    
+    fig, ax = plt.subplots(1,1, figsize=(20, 10))
+    for i,l in enumerate(np.unique(labels)):
+        ax.scatter(*embed_z[labels==l].T,
+                    c=[colors[i]], label=str(l),
+                    s=8, alpha=0.4)
+        if plot_labels:
+            ax.text(np.mean(embed_z[labels==l,0]), np.mean(embed_z[labels==l,1]), str(l), fontsize=16)
+    plt.setp(ax, xticks=[], yticks=[])
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                        box.width, box.height * 0.9])
+    ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
+        fancybox=True, shadow=True, markerscale=5, ncol=5)
+    ax.set_title(&#39;Clustering&#39;)
+    if path is not None:
+        plt.savefig(path, dpi=300)
+    plt.plot()
+
+    
+def plot_marker_gene(expression, gene_name, embed_z, path=None):
+    fig, ax = plt.subplots(1,1, figsize=(20, 10))
+    cmap = matplotlib.cm.get_cmap(&#39;Reds&#39;)
+    sc = ax.scatter(*embed_z.T, c=&#39;yellow&#39;, s=15, alpha=0.1)
+    sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=10, alpha=0.5)
+    sc.set_clim(0,1) 
+    plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
+    ax.set_title(&#39;Normalized expression of {}&#39;.format(gene_name))
+    if path is not None:
+        plt.savefig(path, dpi=300)
+    plt.show()
+    return None
+    
+
+def polyfit_with_fixed_points(n, x, y, xf, yf):
+    mat = np.empty((n + 1 + len(xf),) * 2)
+    vec = np.empty((n + 1 + len(xf),))
+    x_n = x**np.arange(2 * n + 1)[:, None]
+    yx_n = np.sum(x_n[:n + 1] * y, axis=1)
+    x_n = np.sum(x_n, axis=1)
+    idx = np.arange(n + 1) + np.arange(n + 1)[:, None]
+    mat[:n + 1, :n + 1] = np.take(x_n, idx)
+    xf_n = xf**np.arange(n + 1)[:, None]
+    mat[:n + 1, n + 1:] = xf_n / 2
+    mat[n + 1:, :n + 1] = xf_n.T
+    mat[n + 1:, n + 1:] = 0
+    vec[:n + 1] = yx_n
+    vec[n + 1:] = yf
+    params = np.linalg.solve(mat, vec)
+
+    return params[:n + 1]
+
+
+def get_smooth_curve(xy, xy_fixed):
+    xy = np.r_[xy, xy_fixed]
+    _, idx = np.unique(xy[:,0], return_index=True)
+    xy = xy[idx,:]
+    
+    params = polyfit_with_fixed_points(
+        3, 
+        xy[:,0], xy[:,1], 
+        xy_fixed[:,0], xy_fixed[:,1]
+        )
+    poly = np.polynomial.Polynomial(params)
+    xx = np.linspace(xy_fixed[0,0], xy_fixed[-1,0], 100)
+
+    return xx, poly(xx)
+
+
+#------------------------------------------------------------------------------
+# Data loader
+#------------------------------------------------------------------------------
+
+type_dict = {
+    # dyno
+    &#39;dentate&#39;:&#39;UMI&#39;, 
+    &#39;immune&#39;:&#39;UMI&#39;, 
+    &#39;neonatal&#39;:&#39;UMI&#39;, 
+    &#39;mouse_brain&#39;:&#39;UMI&#39;, 
+    &#39;mouse_brain_miller&#39;:&#39;UMI&#39;,
+    &#39;mouse_brain_merged&#39;:&#39;UMI&#39;,
+    &#39;planaria_full&#39;:&#39;UMI&#39;, 
+    &#39;planaria_muscle&#39;:&#39;UMI&#39;,
+    &#39;aging&#39;:&#39;non-UMI&#39;, 
+    &#39;cell_cycle&#39;:&#39;non-UMI&#39;,
+    &#39;fibroblast&#39;:&#39;non-UMI&#39;, 
+    &#39;germline&#39;:&#39;non-UMI&#39;,    
+    &#39;human_embryos&#39;:&#39;non-UMI&#39;, 
+    &#39;mesoderm&#39;:&#39;non-UMI&#39;,
+    
+    # dyngen
+    &#34;linear_1&#34;:&#39;non-UMI&#39;, 
+    &#34;linear_2&#34;:&#39;non-UMI&#39;, 
+    &#34;linear_3&#34;:&#39;non-UMI&#39;,
+    &#39;bifurcating_1&#39;:&#39;non-UMI&#39;,
+    &#39;bifurcating_2&#39;:&#39;non-UMI&#39;,
+    &#34;bifurcating_3&#34;:&#39;non-UMI&#39;, 
+    &#34;cycle_1&#34;:&#39;non-UMI&#39;, 
+    &#34;cycle_2&#34;:&#39;non-UMI&#39;, 
+    &#34;cycle_3&#34;:&#39;non-UMI&#39;,
+    &#34;trifurcating_1&#34;:&#39;non-UMI&#39;, 
+    &#34;trifurcating_2&#34;:&#39;non-UMI&#39;,         
+    &#34;converging_1&#34;:&#39;non-UMI&#39;,
+    
+    # our model
+    &#39;linear&#39;:&#39;UMI&#39;,
+    &#39;bifurcation&#39;:&#39;UMI&#39;,
+    &#39;multifurcating&#39;:&#39;UMI&#39;,
+    &#39;tree&#39;:&#39;UMI&#39;,
+}
+
+def load_data(path, file_name):   
+    data = {}
+    
+    with h5py.File(os.path.join(path, file_name+&#39;.h5&#39;), &#39;r&#39;) as f:
+        data[&#39;count&#39;] = np.array(f[&#39;count&#39;], dtype=np.float32)
+        data[&#39;grouping&#39;] = np.array(f[&#39;grouping&#39;]).astype(str)
+        if &#39;gene_names&#39; in f:
+            data[&#39;gene_names&#39;] = np.array(f[&#39;gene_names&#39;]).astype(str)
+        else:
+            data[&#39;gene_names&#39;] = None
+        if &#39;cell_ids&#39; in f:
+            data[&#39;cell_ids&#39;] = np.array(f[&#39;cell_ids&#39;]).astype(str)
+        else:
+            data[&#39;cell_ids&#39;] = None
+            
+        if &#39;milestone_network&#39; in f:
+            if file_name in [&#39;linear&#39;,&#39;bifurcation&#39;,&#39;multifurcating&#39;,&#39;tree&#39;,                              
+                            &#34;cycle_1&#34;, &#34;cycle_2&#34;, &#34;cycle_3&#34;,
+                            &#34;linear_1&#34;, &#34;linear_2&#34;, &#34;linear_3&#34;, 
+                            &#34;trifurcating_1&#34;, &#34;trifurcating_2&#34;, 
+                            &#34;bifurcating_1&#34;, &#39;bifurcating_2&#39;, &#34;bifurcating_3&#34;, 
+                            &#34;converging_1&#34;]:
+                data[&#39;milestone_network&#39;] = pd.DataFrame(
+                    np.array(np.array(list(f[&#39;milestone_network&#39;])).tolist(), dtype=str), 
+                    columns=[&#39;from&#39;,&#39;to&#39;,&#39;w&#39;]
+                ).astype({&#39;w&#39;:np.float32})
+            else:
+                data[&#39;milestone_network&#39;] = pd.DataFrame(
+                    np.array(np.array(list(f[&#39;milestone_network&#39;])).tolist(), dtype=str), 
+                    columns=[&#39;from&#39;,&#39;to&#39;]
+                )
+            data[&#39;root_milestone_id&#39;] = np.array(f[&#39;root_milestone_id&#39;]).astype(str)[0]            
+        else:
+            data[&#39;milestone_net&#39;] = None
+            data[&#39;root_milestone_id&#39;] = None
+            
+        if file_name in [&#39;mouse_brain&#39;, &#39;mouse_brain_miller&#39;]:
+            data[&#39;grouping&#39;] = np.array([&#39;%02d&#39;%int(i) for i in data[&#39;grouping&#39;]], dtype=object)
+            data[&#39;root_milestone_id&#39;] = dict(zip([&#39;mouse_brain&#39;, &#39;mouse_brain_miller&#39;], [&#39;06&#39;, &#39;05&#39;]))[file_name]
+            data[&#39;covariates&#39;] = np.array(np.array(list(f[&#39;covariates&#39;])).tolist(), dtype=np.float32)
+        if file_name in [&#39;mouse_brain_merged&#39;]:
+            data[&#39;grouping&#39;] = np.array(data[&#39;grouping&#39;], dtype=object)
+            data[&#39;root_milestone_id&#39;] = &#39;NEC&#39;
+            data[&#39;covariates&#39;] = np.array(np.array(list(f[&#39;covariates&#39;])).tolist(), dtype=np.float32)
+
+    data[&#39;type&#39;] = type_dict[file_name]
+    if data[&#39;type&#39;]==&#39;non-UMI&#39;:
+        scale_factor = np.sum(data[&#39;count&#39;],axis=1, keepdims=True)/1e6
+        data[&#39;count&#39;] = data[&#39;count&#39;]/scale_factor
+    
+    return data  </code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="VITAE.utils.get_embedding"><code class="name flex">
+<span>def <span class="ident">get_embedding</span></span>(<span>z, dimred='umap', **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_embedding(z, dimred=&#39;umap&#39;, **kwargs):
+    if dimred==&#39;umap&#39;:
+        # umap has some bugs that it may change the original matrix when doing transform
+        mapper = umap.UMAP(**kwargs).fit(z.copy())
+        embed = mapper.embedding_
+    elif dimred==&#39;pca&#39;:
+        kwargs[&#39;n_components&#39;] = 2            
+        embed = PCA(**kwargs).fit_transform(z)
+    elif dimred==&#39;tsne&#39;:
+        embed = TSNE(**kwargs).fit_transform(z)
+    else:
+        raise ValueError(&#34;Dimension reduction method can only be &#39;umap&#39;, &#39;pca&#39; or &#39;tsne&#39;!&#34;)
+    return embed</code></pre>
+</details>
+</dd>
+<dt id="VITAE.utils.get_igraph"><code class="name flex">
+<span>def <span class="ident">get_igraph</span></span>(<span>z, random_state=0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_igraph(z, random_state=0):
+    # Find knn
+    n_neighbors = 15
+    knn_indices, knn_dists, forest = nearest_neighbors(
+        z, n_neighbors, 
+        random_state=np.random.RandomState(random_state),
+        metric=&#39;euclidean&#39;, metric_kwds={},
+        angular=False, verbose=False,
+    )
+
+    # Build graph
+    n_obs = z.shape[0]
+    X = coo_matrix(([], ([], [])), shape=(n_obs, 1))
+    connectivities = fuzzy_simplicial_set(
+        X,
+        n_neighbors,
+        None,
+        None,
+        knn_indices=knn_indices,
+        knn_dists=knn_dists,
+        set_op_mix_ratio=1.0,
+        local_connectivity=1.0,
+    )[0].tocsr()
+
+    # Get igraph graph from adjacency matrix
+    sources, targets = connectivities.nonzero()
+    weights = connectivities[sources, targets].A1
+    g = ig.Graph(directed=None)
+    g.add_vertices(connectivities.shape[0])
+    g.add_edges(list(zip(sources, targets)))
+    g.es[&#39;weight&#39;] = weights
+    return g</code></pre>
+</details>
+</dd>
+<dt id="VITAE.utils.louvain_igraph"><code class="name flex">
+<span>def <span class="ident">louvain_igraph</span></span>(<span>g, res, random_state=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="params">Params</h2>
+<p>g
+- igraph object
+res
+- resolution parameter
+random_state - random seed</p>
+<h2 id="returns">Returns</h2>
+<p>labels
+- clustered labels</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def louvain_igraph(g, res, random_state=0):
+    &#39;&#39;&#39;
+    Params:
+        g            - igraph object
+        res          - resolution parameter
+        random_state - random seed
+    Returns:
+        labels       - clustered labels
+    &#39;&#39;&#39;
+    # Louvain
+    partition_kwargs = {}
+    partition_type = louvain.RBConfigurationVertexPartition
+    partition_kwargs[&#34;resolution_parameter&#34;] = res
+    partition_kwargs[&#34;seed&#34;] = random_state
+    part = louvain.find_partition(
+                    g, partition_type,
+                    **partition_kwargs,
+                )
+    labels = np.array(part.membership)
+    return labels</code></pre>
+</details>
+</dd>
+<dt id="VITAE.utils.plot_clusters"><code class="name flex">
+<span>def <span class="ident">plot_clusters</span></span>(<span>embed_z, labels, plot_labels=False, path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_clusters(embed_z, labels, plot_labels=False, path=None):
+    n_labels = len(np.unique(labels))
+    colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
+    
+    fig, ax = plt.subplots(1,1, figsize=(20, 10))
+    for i,l in enumerate(np.unique(labels)):
+        ax.scatter(*embed_z[labels==l].T,
+                    c=[colors[i]], label=str(l),
+                    s=8, alpha=0.4)
+        if plot_labels:
+            ax.text(np.mean(embed_z[labels==l,0]), np.mean(embed_z[labels==l,1]), str(l), fontsize=16)
+    plt.setp(ax, xticks=[], yticks=[])
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                        box.width, box.height * 0.9])
+    ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
+        fancybox=True, shadow=True, markerscale=5, ncol=5)
+    ax.set_title(&#39;Clustering&#39;)
+    if path is not None:
+        plt.savefig(path, dpi=300)
+    plt.plot()</code></pre>
+</details>
+</dd>
+<dt id="VITAE.utils.plot_marker_gene"><code class="name flex">
+<span>def <span class="ident">plot_marker_gene</span></span>(<span>expression, gene_name, embed_z, path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_marker_gene(expression, gene_name, embed_z, path=None):
+    fig, ax = plt.subplots(1,1, figsize=(20, 10))
+    cmap = matplotlib.cm.get_cmap(&#39;Reds&#39;)
+    sc = ax.scatter(*embed_z.T, c=&#39;yellow&#39;, s=15, alpha=0.1)
+    sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=10, alpha=0.5)
+    sc.set_clim(0,1) 
+    plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
+    ax.set_title(&#39;Normalized expression of {}&#39;.format(gene_name))
+    if path is not None:
+        plt.savefig(path, dpi=300)
+    plt.show()
+    return None</code></pre>
+</details>
+</dd>
+<dt id="VITAE.utils.polyfit_with_fixed_points"><code class="name flex">
+<span>def <span class="ident">polyfit_with_fixed_points</span></span>(<span>n, x, y, xf, yf)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def polyfit_with_fixed_points(n, x, y, xf, yf):
+    mat = np.empty((n + 1 + len(xf),) * 2)
+    vec = np.empty((n + 1 + len(xf),))
+    x_n = x**np.arange(2 * n + 1)[:, None]
+    yx_n = np.sum(x_n[:n + 1] * y, axis=1)
+    x_n = np.sum(x_n, axis=1)
+    idx = np.arange(n + 1) + np.arange(n + 1)[:, None]
+    mat[:n + 1, :n + 1] = np.take(x_n, idx)
+    xf_n = xf**np.arange(n + 1)[:, None]
+    mat[:n + 1, n + 1:] = xf_n / 2
+    mat[n + 1:, :n + 1] = xf_n.T
+    mat[n + 1:, n + 1:] = 0
+    vec[:n + 1] = yx_n
+    vec[n + 1:] = yf
+    params = np.linalg.solve(mat, vec)
+
+    return params[:n + 1]</code></pre>
+</details>
+</dd>
+<dt id="VITAE.utils.get_smooth_curve"><code class="name flex">
+<span>def <span class="ident">get_smooth_curve</span></span>(<span>xy, xy_fixed)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_smooth_curve(xy, xy_fixed):
+    xy = np.r_[xy, xy_fixed]
+    _, idx = np.unique(xy[:,0], return_index=True)
+    xy = xy[idx,:]
+    
+    params = polyfit_with_fixed_points(
+        3, 
+        xy[:,0], xy[:,1], 
+        xy_fixed[:,0], xy_fixed[:,1]
+        )
+    poly = np.polynomial.Polynomial(params)
+    xx = np.linspace(xy_fixed[0,0], xy_fixed[-1,0], 100)
+
+    return xx, poly(xx)</code></pre>
+</details>
+</dd>
+<dt id="VITAE.utils.load_data"><code class="name flex">
+<span>def <span class="ident">load_data</span></span>(<span>path, file_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_data(path, file_name):   
+    data = {}
+    
+    with h5py.File(os.path.join(path, file_name+&#39;.h5&#39;), &#39;r&#39;) as f:
+        data[&#39;count&#39;] = np.array(f[&#39;count&#39;], dtype=np.float32)
+        data[&#39;grouping&#39;] = np.array(f[&#39;grouping&#39;]).astype(str)
+        if &#39;gene_names&#39; in f:
+            data[&#39;gene_names&#39;] = np.array(f[&#39;gene_names&#39;]).astype(str)
+        else:
+            data[&#39;gene_names&#39;] = None
+        if &#39;cell_ids&#39; in f:
+            data[&#39;cell_ids&#39;] = np.array(f[&#39;cell_ids&#39;]).astype(str)
+        else:
+            data[&#39;cell_ids&#39;] = None
+            
+        if &#39;milestone_network&#39; in f:
+            if file_name in [&#39;linear&#39;,&#39;bifurcation&#39;,&#39;multifurcating&#39;,&#39;tree&#39;,                              
+                            &#34;cycle_1&#34;, &#34;cycle_2&#34;, &#34;cycle_3&#34;,
+                            &#34;linear_1&#34;, &#34;linear_2&#34;, &#34;linear_3&#34;, 
+                            &#34;trifurcating_1&#34;, &#34;trifurcating_2&#34;, 
+                            &#34;bifurcating_1&#34;, &#39;bifurcating_2&#39;, &#34;bifurcating_3&#34;, 
+                            &#34;converging_1&#34;]:
+                data[&#39;milestone_network&#39;] = pd.DataFrame(
+                    np.array(np.array(list(f[&#39;milestone_network&#39;])).tolist(), dtype=str), 
+                    columns=[&#39;from&#39;,&#39;to&#39;,&#39;w&#39;]
+                ).astype({&#39;w&#39;:np.float32})
+            else:
+                data[&#39;milestone_network&#39;] = pd.DataFrame(
+                    np.array(np.array(list(f[&#39;milestone_network&#39;])).tolist(), dtype=str), 
+                    columns=[&#39;from&#39;,&#39;to&#39;]
+                )
+            data[&#39;root_milestone_id&#39;] = np.array(f[&#39;root_milestone_id&#39;]).astype(str)[0]            
+        else:
+            data[&#39;milestone_net&#39;] = None
+            data[&#39;root_milestone_id&#39;] = None
+            
+        if file_name in [&#39;mouse_brain&#39;, &#39;mouse_brain_miller&#39;]:
+            data[&#39;grouping&#39;] = np.array([&#39;%02d&#39;%int(i) for i in data[&#39;grouping&#39;]], dtype=object)
+            data[&#39;root_milestone_id&#39;] = dict(zip([&#39;mouse_brain&#39;, &#39;mouse_brain_miller&#39;], [&#39;06&#39;, &#39;05&#39;]))[file_name]
+            data[&#39;covariates&#39;] = np.array(np.array(list(f[&#39;covariates&#39;])).tolist(), dtype=np.float32)
+        if file_name in [&#39;mouse_brain_merged&#39;]:
+            data[&#39;grouping&#39;] = np.array(data[&#39;grouping&#39;], dtype=object)
+            data[&#39;root_milestone_id&#39;] = &#39;NEC&#39;
+            data[&#39;covariates&#39;] = np.array(np.array(list(f[&#39;covariates&#39;])).tolist(), dtype=np.float32)
+
+    data[&#39;type&#39;] = type_dict[file_name]
+    if data[&#39;type&#39;]==&#39;non-UMI&#39;:
+        scale_factor = np.sum(data[&#39;count&#39;],axis=1, keepdims=True)/1e6
+        data[&#39;count&#39;] = data[&#39;count&#39;]/scale_factor
+    
+    return data  </code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="VITAE.utils.Early_Stopping"><code class="flex name class">
+<span>class <span class="ident">Early_Stopping</span></span>
+<span>(</span><span>warmup=0, patience=10, tolerance=0.001, is_minimize=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Early_Stopping():
+    def __init__(self, warmup=0, patience=10, tolerance=1e-3, is_minimize=True):
+        self.warmup = warmup
+        self.patience = patience
+        self.tolerance = tolerance
+        self.is_minimize = is_minimize
+
+        self.step = -1
+        self.best_step = -1
+        self.best_metric = np.inf
+
+        if not self.is_minimize:
+            self.factor = -1.0
+        else:
+            self.factor = 1.0
+
+    def __call__(self, metric):
+        self.step += 1
+        
+        if self.step &lt; self.warmup:
+            return False
+        elif self.factor*metric&lt;self.factor*self.best_metric-self.tolerance:
+            self.best_metric = metric
+            self.best_step = self.step
+            return False
+        elif self.step - self.best_step&gt;self.patience:
+            print(&#39;Best Epoch: %d. Best Metric: %f.&#39;%(self.best_step, self.best_metric))
+            return True
+        else:
+            return False</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="VITAE" href="index.html">VITAE</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="VITAE.utils.get_embedding" href="#VITAE.utils.get_embedding">get_embedding</a></code></li>
+<li><code><a title="VITAE.utils.get_igraph" href="#VITAE.utils.get_igraph">get_igraph</a></code></li>
+<li><code><a title="VITAE.utils.louvain_igraph" href="#VITAE.utils.louvain_igraph">louvain_igraph</a></code></li>
+<li><code><a title="VITAE.utils.plot_clusters" href="#VITAE.utils.plot_clusters">plot_clusters</a></code></li>
+<li><code><a title="VITAE.utils.plot_marker_gene" href="#VITAE.utils.plot_marker_gene">plot_marker_gene</a></code></li>
+<li><code><a title="VITAE.utils.polyfit_with_fixed_points" href="#VITAE.utils.polyfit_with_fixed_points">polyfit_with_fixed_points</a></code></li>
+<li><code><a title="VITAE.utils.get_smooth_curve" href="#VITAE.utils.get_smooth_curve">get_smooth_curve</a></code></li>
+<li><code><a title="VITAE.utils.load_data" href="#VITAE.utils.load_data">load_data</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="VITAE.utils.Early_Stopping" href="#VITAE.utils.Early_Stopping">Early_Stopping</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+</footer>
+</body>
+</html>

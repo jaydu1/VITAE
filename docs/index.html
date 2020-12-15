@@ -1,0 +1,1755 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.1" />
+<title>VITAE API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Package <code>VITAE</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">__all__ = [&#39;VITAE&#39;]
+
+from VITAE.VITAE import VITAE, get_embedding, get_igraph, louvain_igraph, plot_clusters, load_data
+
+__author__ = &#34;Jin-Hong Du, Ming Gao, and Jingshu Wang&#34;
+__copyright__ = &#34;Copyright 2020, The Trajectory Inference Project&#34;
+
+__license__ = &#34;MIT&#34;
+__version__ = &#34;1.0.0&#34;
+__maintainer__ = &#34;Jin-Hong Du&#34;
+__email__ = &#34;dujinhong@uchicago.edu&#34;
+__status__ = &#34;Development&#34;</code></pre>
+</details>
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="VITAE.inference" href="inference.html">VITAE.inference</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="VITAE.metric" href="metric.html">VITAE.metric</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="VITAE.model" href="model.html">VITAE.model</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="VITAE.preprocess" href="preprocess.html">VITAE.preprocess</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="VITAE.train" href="train.html">VITAE.train</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="VITAE.utils" href="utils.html">VITAE.utils</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="VITAE.VITAE"><code class="flex name class">
+<span>class <span class="ident">VITAE</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Variational Inference for Trajectory by AutoEncoder.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class VITAE():
+    &#34;&#34;&#34;
+    Variational Inference for Trajectory by AutoEncoder.
+    &#34;&#34;&#34;
+    def __init__(self):
+        pass
+
+    def get_data(self, X = None, adata = None, labels = None,
+                 covariate=None, cell_names = None, gene_names = None):
+        &#39;&#39;&#39;Get data for model.
+
+        Parameters
+        ----------
+        X : np.array, optional
+            \([N, G]\) counts or expressions data.
+        adata : AnnData, optional
+            a scanpy object.      
+        covariate : np array
+            \([N, s]\) covariate data..
+        labels : np.array, optional
+            \([N,]\) a list of labelss for cells.
+        cell_names : np.array, optional
+            \([N,]\) a list of cell names.
+        gene_names : np.array, optional
+            \([N,]\) a list of gene names.
+        &#39;&#39;&#39;
+        if adata is None and X is None:
+            raise ValueError(&#34;Either X or adata should be given!&#34;)
+        if adata is not None and X is not None:
+            warnings.warn(&#34;Both X and adata are given, will use adata!&#34;)
+
+        self.adata = adata        
+        self.raw_X = None if X is None else X.astype(np.float32)
+        self.c_score = None if covariate is None else np.array(covariate, np.float32)
+        if sp.sparse.issparse(self.raw_X):
+            self.raw_X = self.raw_X.toarray()
+        self.raw_label_names = None if labels is None else np.array(labels, dtype = str)
+        if X is None:
+            self.raw_cell_names = None
+            self.raw_gene_names = None
+        else:            
+            self.raw_cell_names = np.array([&#39;c_%d&#39;%i for i in range(self.raw_X.shape[0])]) if \
+                cell_names is None else np.array(cell_names, dtype = str)
+            self.raw_gene_names = np.array([&#39;g_%d&#39;%i for i in range(self.raw_X.shape[1])]) if \
+                gene_names is None else np.array(gene_names, dtype = str)
+
+        
+    def preprocess_data(self, processed = False, dimred = False,
+                        K = 1e4, gene_num = 2000, data_type = &#39;UMI&#39;, npc = 64):
+        &#39;&#39;&#39; Data preprocessing - log-normalization, feature selection, and scaling.            
+
+        Parameters
+        ----------
+        processed : boolean, optional
+            whether adata has been processed.
+        dimred : boolean, optional
+            whether the processed adata is after dimension reduction.
+        K : float, optional              
+            the constant summing gene expression in each cell up to.
+        gene_num : int, optional
+            number of feature to select.
+        data_type : str, optional
+            &#39;UMI&#39;, &#39;non-UMI&#39; and &#39;Gaussian&#39;, default is &#39;UMI&#39;. If the input is a processed scanpy object, data type is set to Gaussian.
+        npc : int, optional
+            the number of PCs to retain.
+        &#39;&#39;&#39;
+        if data_type not in set([&#39;UMI&#39;, &#39;non-UMI&#39;, &#39;Gaussian&#39;]):
+            raise ValueError(&#34;Invalid data type, must be one of &#39;UMI&#39;, &#39;non-UMI&#39;, and &#39;Gaussian&#39;.&#34;)
+
+        if (self.adata is not None) &amp; processed:
+            self.data_type = &#39;Gaussian&#39;
+        else:
+            self.data_type = data_type
+
+        raw_X = self.raw_X.copy() if self.raw_X is not None else None
+        self.X_normalized, self.expression, self.X, self.c_score, \
+        self.cell_names, self.gene_names, self.selected_gene_names, \
+        self.scale_factor, self.labels, self.label_names, \
+        self.le, self.gene_scalar = preprocess.preprocess(
+            self.adata,
+            processed,
+            dimred,
+            raw_X,
+            self.c_score,
+            self.raw_label_names,
+            self.raw_cell_names,
+            self.raw_gene_names,
+            data_type, K, gene_num, npc)
+        self.dim_origin = self.X.shape[1]
+        self.selected_cell_subset = self.cell_names
+        self.selected_cell_subset_id = np.arange(len(self.cell_names))
+        self.adata = None
+
+
+    def build_model(self,
+        dimensions = [16],
+        dim_latent = 8,   
+        ):
+        &#39;&#39;&#39; Initialize the Variational Auto Encoder model.
+        
+        Parameters
+        ----------
+        dimensions : list, optional
+            a list of dimensions of layers of autoencoder between latent space and original space.
+        dim_latent : int, optional
+            dimension of latent space.
+        &#39;&#39;&#39;
+        self.dimensions = dimensions
+        self.dim_latent = dim_latent
+    
+        self.vae = model.VariationalAutoEncoder(
+            self.dim_origin, self.dimensions,
+            self.dim_latent, self.data_type,
+            False if self.c_score is None else True
+            )
+        
+
+    def save_model(self, path_to_file=&#39;model.checkpoint&#39;):
+        &#39;&#39;&#39;Saving model weights.
+        
+        Parameters
+        ----------
+        path_to_file : str, optional
+            path to weight files of pre-trained or trained model           
+        &#39;&#39;&#39;
+        self.vae.save_weights(path_to_file)
+        if hasattr(self, &#39;cluster_labels&#39;) and self.cluster_labels is not None:
+            with open(path_to_file+&#39;.label&#39;, &#39;wb&#39;) as f:
+                np.save(f, self.cluster_labels)
+        with open(path_to_file+&#39;.config&#39;, &#39;wb&#39;) as f:
+            np.save(f, [self.dim_origin,
+                        self.dimensions,
+                        self.dim_latent,
+                        self.data_type,
+                        False if self.c_score is None else True])
+        if hasattr(self, &#39;pi&#39;):
+            with open(path_to_file+&#39;.inference&#39;, &#39;wb&#39;) as f:
+                np.save(f, [self.pi, self.mu, self.pc_x,
+                            self.w_tilde, self.var_w_tilde,
+                            self.D_JS, self.z, self.embed_z, self.inferer.embed_mu])
+    
+
+    def load_model(self, path_to_file=&#39;model.checkpoint&#39;, load_labels=False):
+        &#39;&#39;&#39;Load model weights.
+
+        Parameters
+        ----------
+        path_to_file : str, optional 
+            path to weight files of pre trained or trained model
+        load_labels : boolean, optional
+            whether to load clustering labels or not.
+            If load_labels is True, then the LatentSpace layer will be initialized basd on the model. 
+            If load_labels is False, then the LatentSpace layer will not be initialized.
+        &#39;&#39;&#39; 
+        if not os.path.exists(path_to_file+&#39;.config&#39;):
+            raise AssertionError(&#39;Config file not exist!&#39;)               
+        if load_labels and not os.path.exists(path_to_file+&#39;.label&#39;):
+            raise AssertionError(&#39;Label file not exist!&#39;)
+
+        with open(path_to_file+&#39;.config&#39;, &#39;rb&#39;) as f:
+            [self.dim_origin, self.dimensions,
+            self.dim_latent, self.data_type, has_c] = np.load(f, allow_pickle=True)
+        self.vae = model.VariationalAutoEncoder(
+            self.dim_origin, self.dimensions, 
+            self.dim_latent, self.data_type, has_c
+            )
+
+        if load_labels:            
+            with open(path_to_file+&#39;.label&#39;, &#39;rb&#39;) as f:
+                cluster_labels = np.load(f, allow_pickle=True)
+            n_clusters = len(np.unique(cluster_labels))
+            self.init_latent_space(n_clusters, cluster_labels)
+            if os.path.exists(path_to_file+&#39;.inference&#39;):
+                with open(path_to_file+&#39;.inference&#39;, &#39;rb&#39;) as f:
+                    [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                        self.D_JS, self.z, self.embed_z, embed_mu] = np.load(f, allow_pickle=True)
+                self.inferer.mu = self.mu
+                self.inferer.embed_z = self.embed_z
+                self.inferer.embed_mu = embed_mu
+
+        self.vae.load_weights(path_to_file)
+
+
+    def pre_train(self, learning_rate = 1e-3, batch_size = 32, L = 1, alpha=0.01,
+            num_epoch = 300, num_step_per_epoch = None,
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0, 
+            path_to_weights = None):
+        &#39;&#39;&#39;Pretrain the model with specified learning rate.
+
+        Parameters
+        ----------
+        learning_rate : float, optional
+            the initial learning rate for the Adam optimizer.
+        batch_size : int, optional 
+            the batch size for pre-training.
+        L : int, optional 
+            the number of MC samples.
+        num_epoch : int, optional 
+            the maximum number of epoches.
+        num_step_per_epoch : int, optional 
+            the number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
+        early_stopping_patience : int, optional 
+            the maximum number of epoches if there is no improvement.
+        early_stopping_tolerance : float, optional 
+            the minimum change of loss to be considered as an improvement.
+        early_stopping_warmup : int, optional
+            the number of warmup epoches.
+        path_to_weights : str, optional 
+            the path of weight file to be saved; not saving weight if None.
+        &#39;&#39;&#39;    
+        if num_step_per_epoch is None:
+            num_step_per_epoch = self.X.shape[0]//batch_size+1
+                
+        train.clear_session()
+        self.train_dataset = train.warp_dataset(self.X_normalized, 
+                                                self.c_score,
+                                                batch_size, 
+                                                self.X, 
+                                                self.scale_factor)
+        self.vae = train.pre_train(
+            self.train_dataset,
+            self.vae,
+            learning_rate,
+            early_stopping_patience,
+            early_stopping_tolerance,
+            early_stopping_warmup,
+            num_epoch,
+            num_step_per_epoch,
+            L, alpha)
+
+        if path_to_weights is not None:
+            self.save_model(path_to_weights)
+          
+
+    def get_latent_z(self):
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+        return self.vae.get_z(self.X_normalized[self.selected_cell_subset_id,:], c)
+
+
+    def set_cell_subset(self, selected_cell_names):
+        self.selected_cell_subset = np.unique(selected_cell_names)
+        self.selected_cell_subset_id = np.sort(np.where(np.in1d(self.cell_names, selected_cell_names))[0])
+        
+    
+    def refine_pi(self, batch_size=64):  
+        &#39;&#39;&#39;Refine pi by the its posterior. This function will be effected if &#39;selected_cell_subset_id&#39; is set.
+
+        Parameters
+        ----------
+        batch_size - int, optional 
+            the batch size when computing \(p(c_i|Y_i,X_i)\).
+        
+        Returns
+        ----------
+        pi : np.array
+            \([1,K]\) the original pi.
+        post_pi : np.array 
+            \([1,K]\) the posterior estimate of pi.
+        &#39;&#39;&#39;      
+        if len(self.selected_cell_subset_id)!=len(self.cell_names):
+            warnings.warn(&#34;Only using a subset of cells to refine pi.&#34;)
+
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+        self.test_dataset = train.warp_dataset(
+            self.X_normalized[self.selected_cell_subset_id,:], 
+            c,
+            batch_size)
+        pi, p_c_x = self.vae.get_pc_x(self.test_dataset)
+
+        post_pi = np.mean(p_c_x, axis=0, keepdims=True)        
+        self.vae.latent_space.pi.assign(np.log(post_pi+1e-16))
+        return pi, post_pi
+
+
+    def init_latent_space(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
+        &#39;&#39;&#39;Initialze the latent space.
+
+        Parameters
+        ----------
+        n_clusters : int
+            the number of cluster.
+        cluster_labels : np.array, optional
+            \([N,]\) the  cluster labels.
+        mu : np.array, optional
+            \([d,k]\) the value of initial \(\\mu\).
+        log_pi : np.array, optional
+            \([1,K]\) the value of initial \(\\log(\\pi)\).
+        &#39;&#39;&#39;             
+        z = self.get_latent_z()
+        if (mu is None) &amp; (cluster_labels is not None):
+            mu = np.zeros((z.shape[1], n_clusters))
+            for i,l in enumerate(np.unique(cluster_labels)):
+                mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+
+        self.n_clusters = n_clusters
+        self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
+        self.vae.init_latent_space(n_clusters, mu, log_pi)
+        self.inferer = Inferer(self.n_clusters)            
+
+
+    def train(self, learning_rate = 1e-3, batch_size = 32, 
+            L = 1, alpha=0.01, beta=1, 
+            num_epoch = 300, num_step_per_epoch = None,
+            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 5,
+            path_to_weights = None, plot_every_num_epoch=None, dimred=&#39;umap&#39;, **kwargs):
+        &#39;&#39;&#39;Train the model.
+
+        Parameters
+        ----------
+        learning_rate : float, optional  
+            the initial learning rate for the Adam optimizer.
+        batch_size : int, optional  
+            the batch size for training.
+        L : int, optional  
+            the number of MC samples.
+        alpha : float, optional  
+            the value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
+        beta : float, optional  
+            the value of beta in beta-VAE.
+        num_epoch : int, optional  
+            the number of epoch.
+        num_step_per_epoch : int, optional 
+            the number of step per epoch, it will be inferred from number of cells and batch size if it is None.
+        early_stopping_patience : int, optional 
+            the maximum number of epoches if there is no improvement.
+        early_stopping_tolerance : float, optional 
+            the minimum change of loss to be considered as an improvement.
+        early_stopping_warmup : int, optional 
+            the number of warmup epoches.            
+        path_to_weights : str, optional 
+            the path of weight file to be saved; not saving weight if None.
+        plot_every_num_epoch : int, optional 
+            plot the intermediate result every few epoches, or not plotting if it is None.            
+        dimred : str, optional 
+            the name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;. Only used if &#39;plot_every_num_epoch&#39; is not None. 
+        **kwargs :  
+            extra key-value arguments for dimension reduction algorithms.        
+        &#39;&#39;&#39;
+        if num_step_per_epoch is None:
+            num_step_per_epoch = len(self.selected_cell_subset_id)//batch_size+1
+            
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+        self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:],
+                                                c,
+                                                batch_size, 
+                                                self.X[self.selected_cell_subset_id,:], 
+                                                self.scale_factor[self.selected_cell_subset_id])
+        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+                                               c,
+                                               batch_size)
+        self.vae = train.train(
+            self.train_dataset,
+            self.test_dataset,
+            self.vae,
+            learning_rate,
+            early_stopping_patience,
+            early_stopping_tolerance,
+            early_stopping_warmup,
+            num_epoch,
+            num_step_per_epoch,
+            L,
+            alpha,
+            beta,
+            self.labels[self.selected_cell_subset_id],            
+            plot_every_num_epoch,
+            dimred=&#39;umap&#39;, 
+            **kwargs            
+            )
+            
+        if path_to_weights is not None:
+            self.save_model(path_to_weights)
+          
+
+    def init_inference(self, batch_size=32, L=5, 
+            dimred=&#39;umap&#39;, refit_dimred=True, **kwargs):
+        &#39;&#39;&#39;Initialze trajectory inference by computing the posterior estimations.        
+
+        Parameters
+        ----------
+        batch_size : int, optional
+            batch size when doing inference.
+        L : int, optional
+            number of MC samples when doing inference.
+        dimred : str, optional
+            name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;.
+        refit_dimred : boolean, optional 
+            if refit the dimension reduction algorithm or not.
+        **kwargs :  
+            extra key-value arguments for dimension reduction algorithms.              
+        &#39;&#39;&#39;
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+                                               c,
+                                               batch_size)
+        self.pi, self.mu, self.pc_x,\
+            self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
+        if refit_dimred or not hasattr(self.inferer, &#39;embed_z&#39;):
+            self.embed_z = self.inferer.init_embedding(self.z, self.mu, **kwargs)
+        else:
+            self.embed_z = self.inferer.embed_z
+        return None
+        
+        
+    def comp_inference_score(self, method=&#39;modified_map&#39;, thres=0.5, no_loop=False, is_plot=True, path=None):
+        &#39;&#39;&#39; Compute edge scores.
+
+        Parameters
+        ----------        
+        method : string, optional 
+            &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, and &#39;modified_map&#39;.
+        thres : float, optional 
+            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
+        no_loop : boolean, optional 
+            if loops are allowed to exist in the graph.
+        is_plot : boolean, optional  
+            whether to plot or not.
+        path : string, optional 
+            path to save figure, or don&#39;t save if it is None.
+        
+        Returns
+        ----------
+        G : nx.Graph 
+            a weighted graph with weight on each edge indicating its score of existence.
+        &#39;&#39;&#39;
+        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
+        if is_plot:
+            self.inferer.plot_clusters(self.cluster_labels, path=path)
+        return G
+        
+        
+    def infer_trajectory(self, init_node: int, cutoff=None, is_plot=True, path=None):
+        &#39;&#39;&#39;Infer the trajectory.
+
+        Parameters
+        ----------  
+        init_node : int
+            the initial node for the inferred trajectory.
+        cutoff : string, optional
+            threshold for filtering edges with scores less than cutoff.
+        is_plot : boolean, optional
+            whether to plot or not.
+        path : string, optional  
+            path to save figure, or don&#39;t save if it is None.
+
+        Returns
+        ----------
+        G : nx.Graph 
+            the modified graph that indicates the inferred trajectory.
+        w : np.array
+            \([N,k]\) modified \(\\tilde{w}\).
+        pseudotime : np.array
+            \([N,]\) pseudotime based on projected trajectory.
+        &#39;&#39;&#39;
+        G, w, pseudotime = self.inferer.infer_trajectory(init_node, 
+                                                         self.label_names[self.selected_cell_subset_id], 
+                                                         cutoff, 
+                                                         path=path, 
+                                                         is_plot=is_plot)
+        return G, w, pseudotime
+
+    
+    def plot_marker_gene(self, gene_name: str, refit_dimred=False, dimred=&#39;umap&#39;, path=None, **kwargs):
+        &#39;&#39;&#39;Plot expression of the given marker gene.
+
+        Parameters
+        ----------  
+        gene_name : str 
+            name of the marker gene.
+        refit_dimred : boolean, optional 
+            whether to refit dimension reduction or use the existing embedding after inference.
+        dimred : str, optional
+            name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;.
+        path : str, optional
+            path to save the figure, or not saving if it is None.
+        **kwargs :  
+            extra key-value arguments for dimension reduction algorithms.
+        &#39;&#39;&#39;
+        if gene_name not in self.gene_names:
+            raise ValueError(&#34;Gene &#39;{}&#39; does not exist!&#34;.format(gene_name))
+        if self.expression is None:
+            raise ReferenceError(&#34;The expression matrix does not exist!&#34;)
+        expression = self.expression[self.selected_cell_subset_id,:][:,self.gene_names==gene_name].flatten()
+        
+        if not hasattr(self, &#39;embed_z&#39;) or refit_dimred:
+            z = self.get_latent_z()       
+            embed_z = get_embedding(z, dimred, **kwargs)
+        else:
+            embed_z = self.embed_z
+        plot_marker_gene(expression, 
+                         gene_name, 
+                         embed_z[self.selected_cell_subset_id,:],
+                         path)
+        return None
+
+
+    def evaluate(self, milestone_net, begin_node_true, grouping=None,
+                thres=0.5, no_loop=True, cutoff=None,
+                method=&#39;mean&#39;, path=None):
+        &#39;&#39;&#39; Evaluate the model.
+
+        Parameters
+        ----------  
+        milestone_net :
+            the true milestone network.
+            For real data, milestone_net will be a DataFrame of the graph of nodes.
+            Eg.
+                from         to
+                cluster 1    cluster 2
+                cluster 2    cluster 3
+            For synthetic data, milestone_net will be a DataFrame of the (projected)
+            positions of cells. The indexes are the orders of cells in the dataset.
+            Eg.
+                from         to          w
+                cluster 1    cluster 1   1
+                cluster 1    cluster 2   0.1
+        begin_node_true : str or int
+            the true begin node of the milestone.
+        grouping : np.array, optional
+            \([N,]\) for real data, grouping must be provided.
+
+        Returns
+        ----------
+        res : pd.DataFrame
+            the evaluation result.
+        &#39;&#39;&#39;
+        # Evaluate for the whole dataset will ignore selected_cell_subset.
+        if len(self.selected_cell_subset)!=len(self.cell_names):
+            warnings.warn(&#34;Evaluate for the whole dataset.&#34;)
+        
+        # If the begin_node_true, need to encode it by self.le.
+        if isinstance(begin_node_true, str):
+            begin_node_true = self.le.transform([begin_node_true])[0]
+            
+        # For generated data, grouping information is already in milestone_net
+        if &#39;w&#39; in milestone_net.columns:
+            grouping = None
+            
+        # If milestone_net is provided, transform them to be numeric.
+        if milestone_net is not None:
+            milestone_net[&#39;from&#39;] = self.le.transform(milestone_net[&#39;from&#39;])
+            milestone_net[&#39;to&#39;] = self.le.transform(milestone_net[&#39;to&#39;])
+            
+        begin_node_pred = int(np.argmin(np.mean((
+            self.z[self.labels==begin_node_true,:,np.newaxis] -
+            self.mu[np.newaxis,:,:])**2, axis=(0,1))))
+        
+        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
+        G, w, pseudotime = self.inferer.infer_trajectory(begin_node_pred, self.label_names, cutoff=cutoff, path=path, is_plot=False)
+        
+        # 1. Topology
+        G_pred = nx.Graph()
+        G_pred.add_nodes_from(G.nodes)
+        G_pred.add_edges_from(G.edges)
+        nx.set_node_attributes(G_pred, False, &#39;is_init&#39;)
+        G_pred.nodes[begin_node_pred][&#39;is_init&#39;] = True
+
+        G_true = nx.Graph()
+        G_true.add_nodes_from(G.nodes)
+        # if &#39;grouping&#39; is not provided, assume &#39;milestone_net&#39; contains proportions
+        if grouping is None:
+            G_true.add_edges_from(list(
+                milestone_net[~pd.isna(milestone_net[&#39;w&#39;])].groupby([&#39;from&#39;, &#39;to&#39;]).count().index))
+        # otherwise, &#39;milestone_net&#39; indicates edges
+        else:
+            if milestone_net is not None:             
+                G_true.add_edges_from(list(
+                    milestone_net.groupby([&#39;from&#39;, &#39;to&#39;]).count().index))
+            grouping = self.le.transform(grouping)
+        G_true.remove_edges_from(nx.selfloop_edges(G_true))
+        nx.set_node_attributes(G_true, False, &#39;is_init&#39;)
+        G_true.nodes[begin_node_true][&#39;is_init&#39;] = True
+        res = topology(G_true, G_pred)
+            
+        # 2. Milestones assignment
+        if grouping is None:
+            milestones_true = milestone_net[&#39;from&#39;].values.copy()
+            milestones_true[(milestone_net[&#39;from&#39;]!=milestone_net[&#39;to&#39;])
+                           &amp;(milestone_net[&#39;w&#39;]&lt;0.5)] = milestone_net[(milestone_net[&#39;from&#39;]!=milestone_net[&#39;to&#39;])
+                                                                      &amp;(milestone_net[&#39;w&#39;]&lt;0.5)][&#39;to&#39;].values
+        else:
+            milestones_true = grouping
+        milestones_true = milestones_true[pseudotime!=-1]
+        milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
+        res[&#39;ARI&#39;] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
+        
+        if grouping is None:
+            n_samples = len(milestone_net)
+            prop = np.zeros((n_samples,n_samples))
+            prop[np.arange(n_samples), milestone_net[&#39;to&#39;]] = 1-milestone_net[&#39;w&#39;]
+            prop[np.arange(n_samples), milestone_net[&#39;from&#39;]] = np.where(np.isnan(milestone_net[&#39;w&#39;]), 1, milestone_net[&#39;w&#39;])
+            res[&#39;GRI&#39;] = get_GRI(prop, w)
+        else:
+            res[&#39;GRI&#39;] = get_GRI(grouping, w)
+        
+        # 3. Correlation between geodesic distances / Pseudotime
+        if no_loop:
+            if grouping is None:
+                pseudotime_true = milestone_net[&#39;from&#39;].values + 1 - milestone_net[&#39;w&#39;].values
+                pseudotime_true[np.isnan(pseudotime_true)] = milestone_net[pd.isna(milestone_net[&#39;w&#39;])][&#39;from&#39;].values            
+            else:
+                pseudotime_true = - np.ones(len(grouping))
+                nx.set_edge_attributes(G_true, values = 1, name = &#39;weight&#39;)
+                connected_comps = nx.node_connected_component(G_true, begin_node_true)
+                subG = G_true.subgraph(connected_comps)
+                milestone_net_true = self.inferer.build_milestone_net(subG, begin_node_true)
+                if len(milestone_net_true)&gt;0:
+                    pseudotime_true[grouping==int(milestone_net_true[0,0])] = 0
+                    for i in range(len(milestone_net_true)):
+                        pseudotime_true[grouping==int(milestone_net_true[i,1])] = milestone_net_true[i,-1]
+            pseudotime_true = pseudotime_true[pseudotime&gt;-1]
+            pseudotime_pred = pseudotime[pseudotime&gt;-1]
+            res[&#39;PDT score&#39;] = np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]
+        else:
+            res[&#39;PDT score&#39;] = np.nan
+            
+        # 4. Shape
+        # score_cos_theta = 0
+        # for (_from,_to) in G.edges:
+        #     _z = self.z[(w[:,_from]&gt;0) &amp; (w[:,_to]&gt;0),:]
+        #     v_1 = _z - self.mu[:,_from]
+        #     v_2 = _z - self.mu[:,_to]
+        #     cos_theta = np.sum(v_1*v_2, -1)/(np.linalg.norm(v_1,axis=-1)*np.linalg.norm(v_2,axis=-1)+1e-12)
+
+        #     score_cos_theta += np.sum((1-cos_theta)/2)
+
+        # res[&#39;score_cos_theta&#39;] = score_cos_theta/(np.sum(np.sum(w&gt;0, axis=-1)==2)+1e-12)
+        return res</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="VITAE.VITAE.get_data"><code class="name flex">
+<span>def <span class="ident">get_data</span></span>(<span>self, X=None, adata=None, labels=None, covariate=None, cell_names=None, gene_names=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get data for model.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[N, G]</span><script type="math/tex">[N, G]</script></span> counts or expressions data.</dd>
+<dt><strong><code>adata</code></strong> :&ensp;<code>AnnData</code>, optional</dt>
+<dd>a scanpy object.</dd>
+<dt><strong><code>covariate</code></strong> :&ensp;<code>np array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, s]</span><script type="math/tex">[N, s]</script></span> covariate data..</dd>
+<dt><strong><code>labels</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[N,]</span><script type="math/tex">[N,]</script></span> a list of labelss for cells.</dd>
+<dt><strong><code>cell_names</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[N,]</span><script type="math/tex">[N,]</script></span> a list of cell names.</dd>
+<dt><strong><code>gene_names</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[N,]</span><script type="math/tex">[N,]</script></span> a list of gene names.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_data(self, X = None, adata = None, labels = None,
+             covariate=None, cell_names = None, gene_names = None):
+    &#39;&#39;&#39;Get data for model.
+
+    Parameters
+    ----------
+    X : np.array, optional
+        \([N, G]\) counts or expressions data.
+    adata : AnnData, optional
+        a scanpy object.      
+    covariate : np array
+        \([N, s]\) covariate data..
+    labels : np.array, optional
+        \([N,]\) a list of labelss for cells.
+    cell_names : np.array, optional
+        \([N,]\) a list of cell names.
+    gene_names : np.array, optional
+        \([N,]\) a list of gene names.
+    &#39;&#39;&#39;
+    if adata is None and X is None:
+        raise ValueError(&#34;Either X or adata should be given!&#34;)
+    if adata is not None and X is not None:
+        warnings.warn(&#34;Both X and adata are given, will use adata!&#34;)
+
+    self.adata = adata        
+    self.raw_X = None if X is None else X.astype(np.float32)
+    self.c_score = None if covariate is None else np.array(covariate, np.float32)
+    if sp.sparse.issparse(self.raw_X):
+        self.raw_X = self.raw_X.toarray()
+    self.raw_label_names = None if labels is None else np.array(labels, dtype = str)
+    if X is None:
+        self.raw_cell_names = None
+        self.raw_gene_names = None
+    else:            
+        self.raw_cell_names = np.array([&#39;c_%d&#39;%i for i in range(self.raw_X.shape[0])]) if \
+            cell_names is None else np.array(cell_names, dtype = str)
+        self.raw_gene_names = np.array([&#39;g_%d&#39;%i for i in range(self.raw_X.shape[1])]) if \
+            gene_names is None else np.array(gene_names, dtype = str)</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.preprocess_data"><code class="name flex">
+<span>def <span class="ident">preprocess_data</span></span>(<span>self, processed=False, dimred=False, K=10000.0, gene_num=2000, data_type='UMI', npc=64)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Data preprocessing - log-normalization, feature selection, and scaling.
+</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>processed</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether adata has been processed.</dd>
+<dt><strong><code>dimred</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether the processed adata is after dimension reduction.</dd>
+<dt><strong><code>K</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the constant summing gene expression in each cell up to.</dd>
+<dt><strong><code>gene_num</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of feature to select.</dd>
+<dt><strong><code>data_type</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>'UMI', 'non-UMI' and 'Gaussian', default is 'UMI'. If the input is a processed scanpy object, data type is set to Gaussian.</dd>
+<dt><strong><code>npc</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of PCs to retain.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def preprocess_data(self, processed = False, dimred = False,
+                    K = 1e4, gene_num = 2000, data_type = &#39;UMI&#39;, npc = 64):
+    &#39;&#39;&#39; Data preprocessing - log-normalization, feature selection, and scaling.            
+
+    Parameters
+    ----------
+    processed : boolean, optional
+        whether adata has been processed.
+    dimred : boolean, optional
+        whether the processed adata is after dimension reduction.
+    K : float, optional              
+        the constant summing gene expression in each cell up to.
+    gene_num : int, optional
+        number of feature to select.
+    data_type : str, optional
+        &#39;UMI&#39;, &#39;non-UMI&#39; and &#39;Gaussian&#39;, default is &#39;UMI&#39;. If the input is a processed scanpy object, data type is set to Gaussian.
+    npc : int, optional
+        the number of PCs to retain.
+    &#39;&#39;&#39;
+    if data_type not in set([&#39;UMI&#39;, &#39;non-UMI&#39;, &#39;Gaussian&#39;]):
+        raise ValueError(&#34;Invalid data type, must be one of &#39;UMI&#39;, &#39;non-UMI&#39;, and &#39;Gaussian&#39;.&#34;)
+
+    if (self.adata is not None) &amp; processed:
+        self.data_type = &#39;Gaussian&#39;
+    else:
+        self.data_type = data_type
+
+    raw_X = self.raw_X.copy() if self.raw_X is not None else None
+    self.X_normalized, self.expression, self.X, self.c_score, \
+    self.cell_names, self.gene_names, self.selected_gene_names, \
+    self.scale_factor, self.labels, self.label_names, \
+    self.le, self.gene_scalar = preprocess.preprocess(
+        self.adata,
+        processed,
+        dimred,
+        raw_X,
+        self.c_score,
+        self.raw_label_names,
+        self.raw_cell_names,
+        self.raw_gene_names,
+        data_type, K, gene_num, npc)
+    self.dim_origin = self.X.shape[1]
+    self.selected_cell_subset = self.cell_names
+    self.selected_cell_subset_id = np.arange(len(self.cell_names))
+    self.adata = None</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.build_model"><code class="name flex">
+<span>def <span class="ident">build_model</span></span>(<span>self, dimensions=[16], dim_latent=8)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialize the Variational Auto Encoder model.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>dimensions</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>a list of dimensions of layers of autoencoder between latent space and original space.</dd>
+<dt><strong><code>dim_latent</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>dimension of latent space.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_model(self,
+    dimensions = [16],
+    dim_latent = 8,   
+    ):
+    &#39;&#39;&#39; Initialize the Variational Auto Encoder model.
+    
+    Parameters
+    ----------
+    dimensions : list, optional
+        a list of dimensions of layers of autoencoder between latent space and original space.
+    dim_latent : int, optional
+        dimension of latent space.
+    &#39;&#39;&#39;
+    self.dimensions = dimensions
+    self.dim_latent = dim_latent
+
+    self.vae = model.VariationalAutoEncoder(
+        self.dim_origin, self.dimensions,
+        self.dim_latent, self.data_type,
+        False if self.c_score is None else True
+        )</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.save_model"><code class="name flex">
+<span>def <span class="ident">save_model</span></span>(<span>self, path_to_file='model.checkpoint')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Saving model weights.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>path_to_file</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>path to weight files of pre-trained or trained model</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_model(self, path_to_file=&#39;model.checkpoint&#39;):
+    &#39;&#39;&#39;Saving model weights.
+    
+    Parameters
+    ----------
+    path_to_file : str, optional
+        path to weight files of pre-trained or trained model           
+    &#39;&#39;&#39;
+    self.vae.save_weights(path_to_file)
+    if hasattr(self, &#39;cluster_labels&#39;) and self.cluster_labels is not None:
+        with open(path_to_file+&#39;.label&#39;, &#39;wb&#39;) as f:
+            np.save(f, self.cluster_labels)
+    with open(path_to_file+&#39;.config&#39;, &#39;wb&#39;) as f:
+        np.save(f, [self.dim_origin,
+                    self.dimensions,
+                    self.dim_latent,
+                    self.data_type,
+                    False if self.c_score is None else True])
+    if hasattr(self, &#39;pi&#39;):
+        with open(path_to_file+&#39;.inference&#39;, &#39;wb&#39;) as f:
+            np.save(f, [self.pi, self.mu, self.pc_x,
+                        self.w_tilde, self.var_w_tilde,
+                        self.D_JS, self.z, self.embed_z, self.inferer.embed_mu])</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.load_model"><code class="name flex">
+<span>def <span class="ident">load_model</span></span>(<span>self, path_to_file='model.checkpoint', load_labels=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Load model weights.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>path_to_file</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>path to weight files of pre trained or trained model</dd>
+<dt><strong><code>load_labels</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether to load clustering labels or not.
+If load_labels is True, then the LatentSpace layer will be initialized basd on the model.
+If load_labels is False, then the LatentSpace layer will not be initialized.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_model(self, path_to_file=&#39;model.checkpoint&#39;, load_labels=False):
+    &#39;&#39;&#39;Load model weights.
+
+    Parameters
+    ----------
+    path_to_file : str, optional 
+        path to weight files of pre trained or trained model
+    load_labels : boolean, optional
+        whether to load clustering labels or not.
+        If load_labels is True, then the LatentSpace layer will be initialized basd on the model. 
+        If load_labels is False, then the LatentSpace layer will not be initialized.
+    &#39;&#39;&#39; 
+    if not os.path.exists(path_to_file+&#39;.config&#39;):
+        raise AssertionError(&#39;Config file not exist!&#39;)               
+    if load_labels and not os.path.exists(path_to_file+&#39;.label&#39;):
+        raise AssertionError(&#39;Label file not exist!&#39;)
+
+    with open(path_to_file+&#39;.config&#39;, &#39;rb&#39;) as f:
+        [self.dim_origin, self.dimensions,
+        self.dim_latent, self.data_type, has_c] = np.load(f, allow_pickle=True)
+    self.vae = model.VariationalAutoEncoder(
+        self.dim_origin, self.dimensions, 
+        self.dim_latent, self.data_type, has_c
+        )
+
+    if load_labels:            
+        with open(path_to_file+&#39;.label&#39;, &#39;rb&#39;) as f:
+            cluster_labels = np.load(f, allow_pickle=True)
+        n_clusters = len(np.unique(cluster_labels))
+        self.init_latent_space(n_clusters, cluster_labels)
+        if os.path.exists(path_to_file+&#39;.inference&#39;):
+            with open(path_to_file+&#39;.inference&#39;, &#39;rb&#39;) as f:
+                [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                    self.D_JS, self.z, self.embed_z, embed_mu] = np.load(f, allow_pickle=True)
+            self.inferer.mu = self.mu
+            self.inferer.embed_z = self.embed_z
+            self.inferer.embed_mu = embed_mu
+
+    self.vae.load_weights(path_to_file)</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.pre_train"><code class="name flex">
+<span>def <span class="ident">pre_train</span></span>(<span>self, learning_rate=0.001, batch_size=32, L=1, alpha=0.01, num_epoch=300, num_step_per_epoch=None, early_stopping_patience=10, early_stopping_tolerance=0.001, early_stopping_warmup=0, path_to_weights=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Pretrain the model with specified learning rate.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>learning_rate</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the initial learning rate for the Adam optimizer.</dd>
+<dt><strong><code>batch_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the batch size for pre-training.</dd>
+<dt><strong><code>L</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of MC samples.</dd>
+<dt><strong><code>num_epoch</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the maximum number of epoches.</dd>
+<dt><strong><code>num_step_per_epoch</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of step per epoch, it will be inferred from number of cells and batch size if it is None.</dd>
+<dt><strong><code>early_stopping_patience</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the maximum number of epoches if there is no improvement.</dd>
+<dt><strong><code>early_stopping_tolerance</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the minimum change of loss to be considered as an improvement.</dd>
+<dt><strong><code>early_stopping_warmup</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of warmup epoches.</dd>
+<dt><strong><code>path_to_weights</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the path of weight file to be saved; not saving weight if None.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pre_train(self, learning_rate = 1e-3, batch_size = 32, L = 1, alpha=0.01,
+        num_epoch = 300, num_step_per_epoch = None,
+        early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0, 
+        path_to_weights = None):
+    &#39;&#39;&#39;Pretrain the model with specified learning rate.
+
+    Parameters
+    ----------
+    learning_rate : float, optional
+        the initial learning rate for the Adam optimizer.
+    batch_size : int, optional 
+        the batch size for pre-training.
+    L : int, optional 
+        the number of MC samples.
+    num_epoch : int, optional 
+        the maximum number of epoches.
+    num_step_per_epoch : int, optional 
+        the number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
+    early_stopping_patience : int, optional 
+        the maximum number of epoches if there is no improvement.
+    early_stopping_tolerance : float, optional 
+        the minimum change of loss to be considered as an improvement.
+    early_stopping_warmup : int, optional
+        the number of warmup epoches.
+    path_to_weights : str, optional 
+        the path of weight file to be saved; not saving weight if None.
+    &#39;&#39;&#39;    
+    if num_step_per_epoch is None:
+        num_step_per_epoch = self.X.shape[0]//batch_size+1
+            
+    train.clear_session()
+    self.train_dataset = train.warp_dataset(self.X_normalized, 
+                                            self.c_score,
+                                            batch_size, 
+                                            self.X, 
+                                            self.scale_factor)
+    self.vae = train.pre_train(
+        self.train_dataset,
+        self.vae,
+        learning_rate,
+        early_stopping_patience,
+        early_stopping_tolerance,
+        early_stopping_warmup,
+        num_epoch,
+        num_step_per_epoch,
+        L, alpha)
+
+    if path_to_weights is not None:
+        self.save_model(path_to_weights)</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.get_latent_z"><code class="name flex">
+<span>def <span class="ident">get_latent_z</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_latent_z(self):
+    c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+    return self.vae.get_z(self.X_normalized[self.selected_cell_subset_id,:], c)</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.set_cell_subset"><code class="name flex">
+<span>def <span class="ident">set_cell_subset</span></span>(<span>self, selected_cell_names)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_cell_subset(self, selected_cell_names):
+    self.selected_cell_subset = np.unique(selected_cell_names)
+    self.selected_cell_subset_id = np.sort(np.where(np.in1d(self.cell_names, selected_cell_names))[0])</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.refine_pi"><code class="name flex">
+<span>def <span class="ident">refine_pi</span></span>(<span>self, batch_size=64)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Refine pi by the its posterior. This function will be effected if 'selected_cell_subset_id' is set.</p>
+<h2 id="parameters">Parameters</h2>
+<p>batch_size - int, optional
+the batch size when computing <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>pi</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[1,K]</span><script type="math/tex">[1,K]</script></span> the original pi.</dd>
+<dt><strong><code>post_pi</code></strong> :&ensp;<code>np.array </code></dt>
+<dd><span><span class="MathJax_Preview">[1,K]</span><script type="math/tex">[1,K]</script></span> the posterior estimate of pi.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def refine_pi(self, batch_size=64):  
+    &#39;&#39;&#39;Refine pi by the its posterior. This function will be effected if &#39;selected_cell_subset_id&#39; is set.
+
+    Parameters
+    ----------
+    batch_size - int, optional 
+        the batch size when computing \(p(c_i|Y_i,X_i)\).
+    
+    Returns
+    ----------
+    pi : np.array
+        \([1,K]\) the original pi.
+    post_pi : np.array 
+        \([1,K]\) the posterior estimate of pi.
+    &#39;&#39;&#39;      
+    if len(self.selected_cell_subset_id)!=len(self.cell_names):
+        warnings.warn(&#34;Only using a subset of cells to refine pi.&#34;)
+
+    c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+    self.test_dataset = train.warp_dataset(
+        self.X_normalized[self.selected_cell_subset_id,:], 
+        c,
+        batch_size)
+    pi, p_c_x = self.vae.get_pc_x(self.test_dataset)
+
+    post_pi = np.mean(p_c_x, axis=0, keepdims=True)        
+    self.vae.latent_space.pi.assign(np.log(post_pi+1e-16))
+    return pi, post_pi</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.init_latent_space"><code class="name flex">
+<span>def <span class="ident">init_latent_space</span></span>(<span>self, n_clusters, cluster_labels=None, mu=None, log_pi=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialze the latent space.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>n_clusters</code></strong> :&ensp;<code>int</code></dt>
+<dd>the number of cluster.</dd>
+<dt><strong><code>cluster_labels</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[N,]</span><script type="math/tex">[N,]</script></span> the
+cluster labels.</dd>
+<dt><strong><code>mu</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[d,k]</span><script type="math/tex">[d,k]</script></span> the value of initial <span><span class="MathJax_Preview">\mu</span><script type="math/tex">\mu</script></span>.</dd>
+<dt><strong><code>log_pi</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[1,K]</span><script type="math/tex">[1,K]</script></span> the value of initial <span><span class="MathJax_Preview">\log(\pi)</span><script type="math/tex">\log(\pi)</script></span>.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def init_latent_space(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
+    &#39;&#39;&#39;Initialze the latent space.
+
+    Parameters
+    ----------
+    n_clusters : int
+        the number of cluster.
+    cluster_labels : np.array, optional
+        \([N,]\) the  cluster labels.
+    mu : np.array, optional
+        \([d,k]\) the value of initial \(\\mu\).
+    log_pi : np.array, optional
+        \([1,K]\) the value of initial \(\\log(\\pi)\).
+    &#39;&#39;&#39;             
+    z = self.get_latent_z()
+    if (mu is None) &amp; (cluster_labels is not None):
+        mu = np.zeros((z.shape[1], n_clusters))
+        for i,l in enumerate(np.unique(cluster_labels)):
+            mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+
+    self.n_clusters = n_clusters
+    self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
+    self.vae.init_latent_space(n_clusters, mu, log_pi)
+    self.inferer = Inferer(self.n_clusters)            </code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.train"><code class="name flex">
+<span>def <span class="ident">train</span></span>(<span>self, learning_rate=0.001, batch_size=32, L=1, alpha=0.01, beta=1, num_epoch=300, num_step_per_epoch=None, early_stopping_patience=10, early_stopping_tolerance=0.001, early_stopping_warmup=5, path_to_weights=None, plot_every_num_epoch=None, dimred='umap', **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Train the model.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>learning_rate</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the initial learning rate for the Adam optimizer.</dd>
+<dt><strong><code>batch_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the batch size for training.</dd>
+<dt><strong><code>L</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of MC samples.</dd>
+<dt><strong><code>alpha</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the value of beta in beta-VAE.</dd>
+<dt><strong><code>num_epoch</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of epoch.</dd>
+<dt><strong><code>num_step_per_epoch</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of step per epoch, it will be inferred from number of cells and batch size if it is None.</dd>
+<dt><strong><code>early_stopping_patience</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the maximum number of epoches if there is no improvement.</dd>
+<dt><strong><code>early_stopping_tolerance</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the minimum change of loss to be considered as an improvement.</dd>
+<dt><strong><code>early_stopping_warmup</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of warmup epoches.</dd>
+<dt><strong><code>path_to_weights</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the path of weight file to be saved; not saving weight if None.</dd>
+<dt><strong><code>plot_every_num_epoch</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>plot the intermediate result every few epoches, or not plotting if it is None.</dd>
+<dt><strong><code>dimred</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None.</dd>
+<dt><strong><code>**kwargs</code></strong> :&ensp;<code> </code></dt>
+<dd>extra key-value arguments for dimension reduction algorithms.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def train(self, learning_rate = 1e-3, batch_size = 32, 
+        L = 1, alpha=0.01, beta=1, 
+        num_epoch = 300, num_step_per_epoch = None,
+        early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 5,
+        path_to_weights = None, plot_every_num_epoch=None, dimred=&#39;umap&#39;, **kwargs):
+    &#39;&#39;&#39;Train the model.
+
+    Parameters
+    ----------
+    learning_rate : float, optional  
+        the initial learning rate for the Adam optimizer.
+    batch_size : int, optional  
+        the batch size for training.
+    L : int, optional  
+        the number of MC samples.
+    alpha : float, optional  
+        the value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
+    beta : float, optional  
+        the value of beta in beta-VAE.
+    num_epoch : int, optional  
+        the number of epoch.
+    num_step_per_epoch : int, optional 
+        the number of step per epoch, it will be inferred from number of cells and batch size if it is None.
+    early_stopping_patience : int, optional 
+        the maximum number of epoches if there is no improvement.
+    early_stopping_tolerance : float, optional 
+        the minimum change of loss to be considered as an improvement.
+    early_stopping_warmup : int, optional 
+        the number of warmup epoches.            
+    path_to_weights : str, optional 
+        the path of weight file to be saved; not saving weight if None.
+    plot_every_num_epoch : int, optional 
+        plot the intermediate result every few epoches, or not plotting if it is None.            
+    dimred : str, optional 
+        the name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;. Only used if &#39;plot_every_num_epoch&#39; is not None. 
+    **kwargs :  
+        extra key-value arguments for dimension reduction algorithms.        
+    &#39;&#39;&#39;
+    if num_step_per_epoch is None:
+        num_step_per_epoch = len(self.selected_cell_subset_id)//batch_size+1
+        
+    c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+    self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:],
+                                            c,
+                                            batch_size, 
+                                            self.X[self.selected_cell_subset_id,:], 
+                                            self.scale_factor[self.selected_cell_subset_id])
+    self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+                                           c,
+                                           batch_size)
+    self.vae = train.train(
+        self.train_dataset,
+        self.test_dataset,
+        self.vae,
+        learning_rate,
+        early_stopping_patience,
+        early_stopping_tolerance,
+        early_stopping_warmup,
+        num_epoch,
+        num_step_per_epoch,
+        L,
+        alpha,
+        beta,
+        self.labels[self.selected_cell_subset_id],            
+        plot_every_num_epoch,
+        dimred=&#39;umap&#39;, 
+        **kwargs            
+        )
+        
+    if path_to_weights is not None:
+        self.save_model(path_to_weights)</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.init_inference"><code class="name flex">
+<span>def <span class="ident">init_inference</span></span>(<span>self, batch_size=32, L=5, dimred='umap', refit_dimred=True, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialze trajectory inference by computing the posterior estimations.
+</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>batch_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>batch size when doing inference.</dd>
+<dt><strong><code>L</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>number of MC samples when doing inference.</dd>
+<dt><strong><code>dimred</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.</dd>
+<dt><strong><code>refit_dimred</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>if refit the dimension reduction algorithm or not.</dd>
+<dt><strong><code>**kwargs</code></strong> :&ensp;<code> </code></dt>
+<dd>extra key-value arguments for dimension reduction algorithms.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def init_inference(self, batch_size=32, L=5, 
+        dimred=&#39;umap&#39;, refit_dimred=True, **kwargs):
+    &#39;&#39;&#39;Initialze trajectory inference by computing the posterior estimations.        
+
+    Parameters
+    ----------
+    batch_size : int, optional
+        batch size when doing inference.
+    L : int, optional
+        number of MC samples when doing inference.
+    dimred : str, optional
+        name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;.
+    refit_dimred : boolean, optional 
+        if refit the dimension reduction algorithm or not.
+    **kwargs :  
+        extra key-value arguments for dimension reduction algorithms.              
+    &#39;&#39;&#39;
+    c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+    self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+                                           c,
+                                           batch_size)
+    self.pi, self.mu, self.pc_x,\
+        self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
+    if refit_dimred or not hasattr(self.inferer, &#39;embed_z&#39;):
+        self.embed_z = self.inferer.init_embedding(self.z, self.mu, **kwargs)
+    else:
+        self.embed_z = self.inferer.embed_z
+    return None</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.comp_inference_score"><code class="name flex">
+<span>def <span class="ident">comp_inference_score</span></span>(<span>self, method='modified_map', thres=0.5, no_loop=False, is_plot=True, path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Compute edge scores.</p>
+<h2 id="parameters">Parameters</h2>
+<p>method : string, optional
+'mean', 'modified_mean', 'map', and 'modified_map'.
+thres : float, optional
+threshold used for filtering edges <span><span class="MathJax_Preview">e_{ij}</span><script type="math/tex">e_{ij}</script></span> that <span><span class="MathJax_Preview">(n_{i}+n_{j}+e_{ij})/N&lt;thres</span><script type="math/tex">(n_{i}+n_{j}+e_{ij})/N<thres</script></span>, only applied to mean method.
+no_loop : boolean, optional
+if loops are allowed to exist in the graph.
+is_plot : boolean, optional<br>
+whether to plot or not.
+path : string, optional
+path to save figure, or don't save if it is None.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>G</code></strong> :&ensp;<code>nx.Graph </code></dt>
+<dd>a weighted graph with weight on each edge indicating its score of existence.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def comp_inference_score(self, method=&#39;modified_map&#39;, thres=0.5, no_loop=False, is_plot=True, path=None):
+    &#39;&#39;&#39; Compute edge scores.
+
+    Parameters
+    ----------        
+    method : string, optional 
+        &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, and &#39;modified_map&#39;.
+    thres : float, optional 
+        threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
+    no_loop : boolean, optional 
+        if loops are allowed to exist in the graph.
+    is_plot : boolean, optional  
+        whether to plot or not.
+    path : string, optional 
+        path to save figure, or don&#39;t save if it is None.
+    
+    Returns
+    ----------
+    G : nx.Graph 
+        a weighted graph with weight on each edge indicating its score of existence.
+    &#39;&#39;&#39;
+    G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
+    if is_plot:
+        self.inferer.plot_clusters(self.cluster_labels, path=path)
+    return G</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.infer_trajectory"><code class="name flex">
+<span>def <span class="ident">infer_trajectory</span></span>(<span>self, init_node: int, cutoff=None, is_plot=True, path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Infer the trajectory.</p>
+<h2 id="parameters">Parameters</h2>
+<p>init_node : int
+the initial node for the inferred trajectory.
+cutoff : string, optional
+threshold for filtering edges with scores less than cutoff.
+is_plot : boolean, optional
+whether to plot or not.
+path : string, optional<br>
+path to save figure, or don't save if it is None.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>G</code></strong> :&ensp;<code>nx.Graph </code></dt>
+<dd>the modified graph that indicates the inferred trajectory.</dd>
+<dt><strong><code>w</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N,k]</span><script type="math/tex">[N,k]</script></span> modified <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</dd>
+<dt><strong><code>pseudotime</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N,]</span><script type="math/tex">[N,]</script></span> pseudotime based on projected trajectory.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def infer_trajectory(self, init_node: int, cutoff=None, is_plot=True, path=None):
+    &#39;&#39;&#39;Infer the trajectory.
+
+    Parameters
+    ----------  
+    init_node : int
+        the initial node for the inferred trajectory.
+    cutoff : string, optional
+        threshold for filtering edges with scores less than cutoff.
+    is_plot : boolean, optional
+        whether to plot or not.
+    path : string, optional  
+        path to save figure, or don&#39;t save if it is None.
+
+    Returns
+    ----------
+    G : nx.Graph 
+        the modified graph that indicates the inferred trajectory.
+    w : np.array
+        \([N,k]\) modified \(\\tilde{w}\).
+    pseudotime : np.array
+        \([N,]\) pseudotime based on projected trajectory.
+    &#39;&#39;&#39;
+    G, w, pseudotime = self.inferer.infer_trajectory(init_node, 
+                                                     self.label_names[self.selected_cell_subset_id], 
+                                                     cutoff, 
+                                                     path=path, 
+                                                     is_plot=is_plot)
+    return G, w, pseudotime</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.plot_marker_gene"><code class="name flex">
+<span>def <span class="ident">plot_marker_gene</span></span>(<span>self, gene_name: str, refit_dimred=False, dimred='umap', path=None, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plot expression of the given marker gene.</p>
+<h2 id="parameters">Parameters</h2>
+<p>gene_name : str
+name of the marker gene.
+refit_dimred : boolean, optional
+whether to refit dimension reduction or use the existing embedding after inference.
+dimred : str, optional
+name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
+path : str, optional
+path to save the figure, or not saving if it is None.
+**kwargs :<br>
+extra key-value arguments for dimension reduction algorithms.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_marker_gene(self, gene_name: str, refit_dimred=False, dimred=&#39;umap&#39;, path=None, **kwargs):
+    &#39;&#39;&#39;Plot expression of the given marker gene.
+
+    Parameters
+    ----------  
+    gene_name : str 
+        name of the marker gene.
+    refit_dimred : boolean, optional 
+        whether to refit dimension reduction or use the existing embedding after inference.
+    dimred : str, optional
+        name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;.
+    path : str, optional
+        path to save the figure, or not saving if it is None.
+    **kwargs :  
+        extra key-value arguments for dimension reduction algorithms.
+    &#39;&#39;&#39;
+    if gene_name not in self.gene_names:
+        raise ValueError(&#34;Gene &#39;{}&#39; does not exist!&#34;.format(gene_name))
+    if self.expression is None:
+        raise ReferenceError(&#34;The expression matrix does not exist!&#34;)
+    expression = self.expression[self.selected_cell_subset_id,:][:,self.gene_names==gene_name].flatten()
+    
+    if not hasattr(self, &#39;embed_z&#39;) or refit_dimred:
+        z = self.get_latent_z()       
+        embed_z = get_embedding(z, dimred, **kwargs)
+    else:
+        embed_z = self.embed_z
+    plot_marker_gene(expression, 
+                     gene_name, 
+                     embed_z[self.selected_cell_subset_id,:],
+                     path)
+    return None</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.evaluate"><code class="name flex">
+<span>def <span class="ident">evaluate</span></span>(<span>self, milestone_net, begin_node_true, grouping=None, thres=0.5, no_loop=True, cutoff=None, method='mean', path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Evaluate the model.</p>
+<h2 id="parameters">Parameters</h2>
+<p>milestone_net :
+the true milestone network.
+For real data, milestone_net will be a DataFrame of the graph of nodes.
+Eg.
+from
+to
+cluster 1
+cluster 2
+cluster 2
+cluster 3
+For synthetic data, milestone_net will be a DataFrame of the (projected)
+positions of cells. The indexes are the orders of cells in the dataset.
+Eg.
+from
+to
+w
+cluster 1
+cluster 1
+1
+cluster 1
+cluster 2
+0.1
+begin_node_true : str or int
+the true begin node of the milestone.
+grouping : np.array, optional
+<span><span class="MathJax_Preview">[N,]</span><script type="math/tex">[N,]</script></span> for real data, grouping must be provided.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>res</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>the evaluation result.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def evaluate(self, milestone_net, begin_node_true, grouping=None,
+            thres=0.5, no_loop=True, cutoff=None,
+            method=&#39;mean&#39;, path=None):
+    &#39;&#39;&#39; Evaluate the model.
+
+    Parameters
+    ----------  
+    milestone_net :
+        the true milestone network.
+        For real data, milestone_net will be a DataFrame of the graph of nodes.
+        Eg.
+            from         to
+            cluster 1    cluster 2
+            cluster 2    cluster 3
+        For synthetic data, milestone_net will be a DataFrame of the (projected)
+        positions of cells. The indexes are the orders of cells in the dataset.
+        Eg.
+            from         to          w
+            cluster 1    cluster 1   1
+            cluster 1    cluster 2   0.1
+    begin_node_true : str or int
+        the true begin node of the milestone.
+    grouping : np.array, optional
+        \([N,]\) for real data, grouping must be provided.
+
+    Returns
+    ----------
+    res : pd.DataFrame
+        the evaluation result.
+    &#39;&#39;&#39;
+    # Evaluate for the whole dataset will ignore selected_cell_subset.
+    if len(self.selected_cell_subset)!=len(self.cell_names):
+        warnings.warn(&#34;Evaluate for the whole dataset.&#34;)
+    
+    # If the begin_node_true, need to encode it by self.le.
+    if isinstance(begin_node_true, str):
+        begin_node_true = self.le.transform([begin_node_true])[0]
+        
+    # For generated data, grouping information is already in milestone_net
+    if &#39;w&#39; in milestone_net.columns:
+        grouping = None
+        
+    # If milestone_net is provided, transform them to be numeric.
+    if milestone_net is not None:
+        milestone_net[&#39;from&#39;] = self.le.transform(milestone_net[&#39;from&#39;])
+        milestone_net[&#39;to&#39;] = self.le.transform(milestone_net[&#39;to&#39;])
+        
+    begin_node_pred = int(np.argmin(np.mean((
+        self.z[self.labels==begin_node_true,:,np.newaxis] -
+        self.mu[np.newaxis,:,:])**2, axis=(0,1))))
+    
+    G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
+    G, w, pseudotime = self.inferer.infer_trajectory(begin_node_pred, self.label_names, cutoff=cutoff, path=path, is_plot=False)
+    
+    # 1. Topology
+    G_pred = nx.Graph()
+    G_pred.add_nodes_from(G.nodes)
+    G_pred.add_edges_from(G.edges)
+    nx.set_node_attributes(G_pred, False, &#39;is_init&#39;)
+    G_pred.nodes[begin_node_pred][&#39;is_init&#39;] = True
+
+    G_true = nx.Graph()
+    G_true.add_nodes_from(G.nodes)
+    # if &#39;grouping&#39; is not provided, assume &#39;milestone_net&#39; contains proportions
+    if grouping is None:
+        G_true.add_edges_from(list(
+            milestone_net[~pd.isna(milestone_net[&#39;w&#39;])].groupby([&#39;from&#39;, &#39;to&#39;]).count().index))
+    # otherwise, &#39;milestone_net&#39; indicates edges
+    else:
+        if milestone_net is not None:             
+            G_true.add_edges_from(list(
+                milestone_net.groupby([&#39;from&#39;, &#39;to&#39;]).count().index))
+        grouping = self.le.transform(grouping)
+    G_true.remove_edges_from(nx.selfloop_edges(G_true))
+    nx.set_node_attributes(G_true, False, &#39;is_init&#39;)
+    G_true.nodes[begin_node_true][&#39;is_init&#39;] = True
+    res = topology(G_true, G_pred)
+        
+    # 2. Milestones assignment
+    if grouping is None:
+        milestones_true = milestone_net[&#39;from&#39;].values.copy()
+        milestones_true[(milestone_net[&#39;from&#39;]!=milestone_net[&#39;to&#39;])
+                       &amp;(milestone_net[&#39;w&#39;]&lt;0.5)] = milestone_net[(milestone_net[&#39;from&#39;]!=milestone_net[&#39;to&#39;])
+                                                                  &amp;(milestone_net[&#39;w&#39;]&lt;0.5)][&#39;to&#39;].values
+    else:
+        milestones_true = grouping
+    milestones_true = milestones_true[pseudotime!=-1]
+    milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
+    res[&#39;ARI&#39;] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
+    
+    if grouping is None:
+        n_samples = len(milestone_net)
+        prop = np.zeros((n_samples,n_samples))
+        prop[np.arange(n_samples), milestone_net[&#39;to&#39;]] = 1-milestone_net[&#39;w&#39;]
+        prop[np.arange(n_samples), milestone_net[&#39;from&#39;]] = np.where(np.isnan(milestone_net[&#39;w&#39;]), 1, milestone_net[&#39;w&#39;])
+        res[&#39;GRI&#39;] = get_GRI(prop, w)
+    else:
+        res[&#39;GRI&#39;] = get_GRI(grouping, w)
+    
+    # 3. Correlation between geodesic distances / Pseudotime
+    if no_loop:
+        if grouping is None:
+            pseudotime_true = milestone_net[&#39;from&#39;].values + 1 - milestone_net[&#39;w&#39;].values
+            pseudotime_true[np.isnan(pseudotime_true)] = milestone_net[pd.isna(milestone_net[&#39;w&#39;])][&#39;from&#39;].values            
+        else:
+            pseudotime_true = - np.ones(len(grouping))
+            nx.set_edge_attributes(G_true, values = 1, name = &#39;weight&#39;)
+            connected_comps = nx.node_connected_component(G_true, begin_node_true)
+            subG = G_true.subgraph(connected_comps)
+            milestone_net_true = self.inferer.build_milestone_net(subG, begin_node_true)
+            if len(milestone_net_true)&gt;0:
+                pseudotime_true[grouping==int(milestone_net_true[0,0])] = 0
+                for i in range(len(milestone_net_true)):
+                    pseudotime_true[grouping==int(milestone_net_true[i,1])] = milestone_net_true[i,-1]
+        pseudotime_true = pseudotime_true[pseudotime&gt;-1]
+        pseudotime_pred = pseudotime[pseudotime&gt;-1]
+        res[&#39;PDT score&#39;] = np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]
+    else:
+        res[&#39;PDT score&#39;] = np.nan
+        
+    # 4. Shape
+    # score_cos_theta = 0
+    # for (_from,_to) in G.edges:
+    #     _z = self.z[(w[:,_from]&gt;0) &amp; (w[:,_to]&gt;0),:]
+    #     v_1 = _z - self.mu[:,_from]
+    #     v_2 = _z - self.mu[:,_to]
+    #     cos_theta = np.sum(v_1*v_2, -1)/(np.linalg.norm(v_1,axis=-1)*np.linalg.norm(v_2,axis=-1)+1e-12)
+
+    #     score_cos_theta += np.sum((1-cos_theta)/2)
+
+    # res[&#39;score_cos_theta&#39;] = score_cos_theta/(np.sum(np.sum(w&gt;0, axis=-1)==2)+1e-12)
+    return res</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="VITAE.inference" href="inference.html">VITAE.inference</a></code></li>
+<li><code><a title="VITAE.metric" href="metric.html">VITAE.metric</a></code></li>
+<li><code><a title="VITAE.model" href="model.html">VITAE.model</a></code></li>
+<li><code><a title="VITAE.preprocess" href="preprocess.html">VITAE.preprocess</a></code></li>
+<li><code><a title="VITAE.train" href="train.html">VITAE.train</a></code></li>
+<li><code><a title="VITAE.utils" href="utils.html">VITAE.utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="VITAE.VITAE" href="#VITAE.VITAE">VITAE</a></code></h4>
+<ul class="">
+<li><code><a title="VITAE.VITAE.get_data" href="#VITAE.VITAE.get_data">get_data</a></code></li>
+<li><code><a title="VITAE.VITAE.preprocess_data" href="#VITAE.VITAE.preprocess_data">preprocess_data</a></code></li>
+<li><code><a title="VITAE.VITAE.build_model" href="#VITAE.VITAE.build_model">build_model</a></code></li>
+<li><code><a title="VITAE.VITAE.save_model" href="#VITAE.VITAE.save_model">save_model</a></code></li>
+<li><code><a title="VITAE.VITAE.load_model" href="#VITAE.VITAE.load_model">load_model</a></code></li>
+<li><code><a title="VITAE.VITAE.pre_train" href="#VITAE.VITAE.pre_train">pre_train</a></code></li>
+<li><code><a title="VITAE.VITAE.get_latent_z" href="#VITAE.VITAE.get_latent_z">get_latent_z</a></code></li>
+<li><code><a title="VITAE.VITAE.set_cell_subset" href="#VITAE.VITAE.set_cell_subset">set_cell_subset</a></code></li>
+<li><code><a title="VITAE.VITAE.refine_pi" href="#VITAE.VITAE.refine_pi">refine_pi</a></code></li>
+<li><code><a title="VITAE.VITAE.init_latent_space" href="#VITAE.VITAE.init_latent_space">init_latent_space</a></code></li>
+<li><code><a title="VITAE.VITAE.train" href="#VITAE.VITAE.train">train</a></code></li>
+<li><code><a title="VITAE.VITAE.init_inference" href="#VITAE.VITAE.init_inference">init_inference</a></code></li>
+<li><code><a title="VITAE.VITAE.comp_inference_score" href="#VITAE.VITAE.comp_inference_score">comp_inference_score</a></code></li>
+<li><code><a title="VITAE.VITAE.infer_trajectory" href="#VITAE.VITAE.infer_trajectory">infer_trajectory</a></code></li>
+<li><code><a title="VITAE.VITAE.plot_marker_gene" href="#VITAE.VITAE.plot_marker_gene">plot_marker_gene</a></code></li>
+<li><code><a title="VITAE.VITAE.evaluate" href="#VITAE.VITAE.evaluate">evaluate</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+</footer>
+</body>
+</html>
