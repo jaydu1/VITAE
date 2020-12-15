@@ -9,11 +9,24 @@ from sklearn.decomposition import PCA
 from VITAE.utils import _check_expression, _check_variability
 
 def log_norm(x, K = 1e4):
-    """
-    Normalize the gene expression counts for each cell by the total expression counts, 
+    '''Normalize the gene expression counts for each cell by the total expression counts, 
     divide this by a size scale factor, which is determined by total counts and a constant K
     then log-transforms the result.
-    """
+
+    Parameters
+    ----------
+    x : np.array
+        \([N, G^{raw}]\) the raw count data.
+    K : float, optional
+        the normalizing constant.
+
+    Returns
+    ----------
+    x_normalized : np.array
+        \([N, G^{raw}]\) the log-normalized data.
+    scale_factor : np.array
+        \([N, ]\) the scale factors.
+    '''          
     scale_factor = np.sum(x,axis=1, keepdims=True)/K
     x_normalized = np.log(x/scale_factor + 1)
     print('min normailized value: ' + str(np.min(x_normalized)))
@@ -22,8 +35,25 @@ def log_norm(x, K = 1e4):
 
 
 def feature_select(x, gene_num = 2000):
-    # https://www.biorxiv.org/content/biorxiv/early/2018/11/02/460147.full.pdf
-    # Page 12-13: Data preprocessing - Feature selection for individual datasets
+    '''Select highly variable genes (HVGs)
+    (See [Stuart *et al*, (2019)](https://www.nature.com/articles/nbt.4096) and its early version [preprint](https://www.biorxiv.org/content/10.1101/460147v1.full.pdf)
+    Page 12-13: Data preprocessing - Feature selection for individual datasets).
+
+    Parameters
+    ----------
+    x : np.array
+        \([N, G^{raw}]\) the raw count data.
+    gene_num : int, optional
+        the number of genes to retain.
+
+    Returns
+    ----------
+    x : np.array
+        \([N, G]\) the count data after gene selection.
+    index : np.array
+        \([G, ]\) the selected index of genes.
+    '''     
+    
 
     n, p = x.shape
 
@@ -57,32 +87,65 @@ def feature_select(x, gene_num = 2000):
     plt.show()
     
     return x[:, index], index
-    
-
-def label_encoding(labels):
-    # encode the class label by number (order of character)
-    le = preprocessing.LabelEncoder()
-    y = le.fit_transform(labels)
-    return y, le
 
 
 def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
                raw_gene_names, data_type, K = 1e4, gene_num = 2000,  npc = 64):
-    '''
-    Preprocess count data.
-    Params:
-        adata           - a scanpy object
-        processed       - whether adata has been processed
-        dimred          - whether the processed adata is after dimension reduction
-        x               - raw count matrix
-        c               - covariate matrix
-        label_names     - true or estimated cell types
-        raw_cell_names  - names of cells
-        raw_gene_names  - names of genes
-        K               - sum number related to scale_factor
-        gene_num        - total number of genes to select    
-        data_type       - 'UMI', 'non-UMI' and 'Gaussian'
-        npc             - Number of PCs, used if 'data_type' is 'Gaussian'
+    '''Preprocess count data.
+
+    Parameters
+    ----------
+    adata : AnnData
+        a scanpy object.
+    processed : boolean
+        whether adata has been processed.
+    dimred : boolean
+        whether the processed adata is after dimension reduction.
+    x : np.array
+        \([N^{raw}, G^{raw}]\) raw count matrix.
+    c : np.array
+        \([N^{raw}, s]\) covariate matrix.
+    label_names : np.array 
+        \([N^{raw}, ]\) true or estimated cell types.
+    raw_cell_names : np.array  
+        \([N^{raw}, ]\) the names of cells.
+    raw_gene_names : np.array
+        \([G^{raw}, ]\) the names of genes.
+    K : int, optional
+        the normalizing constant.
+    gene_num : int, optional
+        the number of genes to retain.
+    data_type : str, optional
+        'UMI', 'non-UMI', or 'Gaussian'.
+    npc : int, optional
+        the number of PCs to retain, only used if `data_type='Gaussian'`.
+
+    Returns
+    ----------
+    x_normalized : np.array
+        \([N, G]\) the preprocessed matrix.
+    expression : np.array
+        \([N, G^{raw}]\) the expression matrix after log-normalization and before scaling.
+    x : np.array
+        \([N, G]\) the raw count matrix after gene selections.
+    c : np.array
+        \([N, s]\) the covariates.
+    cell_names : np.array
+        \([N, ]\) the cell names.
+    gene_names : np.array
+        \([G^{raw}, ]\) the gene names.
+    selected_gene_names : 
+        \([G, ]\) the selected gene names.
+    scale_factor : 
+        \([N, ]\) the scale factors.
+    labels : np.array
+        \([N, ]\) the encoded labels.
+    label_names : np.array
+        \([N, ]\) the label names.
+    le : sklearn.preprocessing.LabelEncoder
+        the label encoder.
+    gene_scalar : sklearn.preprocessing.StandardScaler
+        the gene scaler.
     '''
     # if input is a scanpy data
     if adata is not None:
@@ -98,7 +161,7 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         else: 
             dimred = False
             x = adata.X.copy()
-            adata, expression, gene_names, cell_mask, gene_mask, gene_mask2 = recipe_seurat(adata, gene_num)
+            adata, expression, gene_names, cell_mask, gene_mask, gene_mask2 = _recipe_seurat(adata, gene_num)
             x_normalized = adata.X.copy()
             scale_factor = adata.obs.counts_per_cell.values / 1e4
             x = x[cell_mask,:][:,gene_mask][:,gene_mask2]
@@ -171,7 +234,7 @@ def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
         scale_factor, labels, label_names, le, gene_scalar)
 
 
-def recipe_seurat(adata, gene_num):
+def _recipe_seurat(adata, gene_num):
     """
     Normalization and filtering as of Seurat [Satija15]_.
     This uses a particular preprocessing

@@ -1,5 +1,6 @@
 import warnings
 import os
+from typing import Optional
 
 import VITAE.model as model
 import VITAE.preprocess as preprocess
@@ -25,7 +26,7 @@ class VITAE():
         pass
 
     def get_data(self, X = None, adata = None, labels = None,
-                 covariate=None, cell_names = None, gene_names = None):
+                 covariate = None, cell_names = None, gene_names = None):
         '''Get data for model.
 
         Parameters
@@ -64,8 +65,8 @@ class VITAE():
                 gene_names is None else np.array(gene_names, dtype = str)
 
         
-    def preprocess_data(self, processed = False, dimred = False,
-                        K = 1e4, gene_num = 2000, data_type = 'UMI', npc = 64):
+    def preprocess_data(self, processed: bool = False, dimred: bool = False,
+                        K: float = 1e4, gene_num: int = 2000, data_type: str = 'UMI', npc: int = 64):
         ''' Data preprocessing - log-normalization, feature selection, and scaling.            
 
         Parameters
@@ -113,7 +114,7 @@ class VITAE():
 
     def build_model(self,
         dimensions = [16],
-        dim_latent = 8,   
+        dim_latent: int = 8,   
         ):
         ''' Initialize the Variational Auto Encoder model.
         
@@ -134,7 +135,7 @@ class VITAE():
             )
         
 
-    def save_model(self, path_to_file='model.checkpoint'):
+    def save_model(self, path_to_file: str = 'model.checkpoint'):
         '''Saving model weights.
         
         Parameters
@@ -159,7 +160,7 @@ class VITAE():
                             self.D_JS, self.z, self.embed_z, self.inferer.embed_mu])
     
 
-    def load_model(self, path_to_file='model.checkpoint', load_labels=False):
+    def load_model(self, path_to_file: str = 'model.checkpoint', load_labels: bool = False):
         '''Load model weights.
 
         Parameters
@@ -200,10 +201,10 @@ class VITAE():
         self.vae.load_weights(path_to_file)
 
 
-    def pre_train(self, learning_rate = 1e-3, batch_size = 32, L = 1, alpha=0.01,
-            num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 0, 
-            path_to_weights = None):
+    def pre_train(self, learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.01,
+            num_epoch: int = 300, num_step_per_epoch: Optional[int] = None,
+            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 0, 
+            path_to_weights: Optional[str] = None):
         '''Pretrain the model with specified learning rate.
 
         Parameters
@@ -214,6 +215,8 @@ class VITAE():
             the batch size for pre-training.
         L : int, optional 
             the number of MC samples.
+        alpha : float, optional
+            the value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
         num_epoch : int, optional 
             the maximum number of epoches.
         num_step_per_epoch : int, optional 
@@ -239,29 +242,43 @@ class VITAE():
         self.vae = train.pre_train(
             self.train_dataset,
             self.vae,
-            learning_rate,
-            early_stopping_patience,
-            early_stopping_tolerance,
-            early_stopping_warmup,
+            learning_rate,                        
+            L, alpha,
             num_epoch,
             num_step_per_epoch,
-            L, alpha)
+            early_stopping_patience,
+            early_stopping_tolerance,
+            early_stopping_warmup)
 
         if path_to_weights is not None:
             self.save_model(path_to_weights)
           
 
     def get_latent_z(self):
+        '''Set a subset of interested cells.
+
+        Returns
+        ----------
+        z : np.array
+            \([N,d]\) the latent means.
+        ''' 
         c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
         return self.vae.get_z(self.X_normalized[self.selected_cell_subset_id,:], c)
 
 
     def set_cell_subset(self, selected_cell_names):
+        '''Set a subset of interested cells.
+
+        Parameters
+        ----------
+        selected_cell_names : np.array, optional
+            the names of selected cells.
+        ''' 
         self.selected_cell_subset = np.unique(selected_cell_names)
         self.selected_cell_subset_id = np.sort(np.where(np.in1d(self.cell_names, selected_cell_names))[0])
         
     
-    def refine_pi(self, batch_size=64):  
+    def refine_pi(self, batch_size: int = 64):  
         '''Refine pi by the its posterior. This function will be effected if 'selected_cell_subset_id' is set.
 
         Parameters
@@ -291,7 +308,7 @@ class VITAE():
         return pi, post_pi
 
 
-    def init_latent_space(self, n_clusters, cluster_labels=None, mu=None, log_pi=None):
+    def init_latent_space(self, n_clusters: int, cluster_labels = None, mu = None, log_pi = None):
         '''Initialze the latent space.
 
         Parameters
@@ -317,11 +334,11 @@ class VITAE():
         self.inferer = Inferer(self.n_clusters)            
 
 
-    def train(self, learning_rate = 1e-3, batch_size = 32, 
-            L = 1, alpha=0.01, beta=1, 
-            num_epoch = 300, num_step_per_epoch = None,
-            early_stopping_patience = 10, early_stopping_tolerance = 1e-3, early_stopping_warmup = 5,
-            path_to_weights = None, plot_every_num_epoch=None, dimred='umap', **kwargs):
+    def train(self, learning_rate: float = 1e-3, batch_size: int = 32, 
+            L: int = 1, alpha: float = 0.01, beta: float = 1, 
+            num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
+            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 5,
+            path_to_weights: Optional[str] = None, plot_every_num_epoch: Optional[int] = None, dimred: str = 'umap', **kwargs):
         '''Train the model.
 
         Parameters
@@ -372,14 +389,14 @@ class VITAE():
             self.test_dataset,
             self.vae,
             learning_rate,
-            early_stopping_patience,
-            early_stopping_tolerance,
-            early_stopping_warmup,
-            num_epoch,
-            num_step_per_epoch,
             L,
             alpha,
             beta,
+            num_epoch,
+            num_step_per_epoch,
+            early_stopping_patience,
+            early_stopping_tolerance,
+            early_stopping_warmup,            
             self.labels[self.selected_cell_subset_id],            
             plot_every_num_epoch,
             dimred='umap', 
@@ -390,8 +407,8 @@ class VITAE():
             self.save_model(path_to_weights)
           
 
-    def init_inference(self, batch_size=32, L=5, 
-            dimred='umap', refit_dimred=True, **kwargs):
+    def init_inference(self, batch_size: int = 32, L: int = 5, 
+            dimred: str = 'umap', refit_dimred: bool = True, **kwargs):
         '''Initialze trajectory inference by computing the posterior estimations.        
 
         Parameters
@@ -420,20 +437,21 @@ class VITAE():
         return None
         
         
-    def comp_inference_score(self, method='modified_map', thres=0.5, no_loop=False, is_plot=True, path=None):
+    def comp_inference_score(self, method: str = 'modified_map', thres = 0.5, 
+            no_loop: bool = False, is_plot: bool = True, path: Optional[str] = None):
         ''' Compute edge scores.
 
         Parameters
-        ----------        
-        method : string, optional 
-            'mean', 'modified_mean', 'map', and 'modified_map'.
+        ----------
+        method : string, optional
+            'mean', 'modified_mean', 'map', or 'modified_map'.
         thres : float, optional 
             threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.
         no_loop : boolean, optional 
             if loops are allowed to exist in the graph.
         is_plot : boolean, optional  
             whether to plot or not.
-        path : string, optional 
+        path : string, optional
             path to save figure, or don't save if it is None.
         
         Returns
@@ -447,11 +465,11 @@ class VITAE():
         return G
         
         
-    def infer_trajectory(self, init_node: int, cutoff=None, is_plot=True, path=None):
+    def infer_trajectory(self, init_node: int, cutoff: Optional[float] = None, is_plot: bool = True, path: Optional[str] = None):
         '''Infer the trajectory.
 
         Parameters
-        ----------  
+        ----------
         init_node : int
             the initial node for the inferred trajectory.
         cutoff : string, optional
@@ -478,11 +496,11 @@ class VITAE():
         return G, w, pseudotime
 
     
-    def plot_marker_gene(self, gene_name: str, refit_dimred=False, dimred='umap', path=None, **kwargs):
+    def plot_marker_gene(self, gene_name: str, refit_dimred: bool = False, dimred: str = 'umap', path: Optional[str] =None, **kwargs):
         '''Plot expression of the given marker gene.
 
         Parameters
-        ----------  
+        ----------
         gene_name : str 
             name of the marker gene.
         refit_dimred : boolean, optional 
@@ -512,26 +530,30 @@ class VITAE():
         return None
 
 
-    def evaluate(self, milestone_net, begin_node_true, grouping=None,
-                thres=0.5, no_loop=True, cutoff=None,
-                method='mean', path=None):
+    def evaluate(self, milestone_net, begin_node_true, grouping = None,
+                thres: float = 0.5, no_loop: bool = True, cutoff: Optional[float] = None,
+                method: str = 'mean', path: Optional[str] = None):
         ''' Evaluate the model.
 
         Parameters
-        ----------  
-        milestone_net :
-            the true milestone network.
-            For real data, milestone_net will be a DataFrame of the graph of nodes.
+        ----------
+        milestone_net : pd.DataFrame
+            the true milestone network. For real data, milestone_net will be a DataFrame of the graph of nodes.
             Eg.
-                from         to
-                cluster 1    cluster 2
-                cluster 2    cluster 3
+
+            from|to
+            ---|---
+            cluster 1 | cluster 1
+            cluster 1 | cluster 2
+
             For synthetic data, milestone_net will be a DataFrame of the (projected)
             positions of cells. The indexes are the orders of cells in the dataset.
             Eg.
-                from         to          w
-                cluster 1    cluster 1   1
-                cluster 1    cluster 2   0.1
+
+            from|to|w
+            ---|---|---
+            cluster 1 | cluster 1 | 1
+            cluster 1 | cluster 2 | 0.1
         begin_node_true : str or int
             the true begin node of the milestone.
         grouping : np.array, optional

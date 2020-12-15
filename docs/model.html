@@ -34,7 +34,12 @@ import tensorflow_probability as tfp
 
  
 class cdf_layer(Layer):
+    &#39;&#39;&#39;
+    The Normal cdf layer with custom gradients.
+    &#39;&#39;&#39;
     def __init__(self):
+        &#39;&#39;&#39;
+        &#39;&#39;&#39;
         super(cdf_layer, self).__init__()
         
     @tf.function
@@ -43,6 +48,20 @@ class cdf_layer(Layer):
         
     @tf.custom_gradient
     def func(self, x):
+        &#39;&#39;&#39;Return cdf(x) and pdf(x).
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            the tensor.
+        
+        Returns
+        ----------
+        f : tf.Tensor
+            cdf(x).
+        grad : tf.Tensor
+            pdf(x).
+        &#39;&#39;&#39;   
         dist = tfp.distributions.Normal(loc=0., scale=1., allow_nan_stats=False)
         f = dist.cdf(x)
         def grad(dy):
@@ -52,12 +71,25 @@ class cdf_layer(Layer):
     
 
 class Sampling(Layer):
-    &#34;&#34;&#34;
-    Sampling latent variable z by (z_mean, z_log_var).    
+    &#34;&#34;&#34;Sampling latent variable \(z\) from \(N(\\mu_z, \\log \\sigma_z^2\)).    
     Used in Encoder.
     &#34;&#34;&#34;
     @tf.function
     def call(self, z_mean, z_log_var):
+        &#39;&#39;&#39;Return cdf(x) and pdf(x).
+
+        Parameters
+        ----------
+        z_mean : tf.Tensor
+            \([B, L, d]\) the mean of \(z\).
+        z_log_var : tf.Tensor
+            \([B, L, d]\) the log-variance of \(z\).
+
+        Returns
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the sampled \(z\).
+        &#39;&#39;&#39;   
         epsilon = tf.random.normal(shape = tf.shape(z_mean))
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
@@ -65,15 +97,21 @@ class Sampling(Layer):
 
 class Encoder(Layer):
     &#39;&#39;&#39;
-    Encoder, model q(z|x).
+    Encoder, model \(p(Z_i|Y_i,X_i)\).
     &#39;&#39;&#39;
     def __init__(self, dimensions, dim_latent, name=&#39;encoder&#39;, **kwargs):
         &#39;&#39;&#39;
-        Input:
-          dimensions  - list of dimensions of layers in dense layers of
-                       encoder expcept the latent layer.
-          dim_latent  - dimension of latent layer.
-        &#39;&#39;&#39;
+        Parameters
+        ----------
+        dimensions : np.array
+            the dimensions of hidden layers of the encoder.
+        dim_latent : int
+            the latent dimension of the encoder.
+        name : str, optional
+            the name of the layer.
+        **kwargs : 
+            other keyword arguments.
+        &#39;&#39;&#39; 
         super(Encoder, self).__init__(name = name, **kwargs)
         self.dense_layers = [Dense(dim, activation = tf.nn.leaky_relu,
                                           name = &#39;encoder_%i&#39;%(i+1)) \
@@ -87,14 +125,26 @@ class Encoder(Layer):
     
     @tf.function
     def call(self, x, L=1, is_training=True):
-        &#39;&#39;&#39;
-        Input :
-            x           - input                     [batch_size, dim_origin]
-        Output:
-            z_mean      - mean of p(z|x)            [batch_size, dim_latent]
-            z_log_var   - log of variance of p(z|x) [batch_size, dim_latent]
-            z           - sampled z                 [batch_size, L, dim_latent]
-        &#39;&#39;&#39;
+        &#39;&#39;&#39;Encode the inputs and get the latent variables.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            \([B, L, d]\) the input.
+        L : int, optional
+            the number of MC samples.
+        is_training : boolean, optional
+            whether in the training or inference mode.
+        
+        Returns
+        ----------
+        z_mean : tf.Tensor
+            \([B, L, d]\) the mean of \(z\).
+        z_log_var : tf.Tensor
+            \([B, L, d]\) the log-variance of \(z\).
+        z : tf.Tensor
+            \([B, L, d]\) the sampled \(z\).
+        &#39;&#39;&#39;         
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             x = dense(x)
             x = bn(x, training=is_training)
@@ -108,16 +158,21 @@ class Encoder(Layer):
 
 class Decoder(Layer):
     &#39;&#39;&#39;
-    Decoder, model p(x|z).
+    Decoder, model \(p(Y_i|Z_i,X_i)\).
     &#39;&#39;&#39;
     def __init__(self, dimensions, dim_origin, data_type = &#39;UMI&#39;, 
                 name = &#39;decoder&#39;, **kwargs):
         &#39;&#39;&#39;
-        Input:
-            dimensions      - list of dimensions of layers in dense layers of
-                                decoder expcept the output layer.
-            dim_origin      - dimension of output layer.
-            data_type       - &#39;UMI&#39;, &#39;non-UMI&#39; and &#39;Gaussian&#39;
+        Parameters
+        ----------
+        dimensions : np.array
+            the dimensions of hidden layers of the encoder.
+        dim_origin : int
+            the output dimension of the decoder.
+        data_type : str, optional
+            &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
+        name : str, optional
+            the name of the layer.
         &#39;&#39;&#39;
         super(Decoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
@@ -146,15 +201,43 @@ class Decoder(Layer):
           
     @tf.function  
     def call(self, z, is_training=True):
-        &#39;&#39;&#39;
-        Input :
-            z           - latent variables  [batch_size, L, dim_origin]
-        Output:
-            nu_z        - x_hat if Gaussian
-            tau         - common variance if Gaussian
-            lambda_z    - x_hat             [batch_size, L, dim_origin]
-            r           - dispersion parameter
-                                            [1,          L, dim_origin]
+        &#39;&#39;&#39;Decode the latent variables and get the reconstructions.
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the sampled \(z\).
+        is_training : boolean, optional
+            whether in the training or inference mode.
+
+        When `data_type==&#39;Gaussian&#39;`:
+
+        Returns
+        ----------
+        nu_z : tf.Tensor
+            \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+        tau : tf.Tensor
+            \([1, G]\) the variance of \(Y_i|Z_i,X_i\).
+
+        When `data_type==&#39;UMI&#39;`:
+
+        Returns
+        ----------
+        lambda_z : tf.Tensor
+            \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+        r : tf.Tensor
+            \([1, G]\) the dispersion parameters of \(Y_i|Z_i,X_i\).
+
+        When `data_type==&#39;non-UMI&#39;`:
+
+        Returns
+        ----------
+        lambda_z : tf.Tensor
+            \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+        r : tf.Tensor
+            \([1, G]\) the dispersion parameters of \(Y_i|Z_i,X_i\).
+        phi_z : tf.Tensor
+            \([1, G]\) the zero inflated parameters of \(Y_i|Z_i,X_i\).
         &#39;&#39;&#39;
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             z = dense(z)
@@ -177,14 +260,21 @@ class Decoder(Layer):
 class LatentSpace(Layer):
     &#39;&#39;&#39;
     Layer for the Latent Space.
-    It contains parameters related to model assumptions.
     &#39;&#39;&#39;
     def __init__(self, n_clusters, dim_latent, M = 50, name = &#39;LatentSpace&#39;, **kwargs):
         &#39;&#39;&#39;
-        Input:
-          dim_latent   - dimension of latent layer.
-          dim_origin - dimension of output layer.
-          M            - number of samples for w.
+        Parameters
+        ----------
+        n_clusters : int
+            the number of vertices in the latent space.
+        dim_latent : int
+            the latent dimension.
+        M : int, optional
+            the discretized number of uniform(0,1).
+        name : str, optional
+            the name of the layer.
+        **kwargs : 
+            other keyword arguments.
         &#39;&#39;&#39;
         super(LatentSpace, self).__init__(name=name, **kwargs)
         self.dim_latent = dim_latent
@@ -215,14 +305,25 @@ class LatentSpace(Layer):
                                 name = &#39;mu&#39;)
         self.cdf_layer = cdf_layer()       
         
-    def initialize(self, mu, pi):
+    def initialize(self, mu, log_pi):
+        &#39;&#39;&#39;Initialze the latent space.
+
+        Parameters
+        ----------
+        mu : np.array
+            \([d, k]\) the position matrix.
+        log_pi : np.array
+            \([1, K]\) \(\\log\\pi\).
+        &#39;&#39;&#39;
         # Initialize parameters of the latent space
         if mu is not None:
             self.mu.assign(mu)
-        if pi is not None:
-            self.pi.assign(pi)
+        if log_pi is not None:
+            self.pi.assign(log_pi)
 
     def normalize(self):
+        &#39;&#39;&#39;Normalize \(\\pi\).
+        &#39;&#39;&#39;
         self.pi = tf.nn.softmax(self.pi)
 
     @tf.function
@@ -330,7 +431,7 @@ class LatentSpace(Layer):
         var_w_tilde = tf.reduce_sum(
             tf.math.square(_w)  *
             tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-            (1,3)) - tf.square(w_tilde)    
+            (1,3)) - tf.square(w_tilde)
         
         _wtilde = tf.expand_dims(tf.expand_dims(w_tilde, 1), -1)
         D_JS = tf.reduce_sum(
@@ -345,6 +446,22 @@ class LatentSpace(Layer):
         return w_tilde, var_w_tilde, D_JS
     
     def get_pz(self, z):
+        &#39;&#39;&#39;Get \(\\log p(Z_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the latent variables.
+
+        Returns
+        ----------
+        log_p_zc_L : tf.Tensor
+            \([B, L, K]\) \(\\log p(Z_i^{(l)},c_i|Y_i,X_i)\).
+        log_p_z_L : tf.Tensor
+            \([B, L]\) \(\\log p(Z_i^{(l)}|Y_i,X_i)\).
+        log_p_z : tf.Tensor
+            \([B, 1]\) the estimated \(\\log p(Z_i|Y_i,X_i)\). 
+        &#39;&#39;&#39;        
         temp_pi, a2, _inv_sig, _mu, _t = self._get_normal_params(z)
         
         log_p_z_c_L =  0.5 * (tf.math.log(2 * np.pi) - \
@@ -357,20 +474,48 @@ class LatentSpace(Layer):
         log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
         return log_p_zc_L, log_p_z_L, log_p_z
 
+    def get_posterior_c(self, z):
+        &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the latent variables.
+
+        Returns
+        ----------
+        p_c_x : np.array
+            \([B, K]\) \(p(c_i|Y_i,X_i)\).
+        &#39;&#39;&#39;  
+        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
+        log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
+        p_c_x = tf.exp(log_p_c_x).numpy()
+        return p_c_x
+
     def call(self, z, inference=False):
-        &#39;&#39;&#39;
-        Input :
-                z       - latent variables outputed by the encoder
-                          [batch_size, L, dim_latent]
-        Output:       
-            inference = True:     
-                log_p_z - MC samples for log p(z)=log sum_{c}p(z|c)*p(c)
-                          [batch_size, ]
-            inference = False:
-                res     - results contains estimations for 
-                            p(c|x), E(w|x), Var(w|x), E(w|x,c), Var(w|x,c), 
-                            c, E(w_tilde), Var(w_tilde), D_JS
-        &#39;&#39;&#39;               
+        &#39;&#39;&#39;Get posterior estimations.
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the latent variables.
+        inference : boolean
+            whether in training or inference mode.
+
+        When `inference=False`:
+
+        Returns
+        ----------
+        log_p_z_L : tf.Tensor
+            \([B, 1]\) the estimated \(\\log p(Z_i|Y_i,X_i)\).
+
+        When `inference=True`:
+
+        Returns
+        ----------
+        res : dict
+            a dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
+        &#39;&#39;&#39;                 
         log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
         if not inference:
@@ -385,46 +530,32 @@ class LatentSpace(Layer):
             res[&#39;var_w_tilde&#39;] = var_w_tilde.numpy()
             res[&#39;D_JS&#39;] = D_JS.numpy()
             return res
-
-    def get_posterior_c(self, z):
-        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
-        log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-        p_c_x = tf.exp(log_p_c_x).numpy()
-        return p_c_x
-
-    def get_proj_z(self, c):
-        &#39;&#39;&#39;
-        Args:
-            c - Numpy array of indexes [1,*]
-        &#39;&#39;&#39;
-        proj_c = np.tile(c, (self.M,1)).T.flatten()
-        proj_z_M = tf.transpose(
-                        tf.gather(self.mu, tf.gather(self.A, proj_c), axis=1) * 
-                        tf.tile(self.w, (1,len(c))) + 
-                        tf.gather(self.mu, tf.gather(self.B, proj_c), axis=1) * 
-                        (1-tf.tile(self.w, (1,len(c))))
-                    )
-        return proj_c, proj_z_M.numpy()
             
             
 class VariationalAutoEncoder(tf.keras.Model):
     &#34;&#34;&#34;
-    Combines the encoder, decoder and LatentSpace into an end-to-end model for training.
+    Combines the encoder, decoder and LatentSpace into an end-to-end model for training and inference.
     &#34;&#34;&#34;
     def __init__(self, dim_origin, dimensions, dim_latent,
                  data_type = &#39;UMI&#39;, has_cov=False,
                  name = &#39;autoencoder&#39;, **kwargs):
         &#39;&#39;&#39;
-        Args:
-            n_clusters      -   Number of clusters.
-            dim_origin      -   Dim of input.
-            dimensions      -   List of dimensions of layers of the encoder. Assume
-                               symmetric network sturcture of encoder and decoder.
-            dim_latent      -   Dimension of latent layer.
-            data_type       -   Type of count data.
-                              &#39;UMI&#39; for negative binomial loss;
-                              &#39;non-UMI&#39; for zero-inflated negative binomial loss.
-            has_cov         - has covariate or not
+        Parameters
+        ----------
+        dim_origin : int
+            the output dimension of the decoder.        
+        dimensions : np.array
+            the dimensions of hidden layers of the encoder.
+        dim_latent : int
+            the latent dimension.
+        data_type : str, optional
+            &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
+        has_cov : boolean
+            whether has covariates or not.
+        name : str, optional
+            the name of the layer.
+        **kwargs : 
+            other keyword arguments.
         &#39;&#39;&#39;
         super(VariationalAutoEncoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
@@ -434,14 +565,48 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.decoder = Decoder(dimensions[::-1], dim_origin, data_type, data_type)        
         self.has_cov = has_cov
         
-    def init_latent_space(self, n_clusters, mu, pi=None):
+    def init_latent_space(self, n_clusters, mu, log_pi=None):
+        &#39;&#39;&#39;Initialze the latent space.
+
+        Parameters
+        ----------
+        n_clusters : int
+            the number of vertices in the latent space.
+        mu : np.array
+            \([d, k]\) the position matrix.
+        log_pi : np.array, optional
+            \([1, K]\) \(\\log\\pi\).
+        &#39;&#39;&#39;
         self.n_clusters = n_clusters
         self.latent_space = LatentSpace(self.n_clusters, self.dim_latent)
-        self.latent_space.initialize(mu, pi)
+        self.latent_space.initialize(mu, log_pi)
 
     def call(self, x_normalized, c_score, x = None, scale_factor = 1,
              pre_train = False, L=1, alpha=0.0):
-        # Feed forward through encoder, LatentSpace layer and decoder.
+        &#39;&#39;&#39;Feed forward through encoder, LatentSpace layer and decoder.
+
+        Parameters
+        ----------
+        x_normalized : int
+            \([B, G]\) the preprocessed data.
+        c_score : np.array
+            \([B, s]\) the covariates \(X_i\), only used when `has_cov=True`.
+        x : np.array, optional
+            \([B, G]\) the original count data \(Y_i\), only used when data_type is not &#39;Gaussian&#39;.
+        scale_factor : np.array, optional
+            \([B, ]\) the scale factors, only used when data_type is not &#39;Gaussian&#39;.
+        pre_train : boolean, optional
+            whether in the pre-training phare or not.
+        L : int, optional
+            the number of MC samples.
+        alpha : float, optional
+            the penalty parameter for covariates adjustment.
+
+        Returns
+        ----------
+        losses : float
+            the loss.
+        &#39;&#39;&#39;
         if not pre_train and self.latent_space is None:
             raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
                     
@@ -451,11 +616,11 @@ class VariationalAutoEncoder(tf.keras.Model):
         z_in = tf.concat([z, tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1) if self.has_cov else z
         
         x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
-        reconstruction_z_loss = self.get_reconstruction_loss(x, z_in, scale_factor, L)
+        reconstruction_z_loss = self._get_reconstruction_loss(x, z_in, scale_factor, L)
         
         if self.has_cov and alpha&gt;0.0:
             zero_in = tf.concat([tf.zeros([z.shape[0],1,z.shape[2]]), tf.tile(tf.expand_dims(c_score,1), (1,1,1))], -1)
-            reconstruction_zero_loss = self.get_reconstruction_loss(x, zero_in, scale_factor, 1)
+            reconstruction_zero_loss = self._get_reconstruction_loss(x, zero_in, scale_factor, 1)
             reconstruction_z_loss = (1-alpha)*reconstruction_z_loss + alpha*reconstruction_zero_loss
         
         self.add_loss(reconstruction_z_loss)
@@ -476,7 +641,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         return self.losses
     
     @tf.function
-    def get_reconstruction_loss(self, x, z_in, scale_factor, L):
+    def _get_reconstruction_loss(self, x, z_in, scale_factor, L):
         if self.data_type==&#39;Gaussian&#39;:
             # Gaussian Log-Likelihood Loss function
             nu_z, tau = self.decoder(z_in)
@@ -514,19 +679,40 @@ class VariationalAutoEncoder(tf.keras.Model):
             
             return neg_E_nb
     
-    def get_z(self, x_normalized, c_score):        
+    def get_z(self, x_normalized, c_score):    
+        &#39;&#39;&#39;Get \(q(Z_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        x_normalized : int
+            \([B, G]\) the preprocessed data.
+        c_score : np.array
+            \([B, s]\) the covariates \(X_i\), only used when `has_cov=True`.
+
+        Returns
+        ----------
+        z_mean : np.array
+            \([B, d]\) the latent mean.
+        &#39;&#39;&#39;    
         x_normalized = x_normalized if (not self.has_cov or c_score is None) else tf.concat([x_normalized, c_score], -1)
         z_mean, _, _ = self.encoder(x_normalized, 1, False)
         return z_mean.numpy()
-    
-    def get_proj_z(self, c):
-        &#39;&#39;&#39;
-        Args:
-            c - List of indexes of edges
-        &#39;&#39;&#39;
-        return self.latent_space.get_proj_z(c)
 
     def get_pc_x(self, test_dataset):
+        &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        test_dataset : tf.Dataset
+            the dataset object.
+
+        Returns
+        ----------
+        pi_norm : np.array
+            \([1, K]\) the estimated \(\\pi\).
+        p_c_x : np.array
+            \([N, ]\) the estimated \(p(c_i|Y_i,X_i)\).
+        &#39;&#39;&#39;    
         if self.latent_space is None:
             raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
         
@@ -541,6 +727,32 @@ class VariationalAutoEncoder(tf.keras.Model):
         return pi_norm, p_c_x
 
     def inference(self, test_dataset, L=1):
+        &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        test_dataset : tf.Dataset
+            the dataset object.
+        L : int
+            the number of MC samples.
+
+        Returns
+        ----------
+        pi_norm  : np.array
+            \([1, K]\) the estimated \(\\pi\).
+        mu : np.array
+            \([d, k]\) the estimated \(\\mu\).
+        p_c_x : np.array
+            \([N, ]\) the estimated \(p(c_i|Y_i,X_i)\).
+        w_tilde : np.array
+            \([N, k]\) the estimated \(E(\\tilde{w}_i|Y_i,X_i)\).
+        var_w_tilde  : np.array 
+            \([N, k]\) the estimated \(Var(\\tilde{w}_i|Y_i,X_i)\).
+        D_JS : np.array 
+            \([N, k]\) the estimated JS divergence.
+        z_mean : np.array
+            \([N, d]\) the estimated latent mean.
+        &#39;&#39;&#39;   
         if self.latent_space is None:
             raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
             
@@ -583,174 +795,18 @@ class VariationalAutoEncoder(tf.keras.Model):
 <span>class <span class="ident">cdf_layer</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>This is the class from which all layers inherit.</p>
-<p>A layer is a callable object that takes as input one or more tensors and
-that outputs one or more tensors. It involves <em>computation</em>, defined
-in the <code>call()</code> method, and a <em>state</em> (weight variables), defined
-either in the constructor <code>__init__()</code> or in the <code>build()</code> method.</p>
-<p>Users will just instantiate a layer and then treat it as a callable.</p>
-<h2 id="arguments">Arguments</h2>
-<p>trainable: Boolean, whether the layer's variables should be trainable.
-name: String name of the layer.
-dtype: The dtype of the layer's computations and weights (default of
-<code>None</code> means use <code>tf.keras.backend.floatx</code> in TensorFlow 2, or the type
-of the first input in TensorFlow 1).
-dynamic: Set this to <code>True</code> if your layer should only be run eagerly, and
-should not be used to generate a static computation graph.
-This would be the case for a Tree-RNN or a recursive network,
-for example, or generally for any layer that manipulates tensors
-using Python control flow. If <code>False</code>, we assume that the layer can
-safely be used to generate a static computation graph.</p>
-<h2 id="attributes">Attributes</h2>
-<dl>
-<dt><strong><code>name</code></strong></dt>
-<dd>The name of the layer (string).</dd>
-<dt><strong><code>dtype</code></strong></dt>
-<dd>The dtype of the layer's computations and weights. If mixed
-precision is used with a <code>tf.keras.mixed_precision.experimental.Policy</code>,
-this is instead just the dtype of the layer's weights, as the computations
-are done in a different dtype.</dd>
-<dt><strong><code>trainable_weights</code></strong></dt>
-<dd>List of variables to be included in backprop.</dd>
-<dt><strong><code>non_trainable_weights</code></strong></dt>
-<dd>List of variables that should not be
-included in backprop.</dd>
-<dt><strong><code>weights</code></strong></dt>
-<dd>The concatenation of the lists trainable_weights and
-non_trainable_weights (in this order).</dd>
-<dt><strong><code>trainable</code></strong></dt>
-<dd>Whether the layer should be trained (boolean), i.e. whether
-its potentially-trainable weights should be returned as part of
-<code>layer.trainable_weights</code>.</dd>
-<dt><strong><code>input_spec</code></strong></dt>
-<dd>Optional (list of) <code>InputSpec</code> object(s) specifying the
-constraints on inputs that can be accepted by the layer.</dd>
-</dl>
-<p>We recommend that descendants of <code>Layer</code> implement the following methods:</p>
-<ul>
-<li><code>__init__()</code>: Defines custom layer attributes, and creates layer state
-variables that do not depend on input shapes, using <code>add_weight()</code>.</li>
-<li><code>build(self, input_shape)</code>: This method can be used to create weights that
-depend on the shape(s) of the input(s), using <code>add_weight()</code>. <code>__call__()</code>
-will automatically build the layer (if it has not been built yet) by
-calling <code>build()</code>.</li>
-<li><code>call(self, *args, **kwargs)</code>: Called in <code>__call__</code> after making sure
-<code>build()</code> has been called. <code>call()</code> performs the logic of applying the
-layer to the input tensors (which should be passed in as argument).
-Two reserved keyword arguments you can optionally use in <code>call()</code> are:<ul>
-<li><code>training</code> (boolean, whether the call is in
-inference mode or training mode)</li>
-<li><code>mask</code> (boolean tensor encoding masked timesteps in the input, used
-in RNN layers)</li>
-</ul>
-</li>
-<li><code>get_config(self)</code>: Returns a dictionary containing the configuration used
-to initialize this layer. If the keys differ from the arguments
-in <code>__init__</code>, then override <code>from_config(self)</code> as well.
-This method is used when saving
-the layer or a model that contains this layer.</li>
-</ul>
-<p>Examples:</p>
-<p>Here's a basic example: a layer with two variables, <code>w</code> and <code>b</code>,
-that returns <code>y = w . x + b</code>.
-It shows how to implement <code>build()</code> and <code>call()</code>.
-Variables set as attributes of a layer are tracked as weights
-of the layers (in <code>layer.weights</code>).</p>
-<pre><code class="language-python">class SimpleDense(Layer):
-
-  def __init__(self, units=32):
-      super(SimpleDense, self).__init__()
-      self.units = units
-
-  def build(self, input_shape):  # Create the state of the layer (weights)
-    w_init = tf.random_normal_initializer()
-    self.w = tf.Variable(
-        initial_value=w_init(shape=(input_shape[-1], self.units),
-                             dtype='float32'),
-        trainable=True)
-    b_init = tf.zeros_initializer()
-    self.b = tf.Variable(
-        initial_value=b_init(shape=(self.units,), dtype='float32'),
-        trainable=True)
-
-  def call(self, inputs):  # Defines the computation from inputs to outputs
-      return tf.matmul(inputs, self.w) + self.b
-
-# Instantiates the layer.
-linear_layer = SimpleDense(4)
-
-# This will also call `build(input_shape)` and create the weights.
-y = linear_layer(tf.ones((2, 2)))
-assert len(linear_layer.weights) == 2
-
-# These weights are trainable, so they're listed in `trainable_weights`:
-assert len(linear_layer.trainable_weights) == 2
-</code></pre>
-<p>Note that the method <code>add_weight()</code> offers a shortcut to create weights:</p>
-<pre><code class="language-python">class SimpleDense(Layer):
-
-  def __init__(self, units=32):
-      super(SimpleDense, self).__init__()
-      self.units = units
-
-  def build(self, input_shape):
-      self.w = self.add_weight(shape=(input_shape[-1], self.units),
-                               initializer='random_normal',
-                               trainable=True)
-      self.b = self.add_weight(shape=(self.units,),
-                               initializer='random_normal',
-                               trainable=True)
-
-  def call(self, inputs):
-      return tf.matmul(inputs, self.w) + self.b
-</code></pre>
-<p>Besides trainable weights, updated via backpropagation during training,
-layers can also have non-trainable weights. These weights are meant to
-be updated manually during <code>call()</code>. Here's a example layer that computes
-the running sum of its inputs:</p>
-<pre><code class="language-python">class ComputeSum(Layer):
-
-  def __init__(self, input_dim):
-      super(ComputeSum, self).__init__()
-      # Create a non-trainable weight.
-      self.total = tf.Variable(initial_value=tf.zeros((input_dim,)),
-                               trainable=False)
-
-  def call(self, inputs):
-      self.total.assign_add(tf.reduce_sum(inputs, axis=0))
-      return self.total
-
-my_sum = ComputeSum(2)
-x = tf.ones((2, 2))
-
-y = my_sum(x)
-print(y.numpy())  # [2. 2.]
-
-y = my_sum(x)
-print(y.numpy())  # [4. 4.]
-
-assert my_sum.weights == [my_sum.total]
-assert my_sum.non_trainable_weights == [my_sum.total]
-assert my_sum.trainable_weights == []
-</code></pre>
-<p>For more information about creating layers, see the guide
-<a href="https://www.tensorflow.org/guide/keras/custom_layers_and_models">Writing custom layers and models with Keras</a></p>
-<p>About the layer's <code>dtype</code> attribute:</p>
-<p>Each layer has a dtype, which is typically the dtype of the layer's
-computations and variables. A layer's dtype can be queried via the
-<code>Layer.dtype</code> property. The dtype is specified with the <code>dtype</code> constructor
-argument. In TensorFlow 2, the dtype defaults to <code>tf.keras.backend.floatx()</code>
-if no dtype is passed. <code>floatx()</code> itself defaults to "float32". Additionally,
-layers will cast their inputs to the layer's dtype in TensorFlow 2. When mixed
-precision is used, layers may have different computation and variable dtypes.
-See <code>tf.keras.mixed_precision.experimental.Policy</code> for details on layer
-dtypes.</p></div>
+<div class="desc"><p>The Normal cdf layer with custom gradients.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class cdf_layer(Layer):
+    &#39;&#39;&#39;
+    The Normal cdf layer with custom gradients.
+    &#39;&#39;&#39;
     def __init__(self):
+        &#39;&#39;&#39;
+        &#39;&#39;&#39;
         super(cdf_layer, self).__init__()
         
     @tf.function
@@ -759,6 +815,20 @@ dtypes.</p></div>
         
     @tf.custom_gradient
     def func(self, x):
+        &#39;&#39;&#39;Return cdf(x) and pdf(x).
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            the tensor.
+        
+        Returns
+        ----------
+        f : tf.Tensor
+            cdf(x).
+        grad : tf.Tensor
+            pdf(x).
+        &#39;&#39;&#39;   
         dist = tfp.distributions.Normal(loc=0., scale=1., allow_nan_stats=False)
         f = dist.cdf(x)
         def grad(dy):
@@ -794,13 +864,39 @@ def call(self, x):
 <span>def <span class="ident">func</span></span>(<span>self, x)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Return cdf(x) and pdf(x).</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd>the tensor.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>f</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd>cdf(x).</dd>
+<dt><strong><code>grad</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd>pdf(x).</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@tf.custom_gradient
 def func(self, x):
+    &#39;&#39;&#39;Return cdf(x) and pdf(x).
+
+    Parameters
+    ----------
+    x : tf.Tensor
+        the tensor.
+    
+    Returns
+    ----------
+    f : tf.Tensor
+        cdf(x).
+    grad : tf.Tensor
+        pdf(x).
+    &#39;&#39;&#39;   
     dist = tfp.distributions.Normal(loc=0., scale=1., allow_nan_stats=False)
     f = dist.cdf(x)
     def grad(dy):
@@ -816,7 +912,7 @@ def func(self, x):
 <span>(</span><span>trainable=True, name=None, dtype=None, dynamic=False, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Sampling latent variable z by (z_mean, z_log_var).
+<div class="desc"><p>Sampling latent variable <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span> from <span><span class="MathJax_Preview">N(\mu_z, \log \sigma_z^2</span><script type="math/tex">N(\mu_z, \log \sigma_z^2</script></span>).
 <br>
 Used in Encoder.</p></div>
 <details class="source">
@@ -824,12 +920,25 @@ Used in Encoder.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Sampling(Layer):
-    &#34;&#34;&#34;
-    Sampling latent variable z by (z_mean, z_log_var).    
+    &#34;&#34;&#34;Sampling latent variable \(z\) from \(N(\\mu_z, \\log \\sigma_z^2\)).    
     Used in Encoder.
     &#34;&#34;&#34;
     @tf.function
     def call(self, z_mean, z_log_var):
+        &#39;&#39;&#39;Return cdf(x) and pdf(x).
+
+        Parameters
+        ----------
+        z_mean : tf.Tensor
+            \([B, L, d]\) the mean of \(z\).
+        z_log_var : tf.Tensor
+            \([B, L, d]\) the log-variance of \(z\).
+
+        Returns
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the sampled \(z\).
+        &#39;&#39;&#39;   
         epsilon = tf.random.normal(shape = tf.shape(z_mean))
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
@@ -849,13 +958,39 @@ Used in Encoder.</p></div>
 <span>def <span class="ident">call</span></span>(<span>self, z_mean, z_log_var)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Return cdf(x) and pdf(x).</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>z_mean</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the mean of <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span>.</dd>
+<dt><strong><code>z_log_var</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the log-variance of <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the sampled <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span>.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@tf.function
 def call(self, z_mean, z_log_var):
+    &#39;&#39;&#39;Return cdf(x) and pdf(x).
+
+    Parameters
+    ----------
+    z_mean : tf.Tensor
+        \([B, L, d]\) the mean of \(z\).
+    z_log_var : tf.Tensor
+        \([B, L, d]\) the log-variance of \(z\).
+
+    Returns
+    ----------
+    z : tf.Tensor
+        \([B, L, d]\) the sampled \(z\).
+    &#39;&#39;&#39;   
     epsilon = tf.random.normal(shape = tf.shape(z_mean))
     z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
     z = tf.clip_by_value(z, -1e6, 1e6)
@@ -869,28 +1004,39 @@ def call(self, z_mean, z_log_var):
 <span>(</span><span>dimensions, dim_latent, name='encoder', **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Encoder, model q(z|x).</p>
-<h2 id="input">Input</h2>
-<p>dimensions
-- list of dimensions of layers in dense layers of
-encoder expcept the latent layer.
-dim_latent
-- dimension of latent layer.</p></div>
+<div class="desc"><p>Encoder, model <span><span class="MathJax_Preview">p(Z_i|Y_i,X_i)</span><script type="math/tex">p(Z_i|Y_i,X_i)</script></span>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>dimensions</code></strong> :&ensp;<code>np.array</code></dt>
+<dd>the dimensions of hidden layers of the encoder.</dd>
+<dt><strong><code>dim_latent</code></strong> :&ensp;<code>int</code></dt>
+<dd>the latent dimension of the encoder.</dd>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the name of the layer.</dd>
+<dt><strong><code>**kwargs</code></strong></dt>
+<dd>other keyword arguments.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Encoder(Layer):
     &#39;&#39;&#39;
-    Encoder, model q(z|x).
+    Encoder, model \(p(Z_i|Y_i,X_i)\).
     &#39;&#39;&#39;
     def __init__(self, dimensions, dim_latent, name=&#39;encoder&#39;, **kwargs):
         &#39;&#39;&#39;
-        Input:
-          dimensions  - list of dimensions of layers in dense layers of
-                       encoder expcept the latent layer.
-          dim_latent  - dimension of latent layer.
-        &#39;&#39;&#39;
+        Parameters
+        ----------
+        dimensions : np.array
+            the dimensions of hidden layers of the encoder.
+        dim_latent : int
+            the latent dimension of the encoder.
+        name : str, optional
+            the name of the layer.
+        **kwargs : 
+            other keyword arguments.
+        &#39;&#39;&#39; 
         super(Encoder, self).__init__(name = name, **kwargs)
         self.dense_layers = [Dense(dim, activation = tf.nn.leaky_relu,
                                           name = &#39;encoder_%i&#39;%(i+1)) \
@@ -904,14 +1050,26 @@ dim_latent
     
     @tf.function
     def call(self, x, L=1, is_training=True):
-        &#39;&#39;&#39;
-        Input :
-            x           - input                     [batch_size, dim_origin]
-        Output:
-            z_mean      - mean of p(z|x)            [batch_size, dim_latent]
-            z_log_var   - log of variance of p(z|x) [batch_size, dim_latent]
-            z           - sampled z                 [batch_size, L, dim_latent]
-        &#39;&#39;&#39;
+        &#39;&#39;&#39;Encode the inputs and get the latent variables.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            \([B, L, d]\) the input.
+        L : int, optional
+            the number of MC samples.
+        is_training : boolean, optional
+            whether in the training or inference mode.
+        
+        Returns
+        ----------
+        z_mean : tf.Tensor
+            \([B, L, d]\) the mean of \(z\).
+        z_log_var : tf.Tensor
+            \([B, L, d]\) the log-variance of \(z\).
+        z : tf.Tensor
+            \([B, L, d]\) the sampled \(z\).
+        &#39;&#39;&#39;         
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             x = dense(x)
             x = bn(x, training=is_training)
@@ -936,33 +1094,51 @@ dim_latent
 <span>def <span class="ident">call</span></span>(<span>self, x, L=1, is_training=True)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Input :
-x
-- input
-[batch_size, dim_origin]</p>
-<h2 id="output">Output</h2>
-<p>z_mean
-- mean of p(z|x)
-[batch_size, dim_latent]
-z_log_var
-- log of variance of p(z|x) [batch_size, dim_latent]
-z
-- sampled z
-[batch_size, L, dim_latent]</p></div>
+<div class="desc"><p>Encode the inputs and get the latent variables.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the input.</dd>
+<dt><strong><code>L</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of MC samples.</dd>
+<dt><strong><code>is_training</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether in the training or inference mode.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>z_mean</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the mean of <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span>.</dd>
+<dt><strong><code>z_log_var</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the log-variance of <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span>.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the sampled <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span>.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@tf.function
 def call(self, x, L=1, is_training=True):
-    &#39;&#39;&#39;
-    Input :
-        x           - input                     [batch_size, dim_origin]
-    Output:
-        z_mean      - mean of p(z|x)            [batch_size, dim_latent]
-        z_log_var   - log of variance of p(z|x) [batch_size, dim_latent]
-        z           - sampled z                 [batch_size, L, dim_latent]
-    &#39;&#39;&#39;
+    &#39;&#39;&#39;Encode the inputs and get the latent variables.
+
+    Parameters
+    ----------
+    x : tf.Tensor
+        \([B, L, d]\) the input.
+    L : int, optional
+        the number of MC samples.
+    is_training : boolean, optional
+        whether in the training or inference mode.
+    
+    Returns
+    ----------
+    z_mean : tf.Tensor
+        \([B, L, d]\) the mean of \(z\).
+    z_log_var : tf.Tensor
+        \([B, L, d]\) the log-variance of \(z\).
+    z : tf.Tensor
+        \([B, L, d]\) the sampled \(z\).
+    &#39;&#39;&#39;         
     for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
         x = dense(x)
         x = bn(x, training=is_training)
@@ -981,31 +1157,39 @@ def call(self, x, L=1, is_training=True):
 <span>(</span><span>dimensions, dim_origin, data_type='UMI', name='decoder', **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Decoder, model p(x|z).</p>
-<h2 id="input">Input</h2>
-<p>dimensions
-- list of dimensions of layers in dense layers of
-decoder expcept the output layer.
-dim_origin
-- dimension of output layer.
-data_type
-- 'UMI', 'non-UMI' and 'Gaussian'</p></div>
+<div class="desc"><p>Decoder, model <span><span class="MathJax_Preview">p(Y_i|Z_i,X_i)</span><script type="math/tex">p(Y_i|Z_i,X_i)</script></span>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>dimensions</code></strong> :&ensp;<code>np.array</code></dt>
+<dd>the dimensions of hidden layers of the encoder.</dd>
+<dt><strong><code>dim_origin</code></strong> :&ensp;<code>int</code></dt>
+<dd>the output dimension of the decoder.</dd>
+<dt><strong><code>data_type</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>'UMI', 'non-UMI', or 'Gaussian'.</dd>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the name of the layer.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Decoder(Layer):
     &#39;&#39;&#39;
-    Decoder, model p(x|z).
+    Decoder, model \(p(Y_i|Z_i,X_i)\).
     &#39;&#39;&#39;
     def __init__(self, dimensions, dim_origin, data_type = &#39;UMI&#39;, 
                 name = &#39;decoder&#39;, **kwargs):
         &#39;&#39;&#39;
-        Input:
-            dimensions      - list of dimensions of layers in dense layers of
-                                decoder expcept the output layer.
-            dim_origin      - dimension of output layer.
-            data_type       - &#39;UMI&#39;, &#39;non-UMI&#39; and &#39;Gaussian&#39;
+        Parameters
+        ----------
+        dimensions : np.array
+            the dimensions of hidden layers of the encoder.
+        dim_origin : int
+            the output dimension of the decoder.
+        data_type : str, optional
+            &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
+        name : str, optional
+            the name of the layer.
         &#39;&#39;&#39;
         super(Decoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
@@ -1034,15 +1218,43 @@ data_type
           
     @tf.function  
     def call(self, z, is_training=True):
-        &#39;&#39;&#39;
-        Input :
-            z           - latent variables  [batch_size, L, dim_origin]
-        Output:
-            nu_z        - x_hat if Gaussian
-            tau         - common variance if Gaussian
-            lambda_z    - x_hat             [batch_size, L, dim_origin]
-            r           - dispersion parameter
-                                            [1,          L, dim_origin]
+        &#39;&#39;&#39;Decode the latent variables and get the reconstructions.
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the sampled \(z\).
+        is_training : boolean, optional
+            whether in the training or inference mode.
+
+        When `data_type==&#39;Gaussian&#39;`:
+
+        Returns
+        ----------
+        nu_z : tf.Tensor
+            \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+        tau : tf.Tensor
+            \([1, G]\) the variance of \(Y_i|Z_i,X_i\).
+
+        When `data_type==&#39;UMI&#39;`:
+
+        Returns
+        ----------
+        lambda_z : tf.Tensor
+            \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+        r : tf.Tensor
+            \([1, G]\) the dispersion parameters of \(Y_i|Z_i,X_i\).
+
+        When `data_type==&#39;non-UMI&#39;`:
+
+        Returns
+        ----------
+        lambda_z : tf.Tensor
+            \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+        r : tf.Tensor
+            \([1, G]\) the dispersion parameters of \(Y_i|Z_i,X_i\).
+        phi_z : tf.Tensor
+            \([1, G]\) the zero inflated parameters of \(Y_i|Z_i,X_i\).
         &#39;&#39;&#39;
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             z = dense(z)
@@ -1075,37 +1287,83 @@ data_type
 <span>def <span class="ident">call</span></span>(<span>self, z, is_training=True)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Input :
-z
-- latent variables
-[batch_size, L, dim_origin]</p>
-<h2 id="output">Output</h2>
-<p>nu_z
-- x_hat if Gaussian
-tau
-- common variance if Gaussian
-lambda_z
-- x_hat
-[batch_size, L, dim_origin]
-r
-- dispersion parameter
-[1,
-L, dim_origin]</p></div>
+<div class="desc"><p>Decode the latent variables and get the reconstructions.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the sampled <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span>.</dd>
+<dt><strong><code>is_training</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether in the training or inference mode.</dd>
+</dl>
+<p>When <code>data_type=='Gaussian'</code>:</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>nu_z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, G]</span><script type="math/tex">[B, L, G]</script></span> the mean of <span><span class="MathJax_Preview">Y_i|Z_i,X_i</span><script type="math/tex">Y_i|Z_i,X_i</script></span>.</dd>
+<dt><strong><code>tau</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[1, G]</span><script type="math/tex">[1, G]</script></span> the variance of <span><span class="MathJax_Preview">Y_i|Z_i,X_i</span><script type="math/tex">Y_i|Z_i,X_i</script></span>.</dd>
+</dl>
+<p>When <code>data_type=='UMI'</code>:</p>
+<h2 id="returns_1">Returns</h2>
+<dl>
+<dt><strong><code>lambda_z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, G]</span><script type="math/tex">[B, L, G]</script></span> the mean of <span><span class="MathJax_Preview">Y_i|Z_i,X_i</span><script type="math/tex">Y_i|Z_i,X_i</script></span>.</dd>
+<dt><strong><code>r</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[1, G]</span><script type="math/tex">[1, G]</script></span> the dispersion parameters of <span><span class="MathJax_Preview">Y_i|Z_i,X_i</span><script type="math/tex">Y_i|Z_i,X_i</script></span>.</dd>
+</dl>
+<p>When <code>data_type=='non-UMI'</code>:</p>
+<h2 id="returns_2">Returns</h2>
+<dl>
+<dt><strong><code>lambda_z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, G]</span><script type="math/tex">[B, L, G]</script></span> the mean of <span><span class="MathJax_Preview">Y_i|Z_i,X_i</span><script type="math/tex">Y_i|Z_i,X_i</script></span>.</dd>
+<dt><strong><code>r</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[1, G]</span><script type="math/tex">[1, G]</script></span> the dispersion parameters of <span><span class="MathJax_Preview">Y_i|Z_i,X_i</span><script type="math/tex">Y_i|Z_i,X_i</script></span>.</dd>
+<dt><strong><code>phi_z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[1, G]</span><script type="math/tex">[1, G]</script></span> the zero inflated parameters of <span><span class="MathJax_Preview">Y_i|Z_i,X_i</span><script type="math/tex">Y_i|Z_i,X_i</script></span>.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@tf.function  
 def call(self, z, is_training=True):
-    &#39;&#39;&#39;
-    Input :
-        z           - latent variables  [batch_size, L, dim_origin]
-    Output:
-        nu_z        - x_hat if Gaussian
-        tau         - common variance if Gaussian
-        lambda_z    - x_hat             [batch_size, L, dim_origin]
-        r           - dispersion parameter
-                                        [1,          L, dim_origin]
+    &#39;&#39;&#39;Decode the latent variables and get the reconstructions.
+
+    Parameters
+    ----------
+    z : tf.Tensor
+        \([B, L, d]\) the sampled \(z\).
+    is_training : boolean, optional
+        whether in the training or inference mode.
+
+    When `data_type==&#39;Gaussian&#39;`:
+
+    Returns
+    ----------
+    nu_z : tf.Tensor
+        \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+    tau : tf.Tensor
+        \([1, G]\) the variance of \(Y_i|Z_i,X_i\).
+
+    When `data_type==&#39;UMI&#39;`:
+
+    Returns
+    ----------
+    lambda_z : tf.Tensor
+        \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+    r : tf.Tensor
+        \([1, G]\) the dispersion parameters of \(Y_i|Z_i,X_i\).
+
+    When `data_type==&#39;non-UMI&#39;`:
+
+    Returns
+    ----------
+    lambda_z : tf.Tensor
+        \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+    r : tf.Tensor
+        \([1, G]\) the dispersion parameters of \(Y_i|Z_i,X_i\).
+    phi_z : tf.Tensor
+        \([1, G]\) the zero inflated parameters of \(Y_i|Z_i,X_i\).
     &#39;&#39;&#39;
     for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
         z = dense(z)
@@ -1132,14 +1390,20 @@ def call(self, z, is_training=True):
 <span>(</span><span>n_clusters, dim_latent, M=50, name='LatentSpace', **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Layer for the Latent Space.
-It contains parameters related to model assumptions.</p>
-<h2 id="input">Input</h2>
-<p>dim_latent
-- dimension of latent layer.
-dim_origin - dimension of output layer.
-M
-- number of samples for w.</p></div>
+<div class="desc"><p>Layer for the Latent Space.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>n_clusters</code></strong> :&ensp;<code>int</code></dt>
+<dd>the number of vertices in the latent space.</dd>
+<dt><strong><code>dim_latent</code></strong> :&ensp;<code>int</code></dt>
+<dd>the latent dimension.</dd>
+<dt><strong><code>M</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the discretized number of uniform(0,1).</dd>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the name of the layer.</dd>
+<dt><strong><code>**kwargs</code></strong></dt>
+<dd>other keyword arguments.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1147,14 +1411,21 @@ M
 <pre><code class="python">class LatentSpace(Layer):
     &#39;&#39;&#39;
     Layer for the Latent Space.
-    It contains parameters related to model assumptions.
     &#39;&#39;&#39;
     def __init__(self, n_clusters, dim_latent, M = 50, name = &#39;LatentSpace&#39;, **kwargs):
         &#39;&#39;&#39;
-        Input:
-          dim_latent   - dimension of latent layer.
-          dim_origin - dimension of output layer.
-          M            - number of samples for w.
+        Parameters
+        ----------
+        n_clusters : int
+            the number of vertices in the latent space.
+        dim_latent : int
+            the latent dimension.
+        M : int, optional
+            the discretized number of uniform(0,1).
+        name : str, optional
+            the name of the layer.
+        **kwargs : 
+            other keyword arguments.
         &#39;&#39;&#39;
         super(LatentSpace, self).__init__(name=name, **kwargs)
         self.dim_latent = dim_latent
@@ -1185,14 +1456,25 @@ M
                                 name = &#39;mu&#39;)
         self.cdf_layer = cdf_layer()       
         
-    def initialize(self, mu, pi):
+    def initialize(self, mu, log_pi):
+        &#39;&#39;&#39;Initialze the latent space.
+
+        Parameters
+        ----------
+        mu : np.array
+            \([d, k]\) the position matrix.
+        log_pi : np.array
+            \([1, K]\) \(\\log\\pi\).
+        &#39;&#39;&#39;
         # Initialize parameters of the latent space
         if mu is not None:
             self.mu.assign(mu)
-        if pi is not None:
-            self.pi.assign(pi)
+        if log_pi is not None:
+            self.pi.assign(log_pi)
 
     def normalize(self):
+        &#39;&#39;&#39;Normalize \(\\pi\).
+        &#39;&#39;&#39;
         self.pi = tf.nn.softmax(self.pi)
 
     @tf.function
@@ -1300,7 +1582,7 @@ M
         var_w_tilde = tf.reduce_sum(
             tf.math.square(_w)  *
             tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-            (1,3)) - tf.square(w_tilde)    
+            (1,3)) - tf.square(w_tilde)
         
         _wtilde = tf.expand_dims(tf.expand_dims(w_tilde, 1), -1)
         D_JS = tf.reduce_sum(
@@ -1315,6 +1597,22 @@ M
         return w_tilde, var_w_tilde, D_JS
     
     def get_pz(self, z):
+        &#39;&#39;&#39;Get \(\\log p(Z_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the latent variables.
+
+        Returns
+        ----------
+        log_p_zc_L : tf.Tensor
+            \([B, L, K]\) \(\\log p(Z_i^{(l)},c_i|Y_i,X_i)\).
+        log_p_z_L : tf.Tensor
+            \([B, L]\) \(\\log p(Z_i^{(l)}|Y_i,X_i)\).
+        log_p_z : tf.Tensor
+            \([B, 1]\) the estimated \(\\log p(Z_i|Y_i,X_i)\). 
+        &#39;&#39;&#39;        
         temp_pi, a2, _inv_sig, _mu, _t = self._get_normal_params(z)
         
         log_p_z_c_L =  0.5 * (tf.math.log(2 * np.pi) - \
@@ -1327,20 +1625,48 @@ M
         log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
         return log_p_zc_L, log_p_z_L, log_p_z
 
+    def get_posterior_c(self, z):
+        &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the latent variables.
+
+        Returns
+        ----------
+        p_c_x : np.array
+            \([B, K]\) \(p(c_i|Y_i,X_i)\).
+        &#39;&#39;&#39;  
+        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
+        log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
+        p_c_x = tf.exp(log_p_c_x).numpy()
+        return p_c_x
+
     def call(self, z, inference=False):
-        &#39;&#39;&#39;
-        Input :
-                z       - latent variables outputed by the encoder
-                          [batch_size, L, dim_latent]
-        Output:       
-            inference = True:     
-                log_p_z - MC samples for log p(z)=log sum_{c}p(z|c)*p(c)
-                          [batch_size, ]
-            inference = False:
-                res     - results contains estimations for 
-                            p(c|x), E(w|x), Var(w|x), E(w|x,c), Var(w|x,c), 
-                            c, E(w_tilde), Var(w_tilde), D_JS
-        &#39;&#39;&#39;               
+        &#39;&#39;&#39;Get posterior estimations.
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the latent variables.
+        inference : boolean
+            whether in training or inference mode.
+
+        When `inference=False`:
+
+        Returns
+        ----------
+        log_p_z_L : tf.Tensor
+            \([B, 1]\) the estimated \(\\log p(Z_i|Y_i,X_i)\).
+
+        When `inference=True`:
+
+        Returns
+        ----------
+        res : dict
+            a dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
+        &#39;&#39;&#39;                 
         log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
         if not inference:
@@ -1354,27 +1680,7 @@ M
             res[&#39;w_tilde&#39;] = w_tilde.numpy()
             res[&#39;var_w_tilde&#39;] = var_w_tilde.numpy()
             res[&#39;D_JS&#39;] = D_JS.numpy()
-            return res
-
-    def get_posterior_c(self, z):
-        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
-        log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-        p_c_x = tf.exp(log_p_c_x).numpy()
-        return p_c_x
-
-    def get_proj_z(self, c):
-        &#39;&#39;&#39;
-        Args:
-            c - Numpy array of indexes [1,*]
-        &#39;&#39;&#39;
-        proj_c = np.tile(c, (self.M,1)).T.flatten()
-        proj_z_M = tf.transpose(
-                        tf.gather(self.mu, tf.gather(self.A, proj_c), axis=1) * 
-                        tf.tile(self.w, (1,len(c))) + 
-                        tf.gather(self.mu, tf.gather(self.B, proj_c), axis=1) * 
-                        (1-tf.tile(self.w, (1,len(c))))
-                    )
-        return proj_c, proj_z_M.numpy()</code></pre>
+            return res</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1387,32 +1693,50 @@ M
 <h3>Methods</h3>
 <dl>
 <dt id="VITAE.model.LatentSpace.initialize"><code class="name flex">
-<span>def <span class="ident">initialize</span></span>(<span>self, mu, pi)</span>
+<span>def <span class="ident">initialize</span></span>(<span>self, mu, log_pi)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Initialze the latent space.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>mu</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[d, k]</span><script type="math/tex">[d, k]</script></span> the position matrix.</dd>
+<dt><strong><code>log_pi</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[1, K]</span><script type="math/tex">[1, K]</script></span> <span><span class="MathJax_Preview">\log\pi</span><script type="math/tex">\log\pi</script></span>.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def initialize(self, mu, pi):
+<pre><code class="python">def initialize(self, mu, log_pi):
+    &#39;&#39;&#39;Initialze the latent space.
+
+    Parameters
+    ----------
+    mu : np.array
+        \([d, k]\) the position matrix.
+    log_pi : np.array
+        \([1, K]\) \(\\log\\pi\).
+    &#39;&#39;&#39;
     # Initialize parameters of the latent space
     if mu is not None:
         self.mu.assign(mu)
-    if pi is not None:
-        self.pi.assign(pi)</code></pre>
+    if log_pi is not None:
+        self.pi.assign(log_pi)</code></pre>
 </details>
 </dd>
 <dt id="VITAE.model.LatentSpace.normalize"><code class="name flex">
 <span>def <span class="ident">normalize</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Normalize <span><span class="MathJax_Preview">\pi</span><script type="math/tex">\pi</script></span>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def normalize(self):
+    &#39;&#39;&#39;Normalize \(\\pi\).
+    &#39;&#39;&#39;
     self.pi = tf.nn.softmax(self.pi)</code></pre>
 </details>
 </dd>
@@ -1420,12 +1744,42 @@ M
 <span>def <span class="ident">get_pz</span></span>(<span>self, z)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Get <span><span class="MathJax_Preview">\log p(Z_i|Y_i,X_i)</span><script type="math/tex">\log p(Z_i|Y_i,X_i)</script></span>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the latent variables.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>log_p_zc_L</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, K]</span><script type="math/tex">[B, L, K]</script></span> <span><span class="MathJax_Preview">\log p(Z_i^{(l)},c_i|Y_i,X_i)</span><script type="math/tex">\log p(Z_i^{(l)},c_i|Y_i,X_i)</script></span>.</dd>
+<dt><strong><code>log_p_z_L</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L]</span><script type="math/tex">[B, L]</script></span> <span><span class="MathJax_Preview">\log p(Z_i^{(l)}|Y_i,X_i)</span><script type="math/tex">\log p(Z_i^{(l)}|Y_i,X_i)</script></span>.</dd>
+<dt><strong><code>log_p_z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, 1]</span><script type="math/tex">[B, 1]</script></span> the estimated <span><span class="MathJax_Preview">\log p(Z_i|Y_i,X_i)</span><script type="math/tex">\log p(Z_i|Y_i,X_i)</script></span>.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_pz(self, z):
+    &#39;&#39;&#39;Get \(\\log p(Z_i|Y_i,X_i)\).
+
+    Parameters
+    ----------
+    z : tf.Tensor
+        \([B, L, d]\) the latent variables.
+
+    Returns
+    ----------
+    log_p_zc_L : tf.Tensor
+        \([B, L, K]\) \(\\log p(Z_i^{(l)},c_i|Y_i,X_i)\).
+    log_p_z_L : tf.Tensor
+        \([B, L]\) \(\\log p(Z_i^{(l)}|Y_i,X_i)\).
+    log_p_z : tf.Tensor
+        \([B, 1]\) the estimated \(\\log p(Z_i|Y_i,X_i)\). 
+    &#39;&#39;&#39;        
     temp_pi, a2, _inv_sig, _mu, _t = self._get_normal_params(z)
     
     log_p_z_c_L =  0.5 * (tf.math.log(2 * np.pi) - \
@@ -1439,43 +1793,96 @@ M
     return log_p_zc_L, log_p_z_L, log_p_z</code></pre>
 </details>
 </dd>
+<dt id="VITAE.model.LatentSpace.get_posterior_c"><code class="name flex">
+<span>def <span class="ident">get_posterior_c</span></span>(<span>self, z)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the latent variables.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>p_c_x</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[B, K]</span><script type="math/tex">[B, K]</script></span> <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_posterior_c(self, z):
+    &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
+
+    Parameters
+    ----------
+    z : tf.Tensor
+        \([B, L, d]\) the latent variables.
+
+    Returns
+    ----------
+    p_c_x : np.array
+        \([B, K]\) \(p(c_i|Y_i,X_i)\).
+    &#39;&#39;&#39;  
+    log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
+    log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
+    p_c_x = tf.exp(log_p_c_x).numpy()
+    return p_c_x</code></pre>
+</details>
+</dd>
 <dt id="VITAE.model.LatentSpace.call"><code class="name flex">
 <span>def <span class="ident">call</span></span>(<span>self, z, inference=False)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Input :
-z
-- latent variables outputed by the encoder
-[batch_size, L, dim_latent]
-Output:
-<br>
-inference = True:
-<br>
-log_p_z - MC samples for log p(z)=log sum_{c}p(z|c)*p(c)
-[batch_size, ]
-inference = False:
-res
-- results contains estimations for
-p(c|x), E(w|x), Var(w|x), E(w|x,c), Var(w|x,c),
-c, E(w_tilde), Var(w_tilde), D_JS</p></div>
+<div class="desc"><p>Get posterior estimations.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d]</span><script type="math/tex">[B, L, d]</script></span> the latent variables.</dd>
+<dt><strong><code>inference</code></strong> :&ensp;<code>boolean</code></dt>
+<dd>whether in training or inference mode.</dd>
+</dl>
+<p>When <code>inference=False</code>:</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>log_p_z_L</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, 1]</span><script type="math/tex">[B, 1]</script></span> the estimated <span><span class="MathJax_Preview">\log p(Z_i|Y_i,X_i)</span><script type="math/tex">\log p(Z_i|Y_i,X_i)</script></span>.</dd>
+</dl>
+<p>When <code>inference=True</code>:</p>
+<h2 id="returns_1">Returns</h2>
+<dl>
+<dt><strong><code>res</code></strong> :&ensp;<code>dict</code></dt>
+<dd>a dict of posterior estimations - <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>, <span><span class="MathJax_Preview">c</span><script type="math/tex">c</script></span>, <span><span class="MathJax_Preview">E(\tilde{w}_i|Y_i,X_i)</span><script type="math/tex">E(\tilde{w}_i|Y_i,X_i)</script></span>, <span><span class="MathJax_Preview">Var(\tilde{w}_i|Y_i,X_i)</span><script type="math/tex">Var(\tilde{w}_i|Y_i,X_i)</script></span>, <span><span class="MathJax_Preview">D_{JS}</span><script type="math/tex">D_{JS}</script></span>.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def call(self, z, inference=False):
-    &#39;&#39;&#39;
-    Input :
-            z       - latent variables outputed by the encoder
-                      [batch_size, L, dim_latent]
-    Output:       
-        inference = True:     
-            log_p_z - MC samples for log p(z)=log sum_{c}p(z|c)*p(c)
-                      [batch_size, ]
-        inference = False:
-            res     - results contains estimations for 
-                        p(c|x), E(w|x), Var(w|x), E(w|x,c), Var(w|x,c), 
-                        c, E(w_tilde), Var(w_tilde), D_JS
-    &#39;&#39;&#39;               
+    &#39;&#39;&#39;Get posterior estimations.
+
+    Parameters
+    ----------
+    z : tf.Tensor
+        \([B, L, d]\) the latent variables.
+    inference : boolean
+        whether in training or inference mode.
+
+    When `inference=False`:
+
+    Returns
+    ----------
+    log_p_z_L : tf.Tensor
+        \([B, 1]\) the estimated \(\\log p(Z_i|Y_i,X_i)\).
+
+    When `inference=True`:
+
+    Returns
+    ----------
+    res : dict
+        a dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
+    &#39;&#39;&#39;                 
     log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
     if not inference:
@@ -1492,47 +1899,6 @@ c, E(w_tilde), Var(w_tilde), D_JS</p></div>
         return res</code></pre>
 </details>
 </dd>
-<dt id="VITAE.model.LatentSpace.get_posterior_c"><code class="name flex">
-<span>def <span class="ident">get_posterior_c</span></span>(<span>self, z)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_posterior_c(self, z):
-    log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
-    log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-    p_c_x = tf.exp(log_p_c_x).numpy()
-    return p_c_x</code></pre>
-</details>
-</dd>
-<dt id="VITAE.model.LatentSpace.get_proj_z"><code class="name flex">
-<span>def <span class="ident">get_proj_z</span></span>(<span>self, c)</span>
-</code></dt>
-<dd>
-<div class="desc"><h2 id="args">Args</h2>
-<p>c - Numpy array of indexes [1,*]</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_proj_z(self, c):
-    &#39;&#39;&#39;
-    Args:
-        c - Numpy array of indexes [1,*]
-    &#39;&#39;&#39;
-    proj_c = np.tile(c, (self.M,1)).T.flatten()
-    proj_z_M = tf.transpose(
-                    tf.gather(self.mu, tf.gather(self.A, proj_c), axis=1) * 
-                    tf.tile(self.w, (1,len(c))) + 
-                    tf.gather(self.mu, tf.gather(self.B, proj_c), axis=1) * 
-                    (1-tf.tile(self.w, (1,len(c))))
-                )
-    return proj_c, proj_z_M.numpy()</code></pre>
-</details>
-</dd>
 </dl>
 </dd>
 <dt id="VITAE.model.VariationalAutoEncoder"><code class="flex name class">
@@ -1540,50 +1906,52 @@ c, E(w_tilde), Var(w_tilde), D_JS</p></div>
 <span>(</span><span>dim_origin, dimensions, dim_latent, data_type='UMI', has_cov=False, name='autoencoder', **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Combines the encoder, decoder and LatentSpace into an end-to-end model for training.</p>
-<h2 id="args">Args</h2>
-<p>n_clusters
--
-Number of clusters.
-dim_origin
--
-Dim of input.
-dimensions
--
-List of dimensions of layers of the encoder. Assume
-symmetric network sturcture of encoder and decoder.
-dim_latent
--
-Dimension of latent layer.
-data_type
--
-Type of count data.
-'UMI' for negative binomial loss;
-'non-UMI' for zero-inflated negative binomial loss.
-has_cov
-- has covariate or not</p></div>
+<div class="desc"><p>Combines the encoder, decoder and LatentSpace into an end-to-end model for training and inference.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>dim_origin</code></strong> :&ensp;<code>int</code></dt>
+<dd>the output dimension of the decoder.</dd>
+<dt><strong><code>dimensions</code></strong> :&ensp;<code>np.array</code></dt>
+<dd>the dimensions of hidden layers of the encoder.</dd>
+<dt><strong><code>dim_latent</code></strong> :&ensp;<code>int</code></dt>
+<dd>the latent dimension.</dd>
+<dt><strong><code>data_type</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>'UMI', 'non-UMI', or 'Gaussian'.</dd>
+<dt><strong><code>has_cov</code></strong> :&ensp;<code>boolean</code></dt>
+<dd>whether has covariates or not.</dd>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the name of the layer.</dd>
+<dt><strong><code>**kwargs</code></strong></dt>
+<dd>other keyword arguments.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class VariationalAutoEncoder(tf.keras.Model):
     &#34;&#34;&#34;
-    Combines the encoder, decoder and LatentSpace into an end-to-end model for training.
+    Combines the encoder, decoder and LatentSpace into an end-to-end model for training and inference.
     &#34;&#34;&#34;
     def __init__(self, dim_origin, dimensions, dim_latent,
                  data_type = &#39;UMI&#39;, has_cov=False,
                  name = &#39;autoencoder&#39;, **kwargs):
         &#39;&#39;&#39;
-        Args:
-            n_clusters      -   Number of clusters.
-            dim_origin      -   Dim of input.
-            dimensions      -   List of dimensions of layers of the encoder. Assume
-                               symmetric network sturcture of encoder and decoder.
-            dim_latent      -   Dimension of latent layer.
-            data_type       -   Type of count data.
-                              &#39;UMI&#39; for negative binomial loss;
-                              &#39;non-UMI&#39; for zero-inflated negative binomial loss.
-            has_cov         - has covariate or not
+        Parameters
+        ----------
+        dim_origin : int
+            the output dimension of the decoder.        
+        dimensions : np.array
+            the dimensions of hidden layers of the encoder.
+        dim_latent : int
+            the latent dimension.
+        data_type : str, optional
+            &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
+        has_cov : boolean
+            whether has covariates or not.
+        name : str, optional
+            the name of the layer.
+        **kwargs : 
+            other keyword arguments.
         &#39;&#39;&#39;
         super(VariationalAutoEncoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
@@ -1593,14 +1961,48 @@ has_cov
         self.decoder = Decoder(dimensions[::-1], dim_origin, data_type, data_type)        
         self.has_cov = has_cov
         
-    def init_latent_space(self, n_clusters, mu, pi=None):
+    def init_latent_space(self, n_clusters, mu, log_pi=None):
+        &#39;&#39;&#39;Initialze the latent space.
+
+        Parameters
+        ----------
+        n_clusters : int
+            the number of vertices in the latent space.
+        mu : np.array
+            \([d, k]\) the position matrix.
+        log_pi : np.array, optional
+            \([1, K]\) \(\\log\\pi\).
+        &#39;&#39;&#39;
         self.n_clusters = n_clusters
         self.latent_space = LatentSpace(self.n_clusters, self.dim_latent)
-        self.latent_space.initialize(mu, pi)
+        self.latent_space.initialize(mu, log_pi)
 
     def call(self, x_normalized, c_score, x = None, scale_factor = 1,
              pre_train = False, L=1, alpha=0.0):
-        # Feed forward through encoder, LatentSpace layer and decoder.
+        &#39;&#39;&#39;Feed forward through encoder, LatentSpace layer and decoder.
+
+        Parameters
+        ----------
+        x_normalized : int
+            \([B, G]\) the preprocessed data.
+        c_score : np.array
+            \([B, s]\) the covariates \(X_i\), only used when `has_cov=True`.
+        x : np.array, optional
+            \([B, G]\) the original count data \(Y_i\), only used when data_type is not &#39;Gaussian&#39;.
+        scale_factor : np.array, optional
+            \([B, ]\) the scale factors, only used when data_type is not &#39;Gaussian&#39;.
+        pre_train : boolean, optional
+            whether in the pre-training phare or not.
+        L : int, optional
+            the number of MC samples.
+        alpha : float, optional
+            the penalty parameter for covariates adjustment.
+
+        Returns
+        ----------
+        losses : float
+            the loss.
+        &#39;&#39;&#39;
         if not pre_train and self.latent_space is None:
             raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
                     
@@ -1610,11 +2012,11 @@ has_cov
         z_in = tf.concat([z, tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1) if self.has_cov else z
         
         x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
-        reconstruction_z_loss = self.get_reconstruction_loss(x, z_in, scale_factor, L)
+        reconstruction_z_loss = self._get_reconstruction_loss(x, z_in, scale_factor, L)
         
         if self.has_cov and alpha&gt;0.0:
             zero_in = tf.concat([tf.zeros([z.shape[0],1,z.shape[2]]), tf.tile(tf.expand_dims(c_score,1), (1,1,1))], -1)
-            reconstruction_zero_loss = self.get_reconstruction_loss(x, zero_in, scale_factor, 1)
+            reconstruction_zero_loss = self._get_reconstruction_loss(x, zero_in, scale_factor, 1)
             reconstruction_z_loss = (1-alpha)*reconstruction_z_loss + alpha*reconstruction_zero_loss
         
         self.add_loss(reconstruction_z_loss)
@@ -1635,7 +2037,7 @@ has_cov
         return self.losses
     
     @tf.function
-    def get_reconstruction_loss(self, x, z_in, scale_factor, L):
+    def _get_reconstruction_loss(self, x, z_in, scale_factor, L):
         if self.data_type==&#39;Gaussian&#39;:
             # Gaussian Log-Likelihood Loss function
             nu_z, tau = self.decoder(z_in)
@@ -1673,19 +2075,40 @@ has_cov
             
             return neg_E_nb
     
-    def get_z(self, x_normalized, c_score):        
+    def get_z(self, x_normalized, c_score):    
+        &#39;&#39;&#39;Get \(q(Z_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        x_normalized : int
+            \([B, G]\) the preprocessed data.
+        c_score : np.array
+            \([B, s]\) the covariates \(X_i\), only used when `has_cov=True`.
+
+        Returns
+        ----------
+        z_mean : np.array
+            \([B, d]\) the latent mean.
+        &#39;&#39;&#39;    
         x_normalized = x_normalized if (not self.has_cov or c_score is None) else tf.concat([x_normalized, c_score], -1)
         z_mean, _, _ = self.encoder(x_normalized, 1, False)
         return z_mean.numpy()
-    
-    def get_proj_z(self, c):
-        &#39;&#39;&#39;
-        Args:
-            c - List of indexes of edges
-        &#39;&#39;&#39;
-        return self.latent_space.get_proj_z(c)
 
     def get_pc_x(self, test_dataset):
+        &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        test_dataset : tf.Dataset
+            the dataset object.
+
+        Returns
+        ----------
+        pi_norm : np.array
+            \([1, K]\) the estimated \(\\pi\).
+        p_c_x : np.array
+            \([N, ]\) the estimated \(p(c_i|Y_i,X_i)\).
+        &#39;&#39;&#39;    
         if self.latent_space is None:
             raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
         
@@ -1700,6 +2123,32 @@ has_cov
         return pi_norm, p_c_x
 
     def inference(self, test_dataset, L=1):
+        &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        test_dataset : tf.Dataset
+            the dataset object.
+        L : int
+            the number of MC samples.
+
+        Returns
+        ----------
+        pi_norm  : np.array
+            \([1, K]\) the estimated \(\\pi\).
+        mu : np.array
+            \([d, k]\) the estimated \(\\mu\).
+        p_c_x : np.array
+            \([N, ]\) the estimated \(p(c_i|Y_i,X_i)\).
+        w_tilde : np.array
+            \([N, k]\) the estimated \(E(\\tilde{w}_i|Y_i,X_i)\).
+        var_w_tilde  : np.array 
+            \([N, k]\) the estimated \(Var(\\tilde{w}_i|Y_i,X_i)\).
+        D_JS : np.array 
+            \([N, k]\) the estimated JS divergence.
+        z_mean : np.array
+            \([N, d]\) the estimated latent mean.
+        &#39;&#39;&#39;   
         if self.latent_space is None:
             raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
             
@@ -1741,44 +2190,97 @@ has_cov
 <h3>Methods</h3>
 <dl>
 <dt id="VITAE.model.VariationalAutoEncoder.init_latent_space"><code class="name flex">
-<span>def <span class="ident">init_latent_space</span></span>(<span>self, n_clusters, mu, pi=None)</span>
+<span>def <span class="ident">init_latent_space</span></span>(<span>self, n_clusters, mu, log_pi=None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Initialze the latent space.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>n_clusters</code></strong> :&ensp;<code>int</code></dt>
+<dd>the number of vertices in the latent space.</dd>
+<dt><strong><code>mu</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[d, k]</span><script type="math/tex">[d, k]</script></span> the position matrix.</dd>
+<dt><strong><code>log_pi</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[1, K]</span><script type="math/tex">[1, K]</script></span> <span><span class="MathJax_Preview">\log\pi</span><script type="math/tex">\log\pi</script></span>.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def init_latent_space(self, n_clusters, mu, pi=None):
+<pre><code class="python">def init_latent_space(self, n_clusters, mu, log_pi=None):
+    &#39;&#39;&#39;Initialze the latent space.
+
+    Parameters
+    ----------
+    n_clusters : int
+        the number of vertices in the latent space.
+    mu : np.array
+        \([d, k]\) the position matrix.
+    log_pi : np.array, optional
+        \([1, K]\) \(\\log\\pi\).
+    &#39;&#39;&#39;
     self.n_clusters = n_clusters
     self.latent_space = LatentSpace(self.n_clusters, self.dim_latent)
-    self.latent_space.initialize(mu, pi)</code></pre>
+    self.latent_space.initialize(mu, log_pi)</code></pre>
 </details>
 </dd>
 <dt id="VITAE.model.VariationalAutoEncoder.call"><code class="name flex">
 <span>def <span class="ident">call</span></span>(<span>self, x_normalized, c_score, x=None, scale_factor=1, pre_train=False, L=1, alpha=0.0)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Calls the model on new inputs.</p>
-<p>In this case <code>call</code> just reapplies
-all ops in the graph to the new inputs
-(e.g. build a new computational graph from the provided inputs).</p>
-<h2 id="arguments">Arguments</h2>
-<p>inputs: A tensor or list of tensors.
-training: Boolean or boolean scalar tensor, indicating whether to run
-the <code>Network</code> in training mode or inference mode.
-mask: A mask or list of masks. A mask can be
-either a tensor or None (no mask).</p>
+<div class="desc"><p>Feed forward through encoder, LatentSpace layer and decoder.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x_normalized</code></strong> :&ensp;<code>int</code></dt>
+<dd><span><span class="MathJax_Preview">[B, G]</span><script type="math/tex">[B, G]</script></span> the preprocessed data.</dd>
+<dt><strong><code>c_score</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[B, s]</span><script type="math/tex">[B, s]</script></span> the covariates <span><span class="MathJax_Preview">X_i</span><script type="math/tex">X_i</script></span>, only used when <code>has_cov=True</code>.</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[B, G]</span><script type="math/tex">[B, G]</script></span> the original count data <span><span class="MathJax_Preview">Y_i</span><script type="math/tex">Y_i</script></span>, only used when data_type is not 'Gaussian'.</dd>
+<dt><strong><code>scale_factor</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[B, ]</span><script type="math/tex">[B, ]</script></span> the scale factors, only used when data_type is not 'Gaussian'.</dd>
+<dt><strong><code>pre_train</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether in the pre-training phare or not.</dd>
+<dt><strong><code>L</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the number of MC samples.</dd>
+<dt><strong><code>alpha</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>the penalty parameter for covariates adjustment.</dd>
+</dl>
 <h2 id="returns">Returns</h2>
-<p>A tensor if there is a single output, or
-a list of tensors if there are more than one outputs.</p></div>
+<dl>
+<dt><strong><code>losses</code></strong> :&ensp;<code>float</code></dt>
+<dd>the loss.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def call(self, x_normalized, c_score, x = None, scale_factor = 1,
          pre_train = False, L=1, alpha=0.0):
-    # Feed forward through encoder, LatentSpace layer and decoder.
+    &#39;&#39;&#39;Feed forward through encoder, LatentSpace layer and decoder.
+
+    Parameters
+    ----------
+    x_normalized : int
+        \([B, G]\) the preprocessed data.
+    c_score : np.array
+        \([B, s]\) the covariates \(X_i\), only used when `has_cov=True`.
+    x : np.array, optional
+        \([B, G]\) the original count data \(Y_i\), only used when data_type is not &#39;Gaussian&#39;.
+    scale_factor : np.array, optional
+        \([B, ]\) the scale factors, only used when data_type is not &#39;Gaussian&#39;.
+    pre_train : boolean, optional
+        whether in the pre-training phare or not.
+    L : int, optional
+        the number of MC samples.
+    alpha : float, optional
+        the penalty parameter for covariates adjustment.
+
+    Returns
+    ----------
+    losses : float
+        the loss.
+    &#39;&#39;&#39;
     if not pre_train and self.latent_space is None:
         raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
                 
@@ -1788,11 +2290,11 @@ a list of tensors if there are more than one outputs.</p></div>
     z_in = tf.concat([z, tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1) if self.has_cov else z
     
     x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
-    reconstruction_z_loss = self.get_reconstruction_loss(x, z_in, scale_factor, L)
+    reconstruction_z_loss = self._get_reconstruction_loss(x, z_in, scale_factor, L)
     
     if self.has_cov and alpha&gt;0.0:
         zero_in = tf.concat([tf.zeros([z.shape[0],1,z.shape[2]]), tf.tile(tf.expand_dims(c_score,1), (1,1,1))], -1)
-        reconstruction_zero_loss = self.get_reconstruction_loss(x, zero_in, scale_factor, 1)
+        reconstruction_zero_loss = self._get_reconstruction_loss(x, zero_in, scale_factor, 1)
         reconstruction_z_loss = (1-alpha)*reconstruction_z_loss + alpha*reconstruction_zero_loss
     
     self.add_loss(reconstruction_z_loss)
@@ -1813,98 +2315,83 @@ a list of tensors if there are more than one outputs.</p></div>
     return self.losses</code></pre>
 </details>
 </dd>
-<dt id="VITAE.model.VariationalAutoEncoder.get_reconstruction_loss"><code class="name flex">
-<span>def <span class="ident">get_reconstruction_loss</span></span>(<span>self, x, z_in, scale_factor, L)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@tf.function
-def get_reconstruction_loss(self, x, z_in, scale_factor, L):
-    if self.data_type==&#39;Gaussian&#39;:
-        # Gaussian Log-Likelihood Loss function
-        nu_z, tau = self.decoder(z_in)
-        neg_E_Gaus = 0.5 * tf.math.log(tau + 1e-12) + 0.5 * tf.math.square(x - nu_z) / tau
-        neg_E_Gaus = tf.reduce_mean(tf.reduce_sum(neg_E_Gaus, axis=-1))
-        
-        return neg_E_Gaus
-    else:
-        if self.data_type == &#39;UMI&#39;:
-            x_hat, r = self.decoder(z_in)
-        else:
-            x_hat, r, phi = self.decoder(z_in)
-
-        x_hat = x_hat*tf.expand_dims(scale_factor, -1)
-
-        # Negative Log-Likelihood Loss function
-
-        # Ref for NB &amp; ZINB loss functions:
-        # https://github.com/gokceneraslan/neuralnet_countmodels/blob/master/Count%20models%20with%20neuralnets.ipynb
-        # Negative Binomial loss
-
-        neg_E_nb = tf.math.lgamma(r) + tf.math.lgamma(x+1.0) \
-                    - tf.math.lgamma(x+r) + \
-                    (r+x) * tf.math.log(1.0 + (x_hat/r)) + \
-                    x * (tf.math.log(r) - tf.math.log(x_hat+1e-12))
-        
-        if self.data_type == &#39;non-UMI&#39;:
-            # Zero-Inflated Negative Binomial loss
-            nb_case = neg_E_nb - tf.math.log(1.0-phi+1e-12)
-            zero_case = - tf.math.log(phi + (1.0-phi) *
-                                 tf.pow(r/(r + x_hat + 1e-12), r) + 1e-12)
-            neg_E_nb = tf.where(tf.less(x, 1e-8), zero_case, nb_case)
-
-        neg_E_nb =  tf.reduce_mean(tf.reduce_sum(neg_E_nb, axis=-1))
-        
-        return neg_E_nb</code></pre>
-</details>
-</dd>
 <dt id="VITAE.model.VariationalAutoEncoder.get_z"><code class="name flex">
 <span>def <span class="ident">get_z</span></span>(<span>self, x_normalized, c_score)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Get <span><span class="MathJax_Preview">q(Z_i|Y_i,X_i)</span><script type="math/tex">q(Z_i|Y_i,X_i)</script></span>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x_normalized</code></strong> :&ensp;<code>int</code></dt>
+<dd><span><span class="MathJax_Preview">[B, G]</span><script type="math/tex">[B, G]</script></span> the preprocessed data.</dd>
+<dt><strong><code>c_score</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[B, s]</span><script type="math/tex">[B, s]</script></span> the covariates <span><span class="MathJax_Preview">X_i</span><script type="math/tex">X_i</script></span>, only used when <code>has_cov=True</code>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>z_mean</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[B, d]</span><script type="math/tex">[B, d]</script></span> the latent mean.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_z(self, x_normalized, c_score):        
+<pre><code class="python">def get_z(self, x_normalized, c_score):    
+    &#39;&#39;&#39;Get \(q(Z_i|Y_i,X_i)\).
+
+    Parameters
+    ----------
+    x_normalized : int
+        \([B, G]\) the preprocessed data.
+    c_score : np.array
+        \([B, s]\) the covariates \(X_i\), only used when `has_cov=True`.
+
+    Returns
+    ----------
+    z_mean : np.array
+        \([B, d]\) the latent mean.
+    &#39;&#39;&#39;    
     x_normalized = x_normalized if (not self.has_cov or c_score is None) else tf.concat([x_normalized, c_score], -1)
     z_mean, _, _ = self.encoder(x_normalized, 1, False)
     return z_mean.numpy()</code></pre>
-</details>
-</dd>
-<dt id="VITAE.model.VariationalAutoEncoder.get_proj_z"><code class="name flex">
-<span>def <span class="ident">get_proj_z</span></span>(<span>self, c)</span>
-</code></dt>
-<dd>
-<div class="desc"><h2 id="args">Args</h2>
-<p>c - List of indexes of edges</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_proj_z(self, c):
-    &#39;&#39;&#39;
-    Args:
-        c - List of indexes of edges
-    &#39;&#39;&#39;
-    return self.latent_space.get_proj_z(c)</code></pre>
 </details>
 </dd>
 <dt id="VITAE.model.VariationalAutoEncoder.get_pc_x"><code class="name flex">
 <span>def <span class="ident">get_pc_x</span></span>(<span>self, test_dataset)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Get <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>test_dataset</code></strong> :&ensp;<code>tf.Dataset</code></dt>
+<dd>the dataset object.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>pi_norm</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[1, K]</span><script type="math/tex">[1, K]</script></span> the estimated <span><span class="MathJax_Preview">\pi</span><script type="math/tex">\pi</script></span>.</dd>
+<dt><strong><code>p_c_x</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> the estimated <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_pc_x(self, test_dataset):
+    &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
+
+    Parameters
+    ----------
+    test_dataset : tf.Dataset
+        the dataset object.
+
+    Returns
+    ----------
+    pi_norm : np.array
+        \([1, K]\) the estimated \(\\pi\).
+    p_c_x : np.array
+        \([N, ]\) the estimated \(p(c_i|Y_i,X_i)\).
+    &#39;&#39;&#39;    
     if self.latent_space is None:
         raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
     
@@ -1923,12 +2410,64 @@ def get_reconstruction_loss(self, x, z_in, scale_factor, L):
 <span>def <span class="ident">inference</span></span>(<span>self, test_dataset, L=1)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Get <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>test_dataset</code></strong> :&ensp;<code>tf.Dataset</code></dt>
+<dd>the dataset object.</dd>
+<dt><strong><code>L</code></strong> :&ensp;<code>int</code></dt>
+<dd>the number of MC samples.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pi_norm
+: np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[1, K]</span><script type="math/tex">[1, K]</script></span> the estimated <span><span class="MathJax_Preview">\pi</span><script type="math/tex">\pi</script></span>.</dd>
+<dt><strong><code>mu</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[d, k]</span><script type="math/tex">[d, k]</script></span> the estimated <span><span class="MathJax_Preview">\mu</span><script type="math/tex">\mu</script></span>.</dd>
+<dt><strong><code>p_c_x</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> the estimated <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</dd>
+<dt><strong><code>w_tilde</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> the estimated <span><span class="MathJax_Preview">E(\tilde{w}_i|Y_i,X_i)</span><script type="math/tex">E(\tilde{w}_i|Y_i,X_i)</script></span>.</dd>
+<dt><code>var_w_tilde
+: np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> the estimated <span><span class="MathJax_Preview">Var(\tilde{w}_i|Y_i,X_i)</span><script type="math/tex">Var(\tilde{w}_i|Y_i,X_i)</script></span>.</dd>
+<dt><strong><code>D_JS</code></strong> :&ensp;<code>np.array </code></dt>
+<dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> the estimated JS divergence.</dd>
+<dt><strong><code>z_mean</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, d]</span><script type="math/tex">[N, d]</script></span> the estimated latent mean.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def inference(self, test_dataset, L=1):
+    &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
+
+    Parameters
+    ----------
+    test_dataset : tf.Dataset
+        the dataset object.
+    L : int
+        the number of MC samples.
+
+    Returns
+    ----------
+    pi_norm  : np.array
+        \([1, K]\) the estimated \(\\pi\).
+    mu : np.array
+        \([d, k]\) the estimated \(\\mu\).
+    p_c_x : np.array
+        \([N, ]\) the estimated \(p(c_i|Y_i,X_i)\).
+    w_tilde : np.array
+        \([N, k]\) the estimated \(E(\\tilde{w}_i|Y_i,X_i)\).
+    var_w_tilde  : np.array 
+        \([N, k]\) the estimated \(Var(\\tilde{w}_i|Y_i,X_i)\).
+    D_JS : np.array 
+        \([N, k]\) the estimated JS divergence.
+    z_mean : np.array
+        \([N, d]\) the estimated latent mean.
+    &#39;&#39;&#39;   
     if self.latent_space is None:
         raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
         
@@ -2003,13 +2542,12 @@ def get_reconstruction_loss(self, x, z_in, scale_factor, L):
 </li>
 <li>
 <h4><code><a title="VITAE.model.LatentSpace" href="#VITAE.model.LatentSpace">LatentSpace</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="VITAE.model.LatentSpace.initialize" href="#VITAE.model.LatentSpace.initialize">initialize</a></code></li>
 <li><code><a title="VITAE.model.LatentSpace.normalize" href="#VITAE.model.LatentSpace.normalize">normalize</a></code></li>
 <li><code><a title="VITAE.model.LatentSpace.get_pz" href="#VITAE.model.LatentSpace.get_pz">get_pz</a></code></li>
-<li><code><a title="VITAE.model.LatentSpace.call" href="#VITAE.model.LatentSpace.call">call</a></code></li>
 <li><code><a title="VITAE.model.LatentSpace.get_posterior_c" href="#VITAE.model.LatentSpace.get_posterior_c">get_posterior_c</a></code></li>
-<li><code><a title="VITAE.model.LatentSpace.get_proj_z" href="#VITAE.model.LatentSpace.get_proj_z">get_proj_z</a></code></li>
+<li><code><a title="VITAE.model.LatentSpace.call" href="#VITAE.model.LatentSpace.call">call</a></code></li>
 </ul>
 </li>
 <li>
@@ -2017,9 +2555,7 @@ def get_reconstruction_loss(self, x, z_in, scale_factor, L):
 <ul class="">
 <li><code><a title="VITAE.model.VariationalAutoEncoder.init_latent_space" href="#VITAE.model.VariationalAutoEncoder.init_latent_space">init_latent_space</a></code></li>
 <li><code><a title="VITAE.model.VariationalAutoEncoder.call" href="#VITAE.model.VariationalAutoEncoder.call">call</a></code></li>
-<li><code><a title="VITAE.model.VariationalAutoEncoder.get_reconstruction_loss" href="#VITAE.model.VariationalAutoEncoder.get_reconstruction_loss">get_reconstruction_loss</a></code></li>
 <li><code><a title="VITAE.model.VariationalAutoEncoder.get_z" href="#VITAE.model.VariationalAutoEncoder.get_z">get_z</a></code></li>
-<li><code><a title="VITAE.model.VariationalAutoEncoder.get_proj_z" href="#VITAE.model.VariationalAutoEncoder.get_proj_z">get_proj_z</a></code></li>
 <li><code><a title="VITAE.model.VariationalAutoEncoder.get_pc_x" href="#VITAE.model.VariationalAutoEncoder.get_pc_x">get_pc_x</a></code></li>
 <li><code><a title="VITAE.model.VariationalAutoEncoder.inference" href="#VITAE.model.VariationalAutoEncoder.inference">inference</a></code></li>
 </ul>

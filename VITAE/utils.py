@@ -22,6 +22,9 @@ import h5py
 #------------------------------------------------------------------------------
 
 class Early_Stopping():
+    '''
+    The early-stopping monitor.
+    '''
     def __init__(self, warmup=0, patience=10, tolerance=1e-3, is_minimize=True):
         self.warmup = warmup
         self.patience = patience
@@ -84,6 +87,22 @@ def _check_variability(A):
 
 
 def get_embedding(z, dimred='umap', **kwargs):
+    '''Get low-dimensional embeddings for visualizations.
+
+    Parameters
+    ----------
+    z : np.array
+        \([N, d]\) latent variables.
+    dimred : str, optional
+        'pca', 'tsne', or umap'.      
+    **kwargs :  
+        extra key-value arguments for dimension reduction algorithms.  
+
+    Returns:
+    ----------
+    embed : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    '''
     if dimred=='umap':
         # umap has some bugs that it may change the original matrix when doing transform
         mapper = umap.UMAP(**kwargs).fit(z.copy())
@@ -99,6 +118,19 @@ def get_embedding(z, dimred='umap', **kwargs):
 
 
 def get_igraph(z, random_state=0):
+    '''Get igraph for running Louvain clustering.
+
+    Parameters
+    ----------
+    z : np.array
+        \([N, d]\) latent variables.
+    random_state : int, optional
+        the random state.
+    Returns:
+    ----------
+    g : igraph
+        the igraph object of connectivities.      
+    '''    
     # Find knn
     n_neighbors = 15
     knn_indices, knn_dists, forest = nearest_neighbors(
@@ -133,13 +165,21 @@ def get_igraph(z, random_state=0):
 
 
 def louvain_igraph(g, res, random_state=0):
-    '''
-    Params:
-        g            - igraph object
-        res          - resolution parameter
-        random_state - random seed
-    Returns:
-        labels       - clustered labels
+    '''Louvain clustering on an igraph object.
+
+    Parameters
+    ----------
+    g : igraph
+        the igraph object of connectivities.
+    res : float
+        the resolution parameter for Louvain clustering.
+    random_state : int, optional
+        the random state.      
+
+    Returns
+    ----------
+    labels : np.array     
+        \([N, ]\) the clustered labels.
     '''
     # Louvain
     partition_kwargs = {}
@@ -155,6 +195,19 @@ def louvain_igraph(g, res, random_state=0):
     
 
 def plot_clusters(embed_z, labels, plot_labels=False, path=None):
+    '''Plot the clustering results.
+
+    Parameters
+    ----------
+    embed_z : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    labels : np.array     
+        \([N, ]\) the clustered labels.
+    plot_labels : boolean, optional
+        whether to plot text of labels or not.
+    path : str, optional
+        the path to save the figure.
+    '''    
     n_labels = len(np.unique(labels))
     colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
     
@@ -178,6 +231,19 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
 
     
 def plot_marker_gene(expression, gene_name, embed_z, path=None):
+    '''Plot the marker gene.
+
+    Parameters
+    ----------
+    expression : np.array
+        \([N, ]\) the expression of the marker gene.
+    gene_name : str
+        the name of the marker gene.
+    embed_z : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    path : str, optional
+        the path to save the figure.
+    '''      
     fig, ax = plt.subplots(1,1, figsize=(20, 10))
     cmap = matplotlib.cm.get_cmap('Reds')
     sc = ax.scatter(*embed_z.T, c='yellow', s=15, alpha=0.1)
@@ -191,7 +257,7 @@ def plot_marker_gene(expression, gene_name, embed_z, path=None):
     return None
     
 
-def polyfit_with_fixed_points(n, x, y, xf, yf):
+def _polyfit_with_fixed_points(n, x, y, xf, yf):
     mat = np.empty((n + 1 + len(xf),) * 2)
     vec = np.empty((n + 1 + len(xf),))
     x_n = x**np.arange(2 * n + 1)[:, None]
@@ -210,12 +276,12 @@ def polyfit_with_fixed_points(n, x, y, xf, yf):
     return params[:n + 1]
 
 
-def get_smooth_curve(xy, xy_fixed):
+def _get_smooth_curve(xy, xy_fixed):
     xy = np.r_[xy, xy_fixed]
     _, idx = np.unique(xy[:,0], return_index=True)
     xy = xy[idx,:]
     
-    params = polyfit_with_fixed_points(
+    params = _polyfit_with_fixed_points(
         3, 
         xy[:,0], xy[:,1], 
         xy_fixed[:,0], xy_fixed[:,1]
@@ -268,7 +334,21 @@ type_dict = {
     'tree':'UMI',
 }
 
-def load_data(path, file_name):   
+def load_data(path, file_name):  
+    '''Load h5df data.
+
+    Parameters
+    ----------
+    path : str
+        the path of the h5 files.
+    file_name : str
+        the dataset name.
+    
+    Returns:
+    ----------
+    data : dict
+        a dict containing count, grouping, etc. of the dataset.
+    '''     
     data = {}
     
     with h5py.File(os.path.join(path, file_name+'.h5'), 'r') as f:

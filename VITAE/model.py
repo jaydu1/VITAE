@@ -5,7 +5,12 @@ import tensorflow_probability as tfp
 
  
 class cdf_layer(Layer):
+    '''
+    The Normal cdf layer with custom gradients.
+    '''
     def __init__(self):
+        '''
+        '''
         super(cdf_layer, self).__init__()
         
     @tf.function
@@ -14,6 +19,20 @@ class cdf_layer(Layer):
         
     @tf.custom_gradient
     def func(self, x):
+        '''Return cdf(x) and pdf(x).
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            the tensor.
+        
+        Returns
+        ----------
+        f : tf.Tensor
+            cdf(x).
+        grad : tf.Tensor
+            pdf(x).
+        '''   
         dist = tfp.distributions.Normal(loc=0., scale=1., allow_nan_stats=False)
         f = dist.cdf(x)
         def grad(dy):
@@ -23,12 +42,25 @@ class cdf_layer(Layer):
     
 
 class Sampling(Layer):
-    """
-    Sampling latent variable z by (z_mean, z_log_var).    
+    """Sampling latent variable \(z\) from \(N(\\mu_z, \\log \\sigma_z^2\)).    
     Used in Encoder.
     """
     @tf.function
     def call(self, z_mean, z_log_var):
+        '''Return cdf(x) and pdf(x).
+
+        Parameters
+        ----------
+        z_mean : tf.Tensor
+            \([B, L, d]\) the mean of \(z\).
+        z_log_var : tf.Tensor
+            \([B, L, d]\) the log-variance of \(z\).
+
+        Returns
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the sampled \(z\).
+        '''   
         epsilon = tf.random.normal(shape = tf.shape(z_mean))
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
@@ -36,15 +68,21 @@ class Sampling(Layer):
 
 class Encoder(Layer):
     '''
-    Encoder, model q(z|x).
+    Encoder, model \(p(Z_i|Y_i,X_i)\).
     '''
     def __init__(self, dimensions, dim_latent, name='encoder', **kwargs):
         '''
-        Input:
-          dimensions  - list of dimensions of layers in dense layers of
-                       encoder expcept the latent layer.
-          dim_latent  - dimension of latent layer.
-        '''
+        Parameters
+        ----------
+        dimensions : np.array
+            the dimensions of hidden layers of the encoder.
+        dim_latent : int
+            the latent dimension of the encoder.
+        name : str, optional
+            the name of the layer.
+        **kwargs : 
+            other keyword arguments.
+        ''' 
         super(Encoder, self).__init__(name = name, **kwargs)
         self.dense_layers = [Dense(dim, activation = tf.nn.leaky_relu,
                                           name = 'encoder_%i'%(i+1)) \
@@ -58,14 +96,26 @@ class Encoder(Layer):
     
     @tf.function
     def call(self, x, L=1, is_training=True):
-        '''
-        Input :
-            x           - input                     [batch_size, dim_origin]
-        Output:
-            z_mean      - mean of p(z|x)            [batch_size, dim_latent]
-            z_log_var   - log of variance of p(z|x) [batch_size, dim_latent]
-            z           - sampled z                 [batch_size, L, dim_latent]
-        '''
+        '''Encode the inputs and get the latent variables.
+
+        Parameters
+        ----------
+        x : tf.Tensor
+            \([B, L, d]\) the input.
+        L : int, optional
+            the number of MC samples.
+        is_training : boolean, optional
+            whether in the training or inference mode.
+        
+        Returns
+        ----------
+        z_mean : tf.Tensor
+            \([B, L, d]\) the mean of \(z\).
+        z_log_var : tf.Tensor
+            \([B, L, d]\) the log-variance of \(z\).
+        z : tf.Tensor
+            \([B, L, d]\) the sampled \(z\).
+        '''         
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             x = dense(x)
             x = bn(x, training=is_training)
@@ -79,16 +129,21 @@ class Encoder(Layer):
 
 class Decoder(Layer):
     '''
-    Decoder, model p(x|z).
+    Decoder, model \(p(Y_i|Z_i,X_i)\).
     '''
     def __init__(self, dimensions, dim_origin, data_type = 'UMI', 
                 name = 'decoder', **kwargs):
         '''
-        Input:
-            dimensions      - list of dimensions of layers in dense layers of
-                                decoder expcept the output layer.
-            dim_origin      - dimension of output layer.
-            data_type       - 'UMI', 'non-UMI' and 'Gaussian'
+        Parameters
+        ----------
+        dimensions : np.array
+            the dimensions of hidden layers of the encoder.
+        dim_origin : int
+            the output dimension of the decoder.
+        data_type : str, optional
+            'UMI', 'non-UMI', or 'Gaussian'.
+        name : str, optional
+            the name of the layer.
         '''
         super(Decoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
@@ -117,15 +172,43 @@ class Decoder(Layer):
           
     @tf.function  
     def call(self, z, is_training=True):
-        '''
-        Input :
-            z           - latent variables  [batch_size, L, dim_origin]
-        Output:
-            nu_z        - x_hat if Gaussian
-            tau         - common variance if Gaussian
-            lambda_z    - x_hat             [batch_size, L, dim_origin]
-            r           - dispersion parameter
-                                            [1,          L, dim_origin]
+        '''Decode the latent variables and get the reconstructions.
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the sampled \(z\).
+        is_training : boolean, optional
+            whether in the training or inference mode.
+
+        When `data_type=='Gaussian'`:
+
+        Returns
+        ----------
+        nu_z : tf.Tensor
+            \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+        tau : tf.Tensor
+            \([1, G]\) the variance of \(Y_i|Z_i,X_i\).
+
+        When `data_type=='UMI'`:
+
+        Returns
+        ----------
+        lambda_z : tf.Tensor
+            \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+        r : tf.Tensor
+            \([1, G]\) the dispersion parameters of \(Y_i|Z_i,X_i\).
+
+        When `data_type=='non-UMI'`:
+
+        Returns
+        ----------
+        lambda_z : tf.Tensor
+            \([B, L, G]\) the mean of \(Y_i|Z_i,X_i\).
+        r : tf.Tensor
+            \([1, G]\) the dispersion parameters of \(Y_i|Z_i,X_i\).
+        phi_z : tf.Tensor
+            \([1, G]\) the zero inflated parameters of \(Y_i|Z_i,X_i\).
         '''
         for dense, bn in zip(self.dense_layers, self.batch_norm_layers):
             z = dense(z)
@@ -148,14 +231,21 @@ class Decoder(Layer):
 class LatentSpace(Layer):
     '''
     Layer for the Latent Space.
-    It contains parameters related to model assumptions.
     '''
     def __init__(self, n_clusters, dim_latent, M = 50, name = 'LatentSpace', **kwargs):
         '''
-        Input:
-          dim_latent   - dimension of latent layer.
-          dim_origin - dimension of output layer.
-          M            - number of samples for w.
+        Parameters
+        ----------
+        n_clusters : int
+            the number of vertices in the latent space.
+        dim_latent : int
+            the latent dimension.
+        M : int, optional
+            the discretized number of uniform(0,1).
+        name : str, optional
+            the name of the layer.
+        **kwargs : 
+            other keyword arguments.
         '''
         super(LatentSpace, self).__init__(name=name, **kwargs)
         self.dim_latent = dim_latent
@@ -186,14 +276,25 @@ class LatentSpace(Layer):
                                 name = 'mu')
         self.cdf_layer = cdf_layer()       
         
-    def initialize(self, mu, pi):
+    def initialize(self, mu, log_pi):
+        '''Initialze the latent space.
+
+        Parameters
+        ----------
+        mu : np.array
+            \([d, k]\) the position matrix.
+        log_pi : np.array
+            \([1, K]\) \(\\log\\pi\).
+        '''
         # Initialize parameters of the latent space
         if mu is not None:
             self.mu.assign(mu)
-        if pi is not None:
-            self.pi.assign(pi)
+        if log_pi is not None:
+            self.pi.assign(log_pi)
 
     def normalize(self):
+        '''Normalize \(\\pi\).
+        '''
         self.pi = tf.nn.softmax(self.pi)
 
     @tf.function
@@ -301,7 +402,7 @@ class LatentSpace(Layer):
         var_w_tilde = tf.reduce_sum(
             tf.math.square(_w)  *
             tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-            (1,3)) - tf.square(w_tilde)    
+            (1,3)) - tf.square(w_tilde)
         
         _wtilde = tf.expand_dims(tf.expand_dims(w_tilde, 1), -1)
         D_JS = tf.reduce_sum(
@@ -316,6 +417,22 @@ class LatentSpace(Layer):
         return w_tilde, var_w_tilde, D_JS
     
     def get_pz(self, z):
+        '''Get \(\\log p(Z_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the latent variables.
+
+        Returns
+        ----------
+        log_p_zc_L : tf.Tensor
+            \([B, L, K]\) \(\\log p(Z_i^{(l)},c_i|Y_i,X_i)\).
+        log_p_z_L : tf.Tensor
+            \([B, L]\) \(\\log p(Z_i^{(l)}|Y_i,X_i)\).
+        log_p_z : tf.Tensor
+            \([B, 1]\) the estimated \(\\log p(Z_i|Y_i,X_i)\). 
+        '''        
         temp_pi, a2, _inv_sig, _mu, _t = self._get_normal_params(z)
         
         log_p_z_c_L =  0.5 * (tf.math.log(2 * np.pi) - \
@@ -328,20 +445,48 @@ class LatentSpace(Layer):
         log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
         return log_p_zc_L, log_p_z_L, log_p_z
 
+    def get_posterior_c(self, z):
+        '''Get \(p(c_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the latent variables.
+
+        Returns
+        ----------
+        p_c_x : np.array
+            \([B, K]\) \(p(c_i|Y_i,X_i)\).
+        '''  
+        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
+        log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
+        p_c_x = tf.exp(log_p_c_x).numpy()
+        return p_c_x
+
     def call(self, z, inference=False):
-        '''
-        Input :
-                z       - latent variables outputed by the encoder
-                          [batch_size, L, dim_latent]
-        Output:       
-            inference = True:     
-                log_p_z - MC samples for log p(z)=log sum_{c}p(z|c)*p(c)
-                          [batch_size, ]
-            inference = False:
-                res     - results contains estimations for 
-                            p(c|x), E(w|x), Var(w|x), E(w|x,c), Var(w|x,c), 
-                            c, E(w_tilde), Var(w_tilde), D_JS
-        '''               
+        '''Get posterior estimations.
+
+        Parameters
+        ----------
+        z : tf.Tensor
+            \([B, L, d]\) the latent variables.
+        inference : boolean
+            whether in training or inference mode.
+
+        When `inference=False`:
+
+        Returns
+        ----------
+        log_p_z_L : tf.Tensor
+            \([B, 1]\) the estimated \(\\log p(Z_i|Y_i,X_i)\).
+
+        When `inference=True`:
+
+        Returns
+        ----------
+        res : dict
+            a dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
+        '''                 
         log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
         if not inference:
@@ -356,46 +501,32 @@ class LatentSpace(Layer):
             res['var_w_tilde'] = var_w_tilde.numpy()
             res['D_JS'] = D_JS.numpy()
             return res
-
-    def get_posterior_c(self, z):
-        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
-        log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-        p_c_x = tf.exp(log_p_c_x).numpy()
-        return p_c_x
-
-    def get_proj_z(self, c):
-        '''
-        Args:
-            c - Numpy array of indexes [1,*]
-        '''
-        proj_c = np.tile(c, (self.M,1)).T.flatten()
-        proj_z_M = tf.transpose(
-                        tf.gather(self.mu, tf.gather(self.A, proj_c), axis=1) * 
-                        tf.tile(self.w, (1,len(c))) + 
-                        tf.gather(self.mu, tf.gather(self.B, proj_c), axis=1) * 
-                        (1-tf.tile(self.w, (1,len(c))))
-                    )
-        return proj_c, proj_z_M.numpy()
             
             
 class VariationalAutoEncoder(tf.keras.Model):
     """
-    Combines the encoder, decoder and LatentSpace into an end-to-end model for training.
+    Combines the encoder, decoder and LatentSpace into an end-to-end model for training and inference.
     """
     def __init__(self, dim_origin, dimensions, dim_latent,
                  data_type = 'UMI', has_cov=False,
                  name = 'autoencoder', **kwargs):
         '''
-        Args:
-            n_clusters      -   Number of clusters.
-            dim_origin      -   Dim of input.
-            dimensions      -   List of dimensions of layers of the encoder. Assume
-                               symmetric network sturcture of encoder and decoder.
-            dim_latent      -   Dimension of latent layer.
-            data_type       -   Type of count data.
-                              'UMI' for negative binomial loss;
-                              'non-UMI' for zero-inflated negative binomial loss.
-            has_cov         - has covariate or not
+        Parameters
+        ----------
+        dim_origin : int
+            the output dimension of the decoder.        
+        dimensions : np.array
+            the dimensions of hidden layers of the encoder.
+        dim_latent : int
+            the latent dimension.
+        data_type : str, optional
+            'UMI', 'non-UMI', or 'Gaussian'.
+        has_cov : boolean
+            whether has covariates or not.
+        name : str, optional
+            the name of the layer.
+        **kwargs : 
+            other keyword arguments.
         '''
         super(VariationalAutoEncoder, self).__init__(name = name, **kwargs)
         self.data_type = data_type
@@ -405,14 +536,48 @@ class VariationalAutoEncoder(tf.keras.Model):
         self.decoder = Decoder(dimensions[::-1], dim_origin, data_type, data_type)        
         self.has_cov = has_cov
         
-    def init_latent_space(self, n_clusters, mu, pi=None):
+    def init_latent_space(self, n_clusters, mu, log_pi=None):
+        '''Initialze the latent space.
+
+        Parameters
+        ----------
+        n_clusters : int
+            the number of vertices in the latent space.
+        mu : np.array
+            \([d, k]\) the position matrix.
+        log_pi : np.array, optional
+            \([1, K]\) \(\\log\\pi\).
+        '''
         self.n_clusters = n_clusters
         self.latent_space = LatentSpace(self.n_clusters, self.dim_latent)
-        self.latent_space.initialize(mu, pi)
+        self.latent_space.initialize(mu, log_pi)
 
     def call(self, x_normalized, c_score, x = None, scale_factor = 1,
              pre_train = False, L=1, alpha=0.0):
-        # Feed forward through encoder, LatentSpace layer and decoder.
+        '''Feed forward through encoder, LatentSpace layer and decoder.
+
+        Parameters
+        ----------
+        x_normalized : int
+            \([B, G]\) the preprocessed data.
+        c_score : np.array
+            \([B, s]\) the covariates \(X_i\), only used when `has_cov=True`.
+        x : np.array, optional
+            \([B, G]\) the original count data \(Y_i\), only used when data_type is not 'Gaussian'.
+        scale_factor : np.array, optional
+            \([B, ]\) the scale factors, only used when data_type is not 'Gaussian'.
+        pre_train : boolean, optional
+            whether in the pre-training phare or not.
+        L : int, optional
+            the number of MC samples.
+        alpha : float, optional
+            the penalty parameter for covariates adjustment.
+
+        Returns
+        ----------
+        losses : float
+            the loss.
+        '''
         if not pre_train and self.latent_space is None:
             raise ReferenceError('Have not initialized the latent space.')
                     
@@ -422,11 +587,11 @@ class VariationalAutoEncoder(tf.keras.Model):
         z_in = tf.concat([z, tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1) if self.has_cov else z
         
         x = tf.tile(tf.expand_dims(x, 1), (1,L,1))
-        reconstruction_z_loss = self.get_reconstruction_loss(x, z_in, scale_factor, L)
+        reconstruction_z_loss = self._get_reconstruction_loss(x, z_in, scale_factor, L)
         
         if self.has_cov and alpha>0.0:
             zero_in = tf.concat([tf.zeros([z.shape[0],1,z.shape[2]]), tf.tile(tf.expand_dims(c_score,1), (1,1,1))], -1)
-            reconstruction_zero_loss = self.get_reconstruction_loss(x, zero_in, scale_factor, 1)
+            reconstruction_zero_loss = self._get_reconstruction_loss(x, zero_in, scale_factor, 1)
             reconstruction_z_loss = (1-alpha)*reconstruction_z_loss + alpha*reconstruction_zero_loss
         
         self.add_loss(reconstruction_z_loss)
@@ -447,7 +612,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         return self.losses
     
     @tf.function
-    def get_reconstruction_loss(self, x, z_in, scale_factor, L):
+    def _get_reconstruction_loss(self, x, z_in, scale_factor, L):
         if self.data_type=='Gaussian':
             # Gaussian Log-Likelihood Loss function
             nu_z, tau = self.decoder(z_in)
@@ -485,19 +650,40 @@ class VariationalAutoEncoder(tf.keras.Model):
             
             return neg_E_nb
     
-    def get_z(self, x_normalized, c_score):        
+    def get_z(self, x_normalized, c_score):    
+        '''Get \(q(Z_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        x_normalized : int
+            \([B, G]\) the preprocessed data.
+        c_score : np.array
+            \([B, s]\) the covariates \(X_i\), only used when `has_cov=True`.
+
+        Returns
+        ----------
+        z_mean : np.array
+            \([B, d]\) the latent mean.
+        '''    
         x_normalized = x_normalized if (not self.has_cov or c_score is None) else tf.concat([x_normalized, c_score], -1)
         z_mean, _, _ = self.encoder(x_normalized, 1, False)
         return z_mean.numpy()
-    
-    def get_proj_z(self, c):
-        '''
-        Args:
-            c - List of indexes of edges
-        '''
-        return self.latent_space.get_proj_z(c)
 
     def get_pc_x(self, test_dataset):
+        '''Get \(p(c_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        test_dataset : tf.Dataset
+            the dataset object.
+
+        Returns
+        ----------
+        pi_norm : np.array
+            \([1, K]\) the estimated \(\\pi\).
+        p_c_x : np.array
+            \([N, ]\) the estimated \(p(c_i|Y_i,X_i)\).
+        '''    
         if self.latent_space is None:
             raise ReferenceError('Have not initialized the latent space.')
         
@@ -512,6 +698,32 @@ class VariationalAutoEncoder(tf.keras.Model):
         return pi_norm, p_c_x
 
     def inference(self, test_dataset, L=1):
+        '''Get \(p(c_i|Y_i,X_i)\).
+
+        Parameters
+        ----------
+        test_dataset : tf.Dataset
+            the dataset object.
+        L : int
+            the number of MC samples.
+
+        Returns
+        ----------
+        pi_norm  : np.array
+            \([1, K]\) the estimated \(\\pi\).
+        mu : np.array
+            \([d, k]\) the estimated \(\\mu\).
+        p_c_x : np.array
+            \([N, ]\) the estimated \(p(c_i|Y_i,X_i)\).
+        w_tilde : np.array
+            \([N, k]\) the estimated \(E(\\tilde{w}_i|Y_i,X_i)\).
+        var_w_tilde  : np.array 
+            \([N, k]\) the estimated \(Var(\\tilde{w}_i|Y_i,X_i)\).
+        D_JS : np.array 
+            \([N, k]\) the estimated JS divergence.
+        z_mean : np.array
+            \([N, d]\) the estimated latent mean.
+        '''   
         if self.latent_space is None:
             raise ReferenceError('Have not initialized the latent space.')
             

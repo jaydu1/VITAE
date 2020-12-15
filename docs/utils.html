@@ -51,6 +51,9 @@ import h5py
 #------------------------------------------------------------------------------
 
 class Early_Stopping():
+    &#39;&#39;&#39;
+    The early-stopping monitor.
+    &#39;&#39;&#39;
     def __init__(self, warmup=0, patience=10, tolerance=1e-3, is_minimize=True):
         self.warmup = warmup
         self.patience = patience
@@ -113,6 +116,22 @@ def _check_variability(A):
 
 
 def get_embedding(z, dimred=&#39;umap&#39;, **kwargs):
+    &#39;&#39;&#39;Get low-dimensional embeddings for visualizations.
+
+    Parameters
+    ----------
+    z : np.array
+        \([N, d]\) latent variables.
+    dimred : str, optional
+        &#39;pca&#39;, &#39;tsne&#39;, or umap&#39;.      
+    **kwargs :  
+        extra key-value arguments for dimension reduction algorithms.  
+
+    Returns:
+    ----------
+    embed : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    &#39;&#39;&#39;
     if dimred==&#39;umap&#39;:
         # umap has some bugs that it may change the original matrix when doing transform
         mapper = umap.UMAP(**kwargs).fit(z.copy())
@@ -128,6 +147,19 @@ def get_embedding(z, dimred=&#39;umap&#39;, **kwargs):
 
 
 def get_igraph(z, random_state=0):
+    &#39;&#39;&#39;Get igraph for running Louvain clustering.
+
+    Parameters
+    ----------
+    z : np.array
+        \([N, d]\) latent variables.
+    random_state : int, optional
+        the random state.
+    Returns:
+    ----------
+    g : igraph
+        the igraph object of connectivities.      
+    &#39;&#39;&#39;    
     # Find knn
     n_neighbors = 15
     knn_indices, knn_dists, forest = nearest_neighbors(
@@ -162,13 +194,21 @@ def get_igraph(z, random_state=0):
 
 
 def louvain_igraph(g, res, random_state=0):
-    &#39;&#39;&#39;
-    Params:
-        g            - igraph object
-        res          - resolution parameter
-        random_state - random seed
-    Returns:
-        labels       - clustered labels
+    &#39;&#39;&#39;Louvain clustering on an igraph object.
+
+    Parameters
+    ----------
+    g : igraph
+        the igraph object of connectivities.
+    res : float
+        the resolution parameter for Louvain clustering.
+    random_state : int, optional
+        the random state.      
+
+    Returns
+    ----------
+    labels : np.array     
+        \([N, ]\) the clustered labels.
     &#39;&#39;&#39;
     # Louvain
     partition_kwargs = {}
@@ -184,6 +224,19 @@ def louvain_igraph(g, res, random_state=0):
     
 
 def plot_clusters(embed_z, labels, plot_labels=False, path=None):
+    &#39;&#39;&#39;Plot the clustering results.
+
+    Parameters
+    ----------
+    embed_z : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    labels : np.array     
+        \([N, ]\) the clustered labels.
+    plot_labels : boolean, optional
+        whether to plot text of labels or not.
+    path : str, optional
+        the path to save the figure.
+    &#39;&#39;&#39;    
     n_labels = len(np.unique(labels))
     colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
     
@@ -207,6 +260,19 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
 
     
 def plot_marker_gene(expression, gene_name, embed_z, path=None):
+    &#39;&#39;&#39;Plot the marker gene.
+
+    Parameters
+    ----------
+    expression : np.array
+        \([N, ]\) the expression of the marker gene.
+    gene_name : str
+        the name of the marker gene.
+    embed_z : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    path : str, optional
+        the path to save the figure.
+    &#39;&#39;&#39;      
     fig, ax = plt.subplots(1,1, figsize=(20, 10))
     cmap = matplotlib.cm.get_cmap(&#39;Reds&#39;)
     sc = ax.scatter(*embed_z.T, c=&#39;yellow&#39;, s=15, alpha=0.1)
@@ -220,7 +286,7 @@ def plot_marker_gene(expression, gene_name, embed_z, path=None):
     return None
     
 
-def polyfit_with_fixed_points(n, x, y, xf, yf):
+def _polyfit_with_fixed_points(n, x, y, xf, yf):
     mat = np.empty((n + 1 + len(xf),) * 2)
     vec = np.empty((n + 1 + len(xf),))
     x_n = x**np.arange(2 * n + 1)[:, None]
@@ -239,12 +305,12 @@ def polyfit_with_fixed_points(n, x, y, xf, yf):
     return params[:n + 1]
 
 
-def get_smooth_curve(xy, xy_fixed):
+def _get_smooth_curve(xy, xy_fixed):
     xy = np.r_[xy, xy_fixed]
     _, idx = np.unique(xy[:,0], return_index=True)
     xy = xy[idx,:]
     
-    params = polyfit_with_fixed_points(
+    params = _polyfit_with_fixed_points(
         3, 
         xy[:,0], xy[:,1], 
         xy_fixed[:,0], xy_fixed[:,1]
@@ -297,7 +363,21 @@ type_dict = {
     &#39;tree&#39;:&#39;UMI&#39;,
 }
 
-def load_data(path, file_name):   
+def load_data(path, file_name):  
+    &#39;&#39;&#39;Load h5df data.
+
+    Parameters
+    ----------
+    path : str
+        the path of the h5 files.
+    file_name : str
+        the dataset name.
+    
+    Returns:
+    ----------
+    data : dict
+        a dict containing count, grouping, etc. of the dataset.
+    &#39;&#39;&#39;     
     data = {}
     
     with h5py.File(os.path.join(path, file_name+&#39;.h5&#39;), &#39;r&#39;) as f:
@@ -361,12 +441,40 @@ def load_data(path, file_name):
 <span>def <span class="ident">get_embedding</span></span>(<span>z, dimred='umap', **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Get low-dimensional embeddings for visualizations.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>z</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, d]</span><script type="math/tex">[N, d]</script></span> latent variables.</dd>
+<dt><strong><code>dimred</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>'pca', 'tsne', or umap'.</dd>
+<dt><strong><code>**kwargs</code></strong> :&ensp;<code> </code></dt>
+<dd>extra key-value arguments for dimension reduction algorithms.</dd>
+</dl>
+<h2 id="returns">Returns:</h2>
+<p>embed : np.array
+<span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> latent variables after dimension reduction.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_embedding(z, dimred=&#39;umap&#39;, **kwargs):
+    &#39;&#39;&#39;Get low-dimensional embeddings for visualizations.
+
+    Parameters
+    ----------
+    z : np.array
+        \([N, d]\) latent variables.
+    dimred : str, optional
+        &#39;pca&#39;, &#39;tsne&#39;, or umap&#39;.      
+    **kwargs :  
+        extra key-value arguments for dimension reduction algorithms.  
+
+    Returns:
+    ----------
+    embed : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    &#39;&#39;&#39;
     if dimred==&#39;umap&#39;:
         # umap has some bugs that it may change the original matrix when doing transform
         mapper = umap.UMAP(**kwargs).fit(z.copy())
@@ -385,12 +493,35 @@ def load_data(path, file_name):
 <span>def <span class="ident">get_igraph</span></span>(<span>z, random_state=0)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Get igraph for running Louvain clustering.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>z</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, d]</span><script type="math/tex">[N, d]</script></span> latent variables.</dd>
+<dt><strong><code>random_state</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the random state.</dd>
+</dl>
+<h2 id="returns">Returns:</h2>
+<p>g : igraph
+the igraph object of connectivities.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_igraph(z, random_state=0):
+    &#39;&#39;&#39;Get igraph for running Louvain clustering.
+
+    Parameters
+    ----------
+    z : np.array
+        \([N, d]\) latent variables.
+    random_state : int, optional
+        the random state.
+    Returns:
+    ----------
+    g : igraph
+        the igraph object of connectivities.      
+    &#39;&#39;&#39;    
     # Find knn
     n_neighbors = 15
     knn_indices, knn_dists, forest = nearest_neighbors(
@@ -428,27 +559,42 @@ def load_data(path, file_name):
 <span>def <span class="ident">louvain_igraph</span></span>(<span>g, res, random_state=0)</span>
 </code></dt>
 <dd>
-<div class="desc"><h2 id="params">Params</h2>
-<p>g
-- igraph object
-res
-- resolution parameter
-random_state - random seed</p>
+<div class="desc"><p>Louvain clustering on an igraph object.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>g</code></strong> :&ensp;<code>igraph</code></dt>
+<dd>the igraph object of connectivities.</dd>
+<dt><strong><code>res</code></strong> :&ensp;<code>float</code></dt>
+<dd>the resolution parameter for Louvain clustering.</dd>
+<dt><strong><code>random_state</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>the random state.</dd>
+</dl>
 <h2 id="returns">Returns</h2>
-<p>labels
-- clustered labels</p></div>
+<dl>
+<dt><strong><code>labels</code></strong> :&ensp;<code>np.array
+</code></dt>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> the clustered labels.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def louvain_igraph(g, res, random_state=0):
-    &#39;&#39;&#39;
-    Params:
-        g            - igraph object
-        res          - resolution parameter
-        random_state - random seed
-    Returns:
-        labels       - clustered labels
+    &#39;&#39;&#39;Louvain clustering on an igraph object.
+
+    Parameters
+    ----------
+    g : igraph
+        the igraph object of connectivities.
+    res : float
+        the resolution parameter for Louvain clustering.
+    random_state : int, optional
+        the random state.      
+
+    Returns
+    ----------
+    labels : np.array     
+        \([N, ]\) the clustered labels.
     &#39;&#39;&#39;
     # Louvain
     partition_kwargs = {}
@@ -467,12 +613,37 @@ random_state - random seed</p>
 <span>def <span class="ident">plot_clusters</span></span>(<span>embed_z, labels, plot_labels=False, path=None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Plot the clustering results.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>embed_z</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> latent variables after dimension reduction.</dd>
+<dt><strong><code>labels</code></strong> :&ensp;<code>np.array
+</code></dt>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> the clustered labels.</dd>
+<dt><strong><code>plot_labels</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether to plot text of labels or not.</dd>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the path to save the figure.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def plot_clusters(embed_z, labels, plot_labels=False, path=None):
+    &#39;&#39;&#39;Plot the clustering results.
+
+    Parameters
+    ----------
+    embed_z : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    labels : np.array     
+        \([N, ]\) the clustered labels.
+    plot_labels : boolean, optional
+        whether to plot text of labels or not.
+    path : str, optional
+        the path to save the figure.
+    &#39;&#39;&#39;    
     n_labels = len(np.unique(labels))
     colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
     
@@ -499,12 +670,36 @@ random_state - random seed</p>
 <span>def <span class="ident">plot_marker_gene</span></span>(<span>expression, gene_name, embed_z, path=None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Plot the marker gene.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>expression</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> the expression of the marker gene.</dd>
+<dt><strong><code>gene_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>the name of the marker gene.</dd>
+<dt><strong><code>embed_z</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> latent variables after dimension reduction.</dd>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the path to save the figure.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def plot_marker_gene(expression, gene_name, embed_z, path=None):
+    &#39;&#39;&#39;Plot the marker gene.
+
+    Parameters
+    ----------
+    expression : np.array
+        \([N, ]\) the expression of the marker gene.
+    gene_name : str
+        the name of the marker gene.
+    embed_z : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    path : str, optional
+        the path to save the figure.
+    &#39;&#39;&#39;      
     fig, ax = plt.subplots(1,1, figsize=(20, 10))
     cmap = matplotlib.cm.get_cmap(&#39;Reds&#39;)
     sc = ax.scatter(*embed_z.T, c=&#39;yellow&#39;, s=15, alpha=0.1)
@@ -518,69 +713,40 @@ random_state - random seed</p>
     return None</code></pre>
 </details>
 </dd>
-<dt id="VITAE.utils.polyfit_with_fixed_points"><code class="name flex">
-<span>def <span class="ident">polyfit_with_fixed_points</span></span>(<span>n, x, y, xf, yf)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def polyfit_with_fixed_points(n, x, y, xf, yf):
-    mat = np.empty((n + 1 + len(xf),) * 2)
-    vec = np.empty((n + 1 + len(xf),))
-    x_n = x**np.arange(2 * n + 1)[:, None]
-    yx_n = np.sum(x_n[:n + 1] * y, axis=1)
-    x_n = np.sum(x_n, axis=1)
-    idx = np.arange(n + 1) + np.arange(n + 1)[:, None]
-    mat[:n + 1, :n + 1] = np.take(x_n, idx)
-    xf_n = xf**np.arange(n + 1)[:, None]
-    mat[:n + 1, n + 1:] = xf_n / 2
-    mat[n + 1:, :n + 1] = xf_n.T
-    mat[n + 1:, n + 1:] = 0
-    vec[:n + 1] = yx_n
-    vec[n + 1:] = yf
-    params = np.linalg.solve(mat, vec)
-
-    return params[:n + 1]</code></pre>
-</details>
-</dd>
-<dt id="VITAE.utils.get_smooth_curve"><code class="name flex">
-<span>def <span class="ident">get_smooth_curve</span></span>(<span>xy, xy_fixed)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_smooth_curve(xy, xy_fixed):
-    xy = np.r_[xy, xy_fixed]
-    _, idx = np.unique(xy[:,0], return_index=True)
-    xy = xy[idx,:]
-    
-    params = polyfit_with_fixed_points(
-        3, 
-        xy[:,0], xy[:,1], 
-        xy_fixed[:,0], xy_fixed[:,1]
-        )
-    poly = np.polynomial.Polynomial(params)
-    xx = np.linspace(xy_fixed[0,0], xy_fixed[-1,0], 100)
-
-    return xx, poly(xx)</code></pre>
-</details>
-</dd>
 <dt id="VITAE.utils.load_data"><code class="name flex">
 <span>def <span class="ident">load_data</span></span>(<span>path, file_name)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Load h5df data.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>the path of the h5 files.</dd>
+<dt><strong><code>file_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>the dataset name.</dd>
+</dl>
+<h2 id="returns">Returns:</h2>
+<p>data : dict
+a dict containing count, grouping, etc. of the dataset.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def load_data(path, file_name):   
+<pre><code class="python">def load_data(path, file_name):  
+    &#39;&#39;&#39;Load h5df data.
+
+    Parameters
+    ----------
+    path : str
+        the path of the h5 files.
+    file_name : str
+        the dataset name.
+    
+    Returns:
+    ----------
+    data : dict
+        a dict containing count, grouping, etc. of the dataset.
+    &#39;&#39;&#39;     
     data = {}
     
     with h5py.File(os.path.join(path, file_name+&#39;.h5&#39;), &#39;r&#39;) as f:
@@ -643,12 +809,15 @@ random_state - random seed</p>
 <span>(</span><span>warmup=0, patience=10, tolerance=0.001, is_minimize=True)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The early-stopping monitor.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Early_Stopping():
+    &#39;&#39;&#39;
+    The early-stopping monitor.
+    &#39;&#39;&#39;
     def __init__(self, warmup=0, patience=10, tolerance=1e-3, is_minimize=True):
         self.warmup = warmup
         self.patience = patience
@@ -695,14 +864,12 @@ random_state - random seed</p>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="VITAE.utils.get_embedding" href="#VITAE.utils.get_embedding">get_embedding</a></code></li>
 <li><code><a title="VITAE.utils.get_igraph" href="#VITAE.utils.get_igraph">get_igraph</a></code></li>
 <li><code><a title="VITAE.utils.louvain_igraph" href="#VITAE.utils.louvain_igraph">louvain_igraph</a></code></li>
 <li><code><a title="VITAE.utils.plot_clusters" href="#VITAE.utils.plot_clusters">plot_clusters</a></code></li>
 <li><code><a title="VITAE.utils.plot_marker_gene" href="#VITAE.utils.plot_marker_gene">plot_marker_gene</a></code></li>
-<li><code><a title="VITAE.utils.polyfit_with_fixed_points" href="#VITAE.utils.polyfit_with_fixed_points">polyfit_with_fixed_points</a></code></li>
-<li><code><a title="VITAE.utils.get_smooth_curve" href="#VITAE.utils.get_smooth_curve">get_smooth_curve</a></code></li>
 <li><code><a title="VITAE.utils.load_data" href="#VITAE.utils.load_data">load_data</a></code></li>
 </ul>
 </li>

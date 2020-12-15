@@ -29,6 +29,7 @@
 </summary>
 <pre><code class="python">import os
 import warnings
+from typing import Optional
 
 import pandas as pd
 import numpy as np
@@ -39,10 +40,20 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 
-from VITAE.utils import get_embedding, get_smooth_curve
+from VITAE.utils import get_embedding, _get_smooth_curve
 
 class Inferer(object):
-    def __init__(self, NUM_CLUSTER):
+    &#39;&#39;&#39;
+    The class for doing inference based on posterior estimations.
+    &#39;&#39;&#39;
+
+    def __init__(self, NUM_CLUSTER: int):
+        &#39;&#39;&#39;
+        Parameters
+        ----------
+        NUM_CLUSTER : int
+            the number of vertices in the latent space.
+        &#39;&#39;&#39;        
         self.NUM_CLUSTER = NUM_CLUSTER
         self.NUM_STATE = int(NUM_CLUSTER*(NUM_CLUSTER+1)/2)
         self.CLUSTER_CENTER = np.array([int((NUM_CLUSTER+(1-i)/2)*i) for i in range(NUM_CLUSTER)])
@@ -51,8 +62,23 @@ class Inferer(object):
         self.C[self.C&gt;0] = np.arange(self.NUM_STATE)
         self.C = self.C.astype(int)
         
+    def build_graphs(self, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5):
+        &#39;&#39;&#39;Build the backbone.
         
-    def build_graphs(self, pc_x, thres=0.5, method=&#39;mean&#39;):
+        Parameters
+        ----------
+        pc_x : np.array
+            \([N, K]\) the estimated \(p(c_i|Y_i,X_i)\).        
+        method : string, optional
+            &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
+        thres : float, optional 
+            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
+
+        Retruns
+        ----------
+        G : nx.Graph
+            the graph of edge scores.
+        &#39;&#39;&#39;
         graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER))
         if method==&#39;mean&#39;:
             for i in range(self.NUM_CLUSTER-1):
@@ -88,8 +114,23 @@ class Inferer(object):
             
         return G
 
-
     def modify_wtilde(self, w_tilde, edges):
+        &#39;&#39;&#39;Project \(\\tilde{w}\) to the estimated backbone.
+        
+        Parameters
+        ----------
+        w_tilde : np.array
+            \([N, k]\) the estimated \(\\tilde{w}\).        
+        edges : np.array
+            \([|\\mathcal{E}(\\widehat{\\mathcal{B}})|, 2]\).
+        thres : float, optional 
+            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
+
+        Retruns
+        ----------
+        w : np.array
+            the projected \(\\tilde{w}\).
+        &#39;&#39;&#39;
         w = np.zeros_like(w_tilde)
         
         # projection on nodes
@@ -112,31 +153,79 @@ class Inferer(object):
             w[idc, best_proj_err_node_ind] = 1
         return w
 
+    def init_inference(self, w_tilde, pc_x, thres: float = 0.5, method: str = &#39;mean&#39;, no_loop: bool = False):
+        &#39;&#39;&#39;Initialze inference.
+        
+        Parameters
+        ----------
+        w_tilde : np.array
+            \([N, k]\) the estimated \(\\tilde{w}\).        
+        pc_x : np.array
+            \([N, K]\) the estimated \(p(c_i|Y_i,X_i)\).  
+        method : string, optional
+            &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
+        thres : float, optional 
+            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.    
+        no_loop : boolean, optional 
+            if loops are allowed to exist in the graph.
 
-    def init_inference(self, w_tilde, pc_x, thres=0.5, method=&#39;mean&#39;, no_loop=False):
+        Retruns
+        ----------
+        G : np.array
+            the estimated backbone \(\\widehat{\\mathcal{B}}\).
+        edges : np.array
+            \(|\\mathcal{E}(\\widehat{\\mathcal{B}})|,2\) the edges in the estimated backbone.
+        &#39;&#39;&#39;
         self.no_loop = no_loop
         self.w_tilde = w_tilde
         
         # Build graph
-        self.G = self.build_graphs(pc_x, thres=thres, method=method)
+        self.G = self.build_graphs(pc_x, method=method, thres=thres)
         
         edges = np.array(list(self.G.edges))
         self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
 
         return self.G, self.edges
-        
     
-    def init_embedding(self, z, mu, dimred=&#39;umap&#39;, **kwargs):
+    def init_embedding(self, z, mu, dimred: str =&#39;umap&#39;, **kwargs):
+        &#39;&#39;&#39;Initialze embeddings for visualizations.
+
+        Parameters
+        ----------
+        z : np.array
+            \([N,d]\) the latent means.
+        mu : np.array
+            \([d,k]\) the value of initial \(\\mu\).
+        dimred : str, optional 
+            the name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;. Only used if &#39;plot_every_num_epoch&#39; is not None. 
+        **kwargs : 
+            extra key-value arguments for dimension reduction algorithms.   
+
+        Retruns
+        ----------
+        embed_z : np.array
+            \([N, 2]\) latent variables after dimension reduction.
+        &#39;&#39;&#39;
         self.mu = mu.copy()
         concate_z = np.concatenate((z, mu.T), axis=0)
         embed = get_embedding(concate_z, dimred, **kwargs)
         
         self.embed_z = embed[:-self.NUM_CLUSTER,:]
         self.embed_mu = embed[-self.NUM_CLUSTER:,:]
-        return self.embed_z.copy()
+        return self.embed_z.copy()    
         
-        
-    def plot_clusters(self, labels, path=None):
+    def plot_clusters(self, labels, plot_labels: bool=True, path: Optional[str] = None):
+        &#39;&#39;&#39;Plot the embeddings with labels.
+
+        Parameters
+        ----------
+        labels : np.array     
+            \([N, ]\) the clustered labels.
+        plot_labels : boolean, optional
+            whether to plot text of labels or not.
+        path : str, optional
+            the path to save the figure.
+        &#39;&#39;&#39;  
         if labels is None:
             print(&#39;No clustering labels available!&#39;)
         else:
@@ -147,8 +236,9 @@ class Inferer(object):
             for i,x in enumerate(np.unique(labels)):
                 ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
                     s=8, alpha=0.6, label=str(x))
-                ax.text(np.mean(self.embed_z[labels==x,0]), 
-                        np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
+                if plot_labels:
+                    ax.text(np.mean(self.embed_z[labels==x,0]), 
+                            np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
             box = ax.get_position()
             ax.set_position([box.x0, box.y0 + box.height * 0.1,
                              box.width, box.height * 0.9])
@@ -161,15 +251,21 @@ class Inferer(object):
             plt.show()
         return None
         
-    def build_milestone_net(self, subgraph, init_node):
-        &#39;&#39;&#39;
-        Args:
-            subgraph     - a connected component of the graph, csr_matrix
-            init_node    - root node
-        Returns:
-            df_subgraph  - dataframe of milestone network
-        &#39;&#39;&#39;
+    def build_milestone_net(self, subgraph, init_node: int):
+        &#39;&#39;&#39;Build the milestone network.
 
+        Parameters
+        ----------
+        subgraph : nx.Graph
+            a connected component of the backbone given the root vertex.
+        init_node : int
+            the root vertex.
+        
+        Returns
+        ----------
+        df_subgraph : pd.DataFrame 
+            the milestone network.
+        &#39;&#39;&#39;
         if len(subgraph)==1:
             warnings.warn(&#39;Singular node.&#39;)
             return []
@@ -204,8 +300,23 @@ class Inferer(object):
                             key = lambda x: x[1])[0]
             return np.array(milestone_net)
     
-    
-    def comp_pseudotime(self, milestone_net, init_node, w):
+    def comp_pseudotime(self, milestone_net, init_node: int, w):
+        &#39;&#39;&#39;Compute pseudotime.
+
+        Parameters
+        ----------
+        milestone_net : pd.DataFrame
+            the milestone network.
+        init_node : int
+            the root vertex.
+        w : np.array
+            \([N, k]\) the projected \(\\tilde{w}\).
+        
+        Returns
+        ----------
+        pseudotime : np.array
+            \([N, k]\) the estimated pseudtotime.
+        &#39;&#39;&#39;
         pseudotime = - np.ones(w.shape[0])
         pseudotime[w[:,init_node]==1] = 0
         
@@ -220,20 +331,28 @@ class Inferer(object):
         return pseudotime
 
 
-    def infer_trajectory(self, init_node, labels=None, cutoff=None, is_plot=True, path=None):
-        &#39;&#39;&#39;
-        Params:
-            init_node  - (int) the initial node for the inferred trajectory.
-            labels     - (numpy.array) labels of cells, used for plotting.
-            cutoff     - (string) threshold for filtering edges with scores less than cutoff.
-            is_plot    - (boolean) if is_plot is True and labels are given, two plots of the
-                         groupings and the pseudotimes will be displayed; if is_plot is True
-                         and labels are None, only the plot of pseudotime will be displayed.
-            path       - (string) path to save figure, or don&#39;t save if it is None.
-        Returns:
-            G          - (networkx.Graph) modified graph that indicates the inferred trajectory
-            w          - (numpy.array) modified w_tilde
-            pseudotime - (numpy.array) pseudotime based on projected trajectory
+    def infer_trajectory(self, init_node: int, labels = None, cutoff: Optional[float] = None, is_plot: bool = True, path: Optional[str] = None):
+        &#39;&#39;&#39;Infer the trajectory.        
+
+        Parameters
+        ----------
+        init_node : int
+            the initial node for the inferred trajectory.
+        cutoff : string, optional
+            threshold for filtering edges with scores less than cutoff.
+        is_plot : boolean, optional
+            whether to plot or not.
+        path : string, optional  
+            path to save figure, or don&#39;t save if it is None.
+
+        Returns
+        ----------
+        G : nx.Graph 
+            the modified graph that indicates the inferred trajectory.
+        w : np.array
+            \([N,k]\) modified \(\\tilde{w}\).
+        pseudotime : np.array
+            \([N,]\) pseudotime based on projected trajectory.      
         &#39;&#39;&#39;
         # select edges
         if len(self.edges)==0:
@@ -292,7 +411,7 @@ class Inferer(object):
                 points = self.embed_z[np.sum(w[:,select_edges[i,:]]&gt;0, axis=-1)==2,:]
                 points = points[points[:,0].argsort()]                
                 try:
-                    x_smooth, y_smooth = get_smooth_curve(
+                    x_smooth, y_smooth = _get_smooth_curve(
                         points, 
                         self.embed_mu[select_edges[i,:], :]
                         )
@@ -352,16 +471,31 @@ class Inferer(object):
 <dl>
 <dt id="VITAE.inference.Inferer"><code class="flex name class">
 <span>class <span class="ident">Inferer</span></span>
-<span>(</span><span>NUM_CLUSTER)</span>
+<span>(</span><span>NUM_CLUSTER: int)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The class for doing inference based on posterior estimations.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>NUM_CLUSTER</code></strong> :&ensp;<code>int</code></dt>
+<dd>the number of vertices in the latent space.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Inferer(object):
-    def __init__(self, NUM_CLUSTER):
+    &#39;&#39;&#39;
+    The class for doing inference based on posterior estimations.
+    &#39;&#39;&#39;
+
+    def __init__(self, NUM_CLUSTER: int):
+        &#39;&#39;&#39;
+        Parameters
+        ----------
+        NUM_CLUSTER : int
+            the number of vertices in the latent space.
+        &#39;&#39;&#39;        
         self.NUM_CLUSTER = NUM_CLUSTER
         self.NUM_STATE = int(NUM_CLUSTER*(NUM_CLUSTER+1)/2)
         self.CLUSTER_CENTER = np.array([int((NUM_CLUSTER+(1-i)/2)*i) for i in range(NUM_CLUSTER)])
@@ -370,8 +504,23 @@ class Inferer(object):
         self.C[self.C&gt;0] = np.arange(self.NUM_STATE)
         self.C = self.C.astype(int)
         
+    def build_graphs(self, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5):
+        &#39;&#39;&#39;Build the backbone.
         
-    def build_graphs(self, pc_x, thres=0.5, method=&#39;mean&#39;):
+        Parameters
+        ----------
+        pc_x : np.array
+            \([N, K]\) the estimated \(p(c_i|Y_i,X_i)\).        
+        method : string, optional
+            &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
+        thres : float, optional 
+            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
+
+        Retruns
+        ----------
+        G : nx.Graph
+            the graph of edge scores.
+        &#39;&#39;&#39;
         graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER))
         if method==&#39;mean&#39;:
             for i in range(self.NUM_CLUSTER-1):
@@ -407,8 +556,23 @@ class Inferer(object):
             
         return G
 
-
     def modify_wtilde(self, w_tilde, edges):
+        &#39;&#39;&#39;Project \(\\tilde{w}\) to the estimated backbone.
+        
+        Parameters
+        ----------
+        w_tilde : np.array
+            \([N, k]\) the estimated \(\\tilde{w}\).        
+        edges : np.array
+            \([|\\mathcal{E}(\\widehat{\\mathcal{B}})|, 2]\).
+        thres : float, optional 
+            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
+
+        Retruns
+        ----------
+        w : np.array
+            the projected \(\\tilde{w}\).
+        &#39;&#39;&#39;
         w = np.zeros_like(w_tilde)
         
         # projection on nodes
@@ -431,31 +595,79 @@ class Inferer(object):
             w[idc, best_proj_err_node_ind] = 1
         return w
 
+    def init_inference(self, w_tilde, pc_x, thres: float = 0.5, method: str = &#39;mean&#39;, no_loop: bool = False):
+        &#39;&#39;&#39;Initialze inference.
+        
+        Parameters
+        ----------
+        w_tilde : np.array
+            \([N, k]\) the estimated \(\\tilde{w}\).        
+        pc_x : np.array
+            \([N, K]\) the estimated \(p(c_i|Y_i,X_i)\).  
+        method : string, optional
+            &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
+        thres : float, optional 
+            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.    
+        no_loop : boolean, optional 
+            if loops are allowed to exist in the graph.
 
-    def init_inference(self, w_tilde, pc_x, thres=0.5, method=&#39;mean&#39;, no_loop=False):
+        Retruns
+        ----------
+        G : np.array
+            the estimated backbone \(\\widehat{\\mathcal{B}}\).
+        edges : np.array
+            \(|\\mathcal{E}(\\widehat{\\mathcal{B}})|,2\) the edges in the estimated backbone.
+        &#39;&#39;&#39;
         self.no_loop = no_loop
         self.w_tilde = w_tilde
         
         # Build graph
-        self.G = self.build_graphs(pc_x, thres=thres, method=method)
+        self.G = self.build_graphs(pc_x, method=method, thres=thres)
         
         edges = np.array(list(self.G.edges))
         self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
 
         return self.G, self.edges
-        
     
-    def init_embedding(self, z, mu, dimred=&#39;umap&#39;, **kwargs):
+    def init_embedding(self, z, mu, dimred: str =&#39;umap&#39;, **kwargs):
+        &#39;&#39;&#39;Initialze embeddings for visualizations.
+
+        Parameters
+        ----------
+        z : np.array
+            \([N,d]\) the latent means.
+        mu : np.array
+            \([d,k]\) the value of initial \(\\mu\).
+        dimred : str, optional 
+            the name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;. Only used if &#39;plot_every_num_epoch&#39; is not None. 
+        **kwargs : 
+            extra key-value arguments for dimension reduction algorithms.   
+
+        Retruns
+        ----------
+        embed_z : np.array
+            \([N, 2]\) latent variables after dimension reduction.
+        &#39;&#39;&#39;
         self.mu = mu.copy()
         concate_z = np.concatenate((z, mu.T), axis=0)
         embed = get_embedding(concate_z, dimred, **kwargs)
         
         self.embed_z = embed[:-self.NUM_CLUSTER,:]
         self.embed_mu = embed[-self.NUM_CLUSTER:,:]
-        return self.embed_z.copy()
+        return self.embed_z.copy()    
         
-        
-    def plot_clusters(self, labels, path=None):
+    def plot_clusters(self, labels, plot_labels: bool=True, path: Optional[str] = None):
+        &#39;&#39;&#39;Plot the embeddings with labels.
+
+        Parameters
+        ----------
+        labels : np.array     
+            \([N, ]\) the clustered labels.
+        plot_labels : boolean, optional
+            whether to plot text of labels or not.
+        path : str, optional
+            the path to save the figure.
+        &#39;&#39;&#39;  
         if labels is None:
             print(&#39;No clustering labels available!&#39;)
         else:
@@ -466,8 +678,9 @@ class Inferer(object):
             for i,x in enumerate(np.unique(labels)):
                 ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
                     s=8, alpha=0.6, label=str(x))
-                ax.text(np.mean(self.embed_z[labels==x,0]), 
-                        np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
+                if plot_labels:
+                    ax.text(np.mean(self.embed_z[labels==x,0]), 
+                            np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
             box = ax.get_position()
             ax.set_position([box.x0, box.y0 + box.height * 0.1,
                              box.width, box.height * 0.9])
@@ -480,15 +693,21 @@ class Inferer(object):
             plt.show()
         return None
         
-    def build_milestone_net(self, subgraph, init_node):
-        &#39;&#39;&#39;
-        Args:
-            subgraph     - a connected component of the graph, csr_matrix
-            init_node    - root node
-        Returns:
-            df_subgraph  - dataframe of milestone network
-        &#39;&#39;&#39;
+    def build_milestone_net(self, subgraph, init_node: int):
+        &#39;&#39;&#39;Build the milestone network.
 
+        Parameters
+        ----------
+        subgraph : nx.Graph
+            a connected component of the backbone given the root vertex.
+        init_node : int
+            the root vertex.
+        
+        Returns
+        ----------
+        df_subgraph : pd.DataFrame 
+            the milestone network.
+        &#39;&#39;&#39;
         if len(subgraph)==1:
             warnings.warn(&#39;Singular node.&#39;)
             return []
@@ -523,8 +742,23 @@ class Inferer(object):
                             key = lambda x: x[1])[0]
             return np.array(milestone_net)
     
-    
-    def comp_pseudotime(self, milestone_net, init_node, w):
+    def comp_pseudotime(self, milestone_net, init_node: int, w):
+        &#39;&#39;&#39;Compute pseudotime.
+
+        Parameters
+        ----------
+        milestone_net : pd.DataFrame
+            the milestone network.
+        init_node : int
+            the root vertex.
+        w : np.array
+            \([N, k]\) the projected \(\\tilde{w}\).
+        
+        Returns
+        ----------
+        pseudotime : np.array
+            \([N, k]\) the estimated pseudtotime.
+        &#39;&#39;&#39;
         pseudotime = - np.ones(w.shape[0])
         pseudotime[w[:,init_node]==1] = 0
         
@@ -539,20 +773,28 @@ class Inferer(object):
         return pseudotime
 
 
-    def infer_trajectory(self, init_node, labels=None, cutoff=None, is_plot=True, path=None):
-        &#39;&#39;&#39;
-        Params:
-            init_node  - (int) the initial node for the inferred trajectory.
-            labels     - (numpy.array) labels of cells, used for plotting.
-            cutoff     - (string) threshold for filtering edges with scores less than cutoff.
-            is_plot    - (boolean) if is_plot is True and labels are given, two plots of the
-                         groupings and the pseudotimes will be displayed; if is_plot is True
-                         and labels are None, only the plot of pseudotime will be displayed.
-            path       - (string) path to save figure, or don&#39;t save if it is None.
-        Returns:
-            G          - (networkx.Graph) modified graph that indicates the inferred trajectory
-            w          - (numpy.array) modified w_tilde
-            pseudotime - (numpy.array) pseudotime based on projected trajectory
+    def infer_trajectory(self, init_node: int, labels = None, cutoff: Optional[float] = None, is_plot: bool = True, path: Optional[str] = None):
+        &#39;&#39;&#39;Infer the trajectory.        
+
+        Parameters
+        ----------
+        init_node : int
+            the initial node for the inferred trajectory.
+        cutoff : string, optional
+            threshold for filtering edges with scores less than cutoff.
+        is_plot : boolean, optional
+            whether to plot or not.
+        path : string, optional  
+            path to save figure, or don&#39;t save if it is None.
+
+        Returns
+        ----------
+        G : nx.Graph 
+            the modified graph that indicates the inferred trajectory.
+        w : np.array
+            \([N,k]\) modified \(\\tilde{w}\).
+        pseudotime : np.array
+            \([N,]\) pseudotime based on projected trajectory.      
         &#39;&#39;&#39;
         # select edges
         if len(self.edges)==0:
@@ -611,7 +853,7 @@ class Inferer(object):
                 points = self.embed_z[np.sum(w[:,select_edges[i,:]]&gt;0, axis=-1)==2,:]
                 points = points[points[:,0].argsort()]                
                 try:
-                    x_smooth, y_smooth = get_smooth_curve(
+                    x_smooth, y_smooth = _get_smooth_curve(
                         points, 
                         self.embed_mu[select_edges[i,:], :]
                         )
@@ -661,15 +903,43 @@ class Inferer(object):
 <h3>Methods</h3>
 <dl>
 <dt id="VITAE.inference.Inferer.build_graphs"><code class="name flex">
-<span>def <span class="ident">build_graphs</span></span>(<span>self, pc_x, thres=0.5, method='mean')</span>
+<span>def <span class="ident">build_graphs</span></span>(<span>self, pc_x, method: str = 'mean', thres: float = 0.5)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Build the backbone.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>pc_x</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, K]</span><script type="math/tex">[N, K]</script></span> the estimated <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</dd>
+<dt><strong><code>method</code></strong> :&ensp;<code>string</code>, optional</dt>
+<dd>'mean', 'modified_mean', 'map', or 'modified_map'.</dd>
+<dt><strong><code>thres</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>threshold used for filtering edges <span><span class="MathJax_Preview">e_{ij}</span><script type="math/tex">e_{ij}</script></span> that <span><span class="MathJax_Preview">(n_{i}+n_{j}+e_{ij})/N&lt;thres</span><script type="math/tex">(n_{i}+n_{j}+e_{ij})/N<thres</script></span>, only applied to mean method.</dd>
+</dl>
+<h2 id="retruns">Retruns</h2>
+<p>G : nx.Graph
+the graph of edge scores.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def build_graphs(self, pc_x, thres=0.5, method=&#39;mean&#39;):
+<pre><code class="python">def build_graphs(self, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5):
+    &#39;&#39;&#39;Build the backbone.
+    
+    Parameters
+    ----------
+    pc_x : np.array
+        \([N, K]\) the estimated \(p(c_i|Y_i,X_i)\).        
+    method : string, optional
+        &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
+    thres : float, optional 
+        threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
+
+    Retruns
+    ----------
+    G : nx.Graph
+        the graph of edge scores.
+    &#39;&#39;&#39;
     graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER))
     if method==&#39;mean&#39;:
         for i in range(self.NUM_CLUSTER-1):
@@ -710,12 +980,40 @@ class Inferer(object):
 <span>def <span class="ident">modify_wtilde</span></span>(<span>self, w_tilde, edges)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Project <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span> to the estimated backbone.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>w_tilde</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> the estimated <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</dd>
+<dt><strong><code>edges</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[|\mathcal{E}(\widehat{\mathcal{B}})|, 2]</span><script type="math/tex">[|\mathcal{E}(\widehat{\mathcal{B}})|, 2]</script></span>.</dd>
+<dt><strong><code>thres</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>threshold used for filtering edges <span><span class="MathJax_Preview">e_{ij}</span><script type="math/tex">e_{ij}</script></span> that <span><span class="MathJax_Preview">(n_{i}+n_{j}+e_{ij})/N&lt;thres</span><script type="math/tex">(n_{i}+n_{j}+e_{ij})/N<thres</script></span>, only applied to mean method.</dd>
+</dl>
+<h2 id="retruns">Retruns</h2>
+<p>w : np.array
+the projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def modify_wtilde(self, w_tilde, edges):
+    &#39;&#39;&#39;Project \(\\tilde{w}\) to the estimated backbone.
+    
+    Parameters
+    ----------
+    w_tilde : np.array
+        \([N, k]\) the estimated \(\\tilde{w}\).        
+    edges : np.array
+        \([|\\mathcal{E}(\\widehat{\\mathcal{B}})|, 2]\).
+    thres : float, optional 
+        threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
+
+    Retruns
+    ----------
+    w : np.array
+        the projected \(\\tilde{w}\).
+    &#39;&#39;&#39;
     w = np.zeros_like(w_tilde)
     
     # projection on nodes
@@ -740,20 +1038,60 @@ class Inferer(object):
 </details>
 </dd>
 <dt id="VITAE.inference.Inferer.init_inference"><code class="name flex">
-<span>def <span class="ident">init_inference</span></span>(<span>self, w_tilde, pc_x, thres=0.5, method='mean', no_loop=False)</span>
+<span>def <span class="ident">init_inference</span></span>(<span>self, w_tilde, pc_x, thres: float = 0.5, method: str = 'mean', no_loop: bool = False)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Initialze inference.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>w_tilde</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> the estimated <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</dd>
+<dt><strong><code>pc_x</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, K]</span><script type="math/tex">[N, K]</script></span> the estimated <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</dd>
+<dt><strong><code>method</code></strong> :&ensp;<code>string</code>, optional</dt>
+<dd>'mean', 'modified_mean', 'map', or 'modified_map'.</dd>
+<dt><strong><code>thres</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>threshold used for filtering edges <span><span class="MathJax_Preview">e_{ij}</span><script type="math/tex">e_{ij}</script></span> that <span><span class="MathJax_Preview">(n_{i}+n_{j}+e_{ij})/N&lt;thres</span><script type="math/tex">(n_{i}+n_{j}+e_{ij})/N<thres</script></span>, only applied to mean method.</dd>
+<dt><strong><code>no_loop</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>if loops are allowed to exist in the graph.</dd>
+</dl>
+<h2 id="retruns">Retruns</h2>
+<p>G : np.array
+the estimated backbone <span><span class="MathJax_Preview">\widehat{\mathcal{B}}</span><script type="math/tex">\widehat{\mathcal{B}}</script></span>.
+edges : np.array
+<span><span class="MathJax_Preview">|\mathcal{E}(\widehat{\mathcal{B}})|,2</span><script type="math/tex">|\mathcal{E}(\widehat{\mathcal{B}})|,2</script></span> the edges in the estimated backbone.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def init_inference(self, w_tilde, pc_x, thres=0.5, method=&#39;mean&#39;, no_loop=False):
+<pre><code class="python">def init_inference(self, w_tilde, pc_x, thres: float = 0.5, method: str = &#39;mean&#39;, no_loop: bool = False):
+    &#39;&#39;&#39;Initialze inference.
+    
+    Parameters
+    ----------
+    w_tilde : np.array
+        \([N, k]\) the estimated \(\\tilde{w}\).        
+    pc_x : np.array
+        \([N, K]\) the estimated \(p(c_i|Y_i,X_i)\).  
+    method : string, optional
+        &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
+    thres : float, optional 
+        threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.    
+    no_loop : boolean, optional 
+        if loops are allowed to exist in the graph.
+
+    Retruns
+    ----------
+    G : np.array
+        the estimated backbone \(\\widehat{\\mathcal{B}}\).
+    edges : np.array
+        \(|\\mathcal{E}(\\widehat{\\mathcal{B}})|,2\) the edges in the estimated backbone.
+    &#39;&#39;&#39;
     self.no_loop = no_loop
     self.w_tilde = w_tilde
     
     # Build graph
-    self.G = self.build_graphs(pc_x, thres=thres, method=method)
+    self.G = self.build_graphs(pc_x, method=method, thres=thres)
     
     edges = np.array(list(self.G.edges))
     self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
@@ -762,34 +1100,87 @@ class Inferer(object):
 </details>
 </dd>
 <dt id="VITAE.inference.Inferer.init_embedding"><code class="name flex">
-<span>def <span class="ident">init_embedding</span></span>(<span>self, z, mu, dimred='umap', **kwargs)</span>
+<span>def <span class="ident">init_embedding</span></span>(<span>self, z, mu, dimred: str = 'umap', **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Initialze embeddings for visualizations.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>z</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N,d]</span><script type="math/tex">[N,d]</script></span> the latent means.</dd>
+<dt><strong><code>mu</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[d,k]</span><script type="math/tex">[d,k]</script></span> the value of initial <span><span class="MathJax_Preview">\mu</span><script type="math/tex">\mu</script></span>.</dd>
+<dt><strong><code>dimred</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None.</dd>
+<dt><strong><code>**kwargs</code></strong></dt>
+<dd>extra key-value arguments for dimension reduction algorithms.</dd>
+</dl>
+<h2 id="retruns">Retruns</h2>
+<p>embed_z : np.array
+<span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> latent variables after dimension reduction.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def init_embedding(self, z, mu, dimred=&#39;umap&#39;, **kwargs):
+<pre><code class="python">def init_embedding(self, z, mu, dimred: str =&#39;umap&#39;, **kwargs):
+    &#39;&#39;&#39;Initialze embeddings for visualizations.
+
+    Parameters
+    ----------
+    z : np.array
+        \([N,d]\) the latent means.
+    mu : np.array
+        \([d,k]\) the value of initial \(\\mu\).
+    dimred : str, optional 
+        the name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;. Only used if &#39;plot_every_num_epoch&#39; is not None. 
+    **kwargs : 
+        extra key-value arguments for dimension reduction algorithms.   
+
+    Retruns
+    ----------
+    embed_z : np.array
+        \([N, 2]\) latent variables after dimension reduction.
+    &#39;&#39;&#39;
     self.mu = mu.copy()
     concate_z = np.concatenate((z, mu.T), axis=0)
     embed = get_embedding(concate_z, dimred, **kwargs)
     
     self.embed_z = embed[:-self.NUM_CLUSTER,:]
     self.embed_mu = embed[-self.NUM_CLUSTER:,:]
-    return self.embed_z.copy()</code></pre>
+    return self.embed_z.copy()    </code></pre>
 </details>
 </dd>
 <dt id="VITAE.inference.Inferer.plot_clusters"><code class="name flex">
-<span>def <span class="ident">plot_clusters</span></span>(<span>self, labels, path=None)</span>
+<span>def <span class="ident">plot_clusters</span></span>(<span>self, labels, plot_labels: bool = True, path: Union[str, NoneType] = None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Plot the embeddings with labels.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>labels</code></strong> :&ensp;<code>np.array
+</code></dt>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> the clustered labels.</dd>
+<dt><strong><code>plot_labels</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether to plot text of labels or not.</dd>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>the path to save the figure.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def plot_clusters(self, labels, path=None):
+<pre><code class="python">def plot_clusters(self, labels, plot_labels: bool=True, path: Optional[str] = None):
+    &#39;&#39;&#39;Plot the embeddings with labels.
+
+    Parameters
+    ----------
+    labels : np.array     
+        \([N, ]\) the clustered labels.
+    plot_labels : boolean, optional
+        whether to plot text of labels or not.
+    path : str, optional
+        the path to save the figure.
+    &#39;&#39;&#39;  
     if labels is None:
         print(&#39;No clustering labels available!&#39;)
     else:
@@ -800,8 +1191,9 @@ class Inferer(object):
         for i,x in enumerate(np.unique(labels)):
             ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
                 s=8, alpha=0.6, label=str(x))
-            ax.text(np.mean(self.embed_z[labels==x,0]), 
-                    np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
+            if plot_labels:
+                ax.text(np.mean(self.embed_z[labels==x,0]), 
+                        np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
         box = ax.get_position()
         ax.set_position([box.x0, box.y0 + box.height * 0.1,
                          box.width, box.height * 0.9])
@@ -816,30 +1208,41 @@ class Inferer(object):
 </details>
 </dd>
 <dt id="VITAE.inference.Inferer.build_milestone_net"><code class="name flex">
-<span>def <span class="ident">build_milestone_net</span></span>(<span>self, subgraph, init_node)</span>
+<span>def <span class="ident">build_milestone_net</span></span>(<span>self, subgraph, init_node: int)</span>
 </code></dt>
 <dd>
-<div class="desc"><h2 id="args">Args</h2>
-<p>subgraph
-- a connected component of the graph, csr_matrix
-init_node
-- root node</p>
+<div class="desc"><p>Build the milestone network.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>subgraph</code></strong> :&ensp;<code>nx.Graph</code></dt>
+<dd>a connected component of the backbone given the root vertex.</dd>
+<dt><strong><code>init_node</code></strong> :&ensp;<code>int</code></dt>
+<dd>the root vertex.</dd>
+</dl>
 <h2 id="returns">Returns</h2>
-<p>df_subgraph
-- dataframe of milestone network</p></div>
+<dl>
+<dt><strong><code>df_subgraph</code></strong> :&ensp;<code>pd.DataFrame </code></dt>
+<dd>the milestone network.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def build_milestone_net(self, subgraph, init_node):
-    &#39;&#39;&#39;
-    Args:
-        subgraph     - a connected component of the graph, csr_matrix
-        init_node    - root node
-    Returns:
-        df_subgraph  - dataframe of milestone network
-    &#39;&#39;&#39;
+<pre><code class="python">def build_milestone_net(self, subgraph, init_node: int):
+    &#39;&#39;&#39;Build the milestone network.
 
+    Parameters
+    ----------
+    subgraph : nx.Graph
+        a connected component of the backbone given the root vertex.
+    init_node : int
+        the root vertex.
+    
+    Returns
+    ----------
+    df_subgraph : pd.DataFrame 
+        the milestone network.
+    &#39;&#39;&#39;
     if len(subgraph)==1:
         warnings.warn(&#39;Singular node.&#39;)
         return []
@@ -876,15 +1279,45 @@ init_node
 </details>
 </dd>
 <dt id="VITAE.inference.Inferer.comp_pseudotime"><code class="name flex">
-<span>def <span class="ident">comp_pseudotime</span></span>(<span>self, milestone_net, init_node, w)</span>
+<span>def <span class="ident">comp_pseudotime</span></span>(<span>self, milestone_net, init_node: int, w)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Compute pseudotime.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>milestone_net</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>the milestone network.</dd>
+<dt><strong><code>init_node</code></strong> :&ensp;<code>int</code></dt>
+<dd>the root vertex.</dd>
+<dt><strong><code>w</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> the projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>pseudotime</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> the estimated pseudtotime.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def comp_pseudotime(self, milestone_net, init_node, w):
+<pre><code class="python">def comp_pseudotime(self, milestone_net, init_node: int, w):
+    &#39;&#39;&#39;Compute pseudotime.
+
+    Parameters
+    ----------
+    milestone_net : pd.DataFrame
+        the milestone network.
+    init_node : int
+        the root vertex.
+    w : np.array
+        \([N, k]\) the projected \(\\tilde{w}\).
+    
+    Returns
+    ----------
+    pseudotime : np.array
+        \([N, k]\) the estimated pseudtotime.
+    &#39;&#39;&#39;
     pseudotime = - np.ones(w.shape[0])
     pseudotime[w[:,init_node]==1] = 0
     
@@ -900,46 +1333,57 @@ init_node
 </details>
 </dd>
 <dt id="VITAE.inference.Inferer.infer_trajectory"><code class="name flex">
-<span>def <span class="ident">infer_trajectory</span></span>(<span>self, init_node, labels=None, cutoff=None, is_plot=True, path=None)</span>
+<span>def <span class="ident">infer_trajectory</span></span>(<span>self, init_node: int, labels=None, cutoff: Union[float, NoneType] = None, is_plot: bool = True, path: Union[str, NoneType] = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><h2 id="params">Params</h2>
-<p>init_node
-- (int) the initial node for the inferred trajectory.
-labels
-- (numpy.array) labels of cells, used for plotting.
-cutoff
-- (string) threshold for filtering edges with scores less than cutoff.
-is_plot
-- (boolean) if is_plot is True and labels are given, two plots of the
-groupings and the pseudotimes will be displayed; if is_plot is True
-and labels are None, only the plot of pseudotime will be displayed.
-path
-- (string) path to save figure, or don't save if it is None.</p>
+<div class="desc"><p>Infer the trajectory.
+</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>init_node</code></strong> :&ensp;<code>int</code></dt>
+<dd>the initial node for the inferred trajectory.</dd>
+<dt><strong><code>cutoff</code></strong> :&ensp;<code>string</code>, optional</dt>
+<dd>threshold for filtering edges with scores less than cutoff.</dd>
+<dt><strong><code>is_plot</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether to plot or not.</dd>
+<dt><strong><code>path</code></strong> :&ensp;<code>string</code>, optional</dt>
+<dd>path to save figure, or don't save if it is None.</dd>
+</dl>
 <h2 id="returns">Returns</h2>
-<p>G
-- (networkx.Graph) modified graph that indicates the inferred trajectory
-w
-- (numpy.array) modified w_tilde
-pseudotime - (numpy.array) pseudotime based on projected trajectory</p></div>
+<dl>
+<dt><strong><code>G</code></strong> :&ensp;<code>nx.Graph </code></dt>
+<dd>the modified graph that indicates the inferred trajectory.</dd>
+<dt><strong><code>w</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N,k]</span><script type="math/tex">[N,k]</script></span> modified <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</dd>
+<dt><strong><code>pseudotime</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N,]</span><script type="math/tex">[N,]</script></span> pseudotime based on projected trajectory.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def infer_trajectory(self, init_node, labels=None, cutoff=None, is_plot=True, path=None):
-    &#39;&#39;&#39;
-    Params:
-        init_node  - (int) the initial node for the inferred trajectory.
-        labels     - (numpy.array) labels of cells, used for plotting.
-        cutoff     - (string) threshold for filtering edges with scores less than cutoff.
-        is_plot    - (boolean) if is_plot is True and labels are given, two plots of the
-                     groupings and the pseudotimes will be displayed; if is_plot is True
-                     and labels are None, only the plot of pseudotime will be displayed.
-        path       - (string) path to save figure, or don&#39;t save if it is None.
-    Returns:
-        G          - (networkx.Graph) modified graph that indicates the inferred trajectory
-        w          - (numpy.array) modified w_tilde
-        pseudotime - (numpy.array) pseudotime based on projected trajectory
+<pre><code class="python">def infer_trajectory(self, init_node: int, labels = None, cutoff: Optional[float] = None, is_plot: bool = True, path: Optional[str] = None):
+    &#39;&#39;&#39;Infer the trajectory.        
+
+    Parameters
+    ----------
+    init_node : int
+        the initial node for the inferred trajectory.
+    cutoff : string, optional
+        threshold for filtering edges with scores less than cutoff.
+    is_plot : boolean, optional
+        whether to plot or not.
+    path : string, optional  
+        path to save figure, or don&#39;t save if it is None.
+
+    Returns
+    ----------
+    G : nx.Graph 
+        the modified graph that indicates the inferred trajectory.
+    w : np.array
+        \([N,k]\) modified \(\\tilde{w}\).
+    pseudotime : np.array
+        \([N,]\) pseudotime based on projected trajectory.      
     &#39;&#39;&#39;
     # select edges
     if len(self.edges)==0:
@@ -998,7 +1442,7 @@ pseudotime - (numpy.array) pseudotime based on projected trajectory</p></div>
             points = self.embed_z[np.sum(w[:,select_edges[i,:]]&gt;0, axis=-1)==2,:]
             points = points[points[:,0].argsort()]                
             try:
-                x_smooth, y_smooth = get_smooth_curve(
+                x_smooth, y_smooth = _get_smooth_curve(
                     points, 
                     self.embed_mu[select_edges[i,:], :]
                     )

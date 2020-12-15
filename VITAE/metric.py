@@ -13,6 +13,20 @@ from numba import jit, float32
 
 
 def topology(G_true, G_pred):
+    '''Evaulate topology metrics.
+
+    Parameters
+    ----------
+    G_true : nx.Graph
+        the reference graph.
+    G_pred : nx.Graph
+        the estimated graph.
+    
+    Returns:
+    ----------
+    res : dict
+        a dict containing evaulation results.
+    '''     
     res = {}
     
     # 1. Isomorphism with same initial node
@@ -50,19 +64,21 @@ def topology(G_true, G_pred):
 
 
 def IM_dist(G1, G2):
-    '''
-    The Ipsen-Mikailov distance is a global (spectral) metric, 
+    '''The Ipsen-Mikailov distance is a global (spectral) metric, 
     corresponding to the square-root of the squared difference of the
     Laplacian spectrum for each graph.
 
     Implementation adapt from
     https://netrd.readthedocs.io/en/latest/_modules/netrd/distance/hamming_ipsen_mikhailov.html
 
-    Params:
-        G1 - networkx.Graph
-        G2 - networkx.Graph
+    Parameters
+    ----------
+    G1 : nx.Graph
+    G2 : nx.Graph
+
     Returns:
-        IM(G1,G2)
+    ----------
+    IM(G1,G2)
     '''
     adj1 = nx.to_numpy_array(G1)
     adj2 = nx.to_numpy_array(G2)
@@ -107,10 +123,14 @@ def _rand_index(true, pred):
 
 
 def get_GRI(true, pred):
-    '''
-    Params:
-        ture - [n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping
-        pred - [n_samples, n_cluster_2] for estimated proportions
+    '''Compute the GRI.
+
+    Parameters
+    ----------
+    ture : np.array
+        [n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping
+    pred : np.array
+        [n_samples, n_cluster_2] for estimated proportions
     '''
     if len(true)!=len(pred):
         raise ValueError('Inputs should have same lengths!')
