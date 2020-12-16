@@ -170,9 +170,9 @@ def train(train_dataset, test_dataset, vae,
     loss_neg_E_nb = tf.keras.metrics.Mean()
     loss_neg_E_pz = tf.keras.metrics.Mean()
     loss_E_qzx = tf.keras.metrics.Mean()
-    early_stopping = Early_Stopping(patience = early_stopping_patience, tolerance = early_stopping_tolerance, warmup=early_stopping_warmup)
+    early_stopping = Early_Stopping(patience = early_stopping_patience, tolerance = early_stopping_tolerance, early_stopping_warmup=early_stopping_warmup)
 
-    print('Warmup:%d'%warmup)
+    print('Warmup:%d'%early_stopping_warmup)
     weight = np.array([1,beta,beta], dtype=np.float32)
     weight = tf.convert_to_tensor(weight)
     
@@ -182,7 +182,7 @@ def train(train_dataset, test_dataset, vae,
         
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
-            if epoch<warmup:
+            if epoch<early_stopping_warmup:
                 with tf.GradientTape() as tape:
                     losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha)
                     # Compute reconstruction loss
