@@ -170,7 +170,7 @@ def train(train_dataset, test_dataset, vae,
     loss_neg_E_nb = tf.keras.metrics.Mean()
     loss_neg_E_pz = tf.keras.metrics.Mean()
     loss_E_qzx = tf.keras.metrics.Mean()
-    early_stopping = Early_Stopping(patience = early_stopping_patience, tolerance = early_stopping_tolerance, early_stopping_warmup=early_stopping_warmup)
+    early_stopping = Early_Stopping(patience = early_stopping_patience, tolerance = early_stopping_tolerance, warmup=early_stopping_warmup)
 
     print('Warmup:%d'%early_stopping_warmup)
     weight = np.array([1,beta,beta], dtype=np.float32)
