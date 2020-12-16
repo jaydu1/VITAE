@@ -185,7 +185,7 @@ class Inferer(object):
         self.embed_mu = embed[-self.NUM_CLUSTER:,:]
         return self.embed_z.copy()    
         
-    def plot_clusters(self, labels, plot_labels: bool=True, path: Optional[str] = None):
+    def plot_clusters(self, labels, plot_labels: bool=False, path: Optional[str] = None):
         '''Plot the embeddings with labels.
 
         Parameters

@@ -438,7 +438,7 @@ class VITAE():
         
         
     def comp_inference_score(self, method: str = 'modified_map', thres = 0.5, 
-            no_loop: bool = False, is_plot: bool = True, path: Optional[str] = None):
+            no_loop: bool = False, is_plot: bool = True, plot_labels: bool = True, path: Optional[str] = None):
         ''' Compute edge scores.
 
         Parameters
@@ -451,6 +451,8 @@ class VITAE():
             if loops are allowed to exist in the graph.
         is_plot : boolean, optional  
             whether to plot or not.
+        plot_labels : boolean, optional  
+            whether to plot label names or not, only used when `is_plot=True`.
         path : string, optional
             path to save figure, or don't save if it is None.
         
@@ -461,7 +463,7 @@ class VITAE():
         '''
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
         if is_plot:
-            self.inferer.plot_clusters(self.cluster_labels, path=path)
+            self.inferer.plot_clusters(self.cluster_labels, plot_labels=plot_labels, path=path)
         return G
         
         
