@@ -11,11 +11,11 @@ We provide some example notebooks. You could start working with VITAE on [*tutor
 
 notebook | system | details | reference
 ---|---|---|---
-[*tutorial\_dentate*](https://github.com/jaydu1/VITAE/blob/master/tutorials/tutorial_dentate.ipynb) | neurons | 3585 cells and 2182 genes, 10x Genomics | [Hochgerner *et al.* (2018)](https://www.nature.com/articles/s41593-017-0056-2)
-[*tutorial\_mouse\_brain*](https://github.com/jaydu1/VITAE/blob/master/tutorials/tutorial_mouse_brain.ipynb) | neurons | 16651 cells and 14707 genes | [Yuzwa *et al.* (2017)](https://www.cell.com/cell-reports/comments/S2211-1247(17)31813-2), Ruan *et al.* (2020+)
+[*tutorial\_dentate*](https://github.com/jaydu1/VITAE/blob/master/tutorials/tutorial_dentate.ipynb) | neurons | 3585 cells and 2182 genes, 10x Genomics | [Hochgerner *et al.* (2018)](https://doi.org/10.1038/s41593-017-0056-2)
+[*tutorial\_mouse\_brain*](https://github.com/jaydu1/VITAE/blob/master/tutorials/tutorial_mouse_brain.ipynb) | neurons | 16651 cells and 14707 genes | [Yuzwa *et al.* (2017)](https://doi.org/10.1016/j.celrep.2017.12.017),<br> Ruan *et al.* (2020+)
 
 
-[Documents](https://jaydu1.github.io/VITAE/) of the package are aviavable.
+[Datasets](https://jaydu1.github.io/VITAE/data/README.md) and [Documents](https://jaydu1.github.io/VITAE/) are availble.
 
 ## Dependency
 
