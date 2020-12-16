@@ -214,7 +214,7 @@ class Inferer(object):
         self.embed_mu = embed[-self.NUM_CLUSTER:,:]
         return self.embed_z.copy()    
         
-    def plot_clusters(self, labels, plot_labels: bool=True, path: Optional[str] = None):
+    def plot_clusters(self, labels, plot_labels: bool=False, path: Optional[str] = None):
         &#39;&#39;&#39;Plot the embeddings with labels.
 
         Parameters
@@ -656,7 +656,7 @@ class Inferer(object):
         self.embed_mu = embed[-self.NUM_CLUSTER:,:]
         return self.embed_z.copy()    
         
-    def plot_clusters(self, labels, plot_labels: bool=True, path: Optional[str] = None):
+    def plot_clusters(self, labels, plot_labels: bool=False, path: Optional[str] = None):
         &#39;&#39;&#39;Plot the embeddings with labels.
 
         Parameters
@@ -1151,7 +1151,7 @@ edges : np.array
 </details>
 </dd>
 <dt id="VITAE.inference.Inferer.plot_clusters"><code class="name flex">
-<span>def <span class="ident">plot_clusters</span></span>(<span>self, labels, plot_labels: bool = True, path: Union[str, NoneType] = None)</span>
+<span>def <span class="ident">plot_clusters</span></span>(<span>self, labels, plot_labels: bool = False, path: Union[str, NoneType] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Plot the embeddings with labels.</p>
@@ -1169,7 +1169,7 @@ edges : np.array
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def plot_clusters(self, labels, plot_labels: bool=True, path: Optional[str] = None):
+<pre><code class="python">def plot_clusters(self, labels, plot_labels: bool=False, path: Optional[str] = None):
     &#39;&#39;&#39;Plot the embeddings with labels.
 
     Parameters

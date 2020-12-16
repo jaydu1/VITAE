@@ -506,7 +506,7 @@ __status__ = &#34;Development&#34;</code></pre>
         
         
     def comp_inference_score(self, method: str = &#39;modified_map&#39;, thres = 0.5, 
-            no_loop: bool = False, is_plot: bool = True, path: Optional[str] = None):
+            no_loop: bool = False, is_plot: bool = True, plot_labels: bool = True, path: Optional[str] = None):
         &#39;&#39;&#39; Compute edge scores.
 
         Parameters
@@ -519,6 +519,8 @@ __status__ = &#34;Development&#34;</code></pre>
             if loops are allowed to exist in the graph.
         is_plot : boolean, optional  
             whether to plot or not.
+        plot_labels : boolean, optional  
+            whether to plot label names or not, only used when `is_plot=True`.
         path : string, optional
             path to save figure, or don&#39;t save if it is None.
         
@@ -529,7 +531,7 @@ __status__ = &#34;Development&#34;</code></pre>
         &#39;&#39;&#39;
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
         if is_plot:
-            self.inferer.plot_clusters(self.cluster_labels, path=path)
+            self.inferer.plot_clusters(self.cluster_labels, plot_labels=plot_labels, path=path)
         return G
         
         
@@ -1410,7 +1412,7 @@ cluster labels.</dd>
 </details>
 </dd>
 <dt id="VITAE.VITAE.comp_inference_score"><code class="name flex">
-<span>def <span class="ident">comp_inference_score</span></span>(<span>self, method: str = 'modified_map', thres=0.5, no_loop: bool = False, is_plot: bool = True, path: Union[str, NoneType] = None)</span>
+<span>def <span class="ident">comp_inference_score</span></span>(<span>self, method: str = 'modified_map', thres=0.5, no_loop: bool = False, is_plot: bool = True, plot_labels: bool = True, path: Union[str, NoneType] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Compute edge scores.</p>
@@ -1424,6 +1426,8 @@ cluster labels.</dd>
 <dd>if loops are allowed to exist in the graph.</dd>
 <dt><strong><code>is_plot</code></strong> :&ensp;<code>boolean</code>, optional</dt>
 <dd>whether to plot or not.</dd>
+<dt><strong><code>plot_labels</code></strong> :&ensp;<code>boolean</code>, optional</dt>
+<dd>whether to plot label names or not, only used when <code>is_plot=True</code>.</dd>
 <dt><strong><code>path</code></strong> :&ensp;<code>string</code>, optional</dt>
 <dd>path to save figure, or don't save if it is None.</dd>
 </dl>
@@ -1437,7 +1441,7 @@ cluster labels.</dd>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def comp_inference_score(self, method: str = &#39;modified_map&#39;, thres = 0.5, 
-        no_loop: bool = False, is_plot: bool = True, path: Optional[str] = None):
+        no_loop: bool = False, is_plot: bool = True, plot_labels: bool = True, path: Optional[str] = None):
     &#39;&#39;&#39; Compute edge scores.
 
     Parameters
@@ -1450,6 +1454,8 @@ cluster labels.</dd>
         if loops are allowed to exist in the graph.
     is_plot : boolean, optional  
         whether to plot or not.
+    plot_labels : boolean, optional  
+        whether to plot label names or not, only used when `is_plot=True`.
     path : string, optional
         path to save figure, or don&#39;t save if it is None.
     
@@ -1460,7 +1466,7 @@ cluster labels.</dd>
     &#39;&#39;&#39;
     G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
     if is_plot:
-        self.inferer.plot_clusters(self.cluster_labels, path=path)
+        self.inferer.plot_clusters(self.cluster_labels, plot_labels=plot_labels, path=path)
     return G</code></pre>
 </details>
 </dd>
