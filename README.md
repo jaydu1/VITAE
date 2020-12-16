@@ -15,7 +15,7 @@ notebook | system | details | reference
 [*tutorial\_mouse\_brain*](https://github.com/jaydu1/VITAE/blob/master/tutorials/tutorial_mouse_brain.ipynb) | neurons | 16651 cells and 14707 genes | [Yuzwa *et al.* (2017)](https://doi.org/10.1016/j.celrep.2017.12.017),<br> Ruan *et al.* (2020+)
 
 
-[Datasets](https://jaydu1.github.io/VITAE/data/README.md) and [Documents](https://jaydu1.github.io/VITAE/) are availble.
+[Datasets](https://github.com/jaydu1/VITAE/tree/master/data) and [Documents](https://jaydu1.github.io/VITAE/) are availble.
 
 ## Dependency
 
