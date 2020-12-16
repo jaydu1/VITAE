@@ -1,6 +1,6 @@
 [![Python](https://raw.githubusercontent.com/jaydu1/VITAE/master/docs/img/badge_python.svg)](https://www.python.org/)
 [![PyPI](https://raw.githubusercontent.com/jaydu1/VITAE/master/docs/img/badge_pypi.svg)](https://pypi.org/project/pyvitae/)
-[![PyPI](https://raw.githubusercontent.com/jaydu1/VITAE/master/docs/img/badge_docs.svg)](https://jaydu1.github.io/VITAE/)
+[![docs](https://raw.githubusercontent.com/jaydu1/VITAE/master/docs/img/badge_docs.svg)](https://jaydu1.github.io/VITAE/)
 
 
 # Model-based Trajectory Inference for Single-Cell RNA Sequencing Using Deep Learning with a Mixture Prior
