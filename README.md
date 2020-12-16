@@ -15,7 +15,7 @@ notebook | system | details | reference
 [*tutorial\_mouse\_brain*](https://github.com/jaydu1/VITAE/blob/master/tutorials/tutorial_mouse_brain.ipynb) | neurons | 16651 cells and 14707 genes | [Yuzwa *et al.* (2017)](https://www.cell.com/cell-reports/comments/S2211-1247(17)31813-2), Ruan *et al.* (2020+)
 
 
-[Documents](https://jaydu1.github.io/VITAE/) of the package is aviavable.
+[Documents](https://jaydu1.github.io/VITAE/) of the package are aviavable.
 
 ## Dependency
 
