@@ -134,6 +134,9 @@ class VITAE():
             False if self.c_score is None else True
             )
         
+        if hasattr(self, 'inferer'):
+            delattr(self, 'inferer')
+            
 
     def save_model(self, path_to_file: str = 'model.checkpoint'):
         '''Saving model weights.
