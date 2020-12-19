@@ -103,8 +103,8 @@ __status__ = &#34;Development&#34;</code></pre>
             \([N, G]\) counts or expressions data.
         adata : AnnData, optional
             a scanpy object.      
-        covariate : np array
-            \([N, s]\) covariate data..
+        covariate : np.array, optional
+            \([N, s]\) covariate data.
         labels : np.array, optional
             \([N,]\) a list of labelss for cells.
         cell_names : np.array, optional
@@ -202,6 +202,9 @@ __status__ = &#34;Development&#34;</code></pre>
             False if self.c_score is None else True
             )
         
+        if hasattr(self, &#39;inferer&#39;):
+            delattr(self, &#39;inferer&#39;)
+            
 
     def save_model(self, path_to_file: str = &#39;model.checkpoint&#39;):
         &#39;&#39;&#39;Saving model weights.
@@ -750,8 +753,8 @@ __status__ = &#34;Development&#34;</code></pre>
 <dd><span><span class="MathJax_Preview">[N, G]</span><script type="math/tex">[N, G]</script></span> counts or expressions data.</dd>
 <dt><strong><code>adata</code></strong> :&ensp;<code>AnnData</code>, optional</dt>
 <dd>a scanpy object.</dd>
-<dt><strong><code>covariate</code></strong> :&ensp;<code>np array</code></dt>
-<dd><span><span class="MathJax_Preview">[N, s]</span><script type="math/tex">[N, s]</script></span> covariate data..</dd>
+<dt><strong><code>covariate</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd><span><span class="MathJax_Preview">[N, s]</span><script type="math/tex">[N, s]</script></span> covariate data.</dd>
 <dt><strong><code>labels</code></strong> :&ensp;<code>np.array</code>, optional</dt>
 <dd><span><span class="MathJax_Preview">[N,]</span><script type="math/tex">[N,]</script></span> a list of labelss for cells.</dd>
 <dt><strong><code>cell_names</code></strong> :&ensp;<code>np.array</code>, optional</dt>
@@ -773,8 +776,8 @@ __status__ = &#34;Development&#34;</code></pre>
         \([N, G]\) counts or expressions data.
     adata : AnnData, optional
         a scanpy object.      
-    covariate : np array
-        \([N, s]\) covariate data..
+    covariate : np.array, optional
+        \([N, s]\) covariate data.
     labels : np.array, optional
         \([N,]\) a list of labelss for cells.
     cell_names : np.array, optional
@@ -911,7 +914,10 @@ __status__ = &#34;Development&#34;</code></pre>
         self.dim_origin, self.dimensions,
         self.dim_latent, self.data_type,
         False if self.c_score is None else True
-        )</code></pre>
+        )
+    
+    if hasattr(self, &#39;inferer&#39;):
+        delattr(self, &#39;inferer&#39;)</code></pre>
 </details>
 </dd>
 <dt id="VITAE.VITAE.save_model"><code class="name flex">

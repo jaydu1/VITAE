@@ -35,8 +35,8 @@ class VITAE():
             \([N, G]\) counts or expressions data.
         adata : AnnData, optional
             a scanpy object.      
-        covariate : np array
-            \([N, s]\) covariate data..
+        covariate : np.array, optional
+            \([N, s]\) covariate data.
         labels : np.array, optional
             \([N,]\) a list of labelss for cells.
         cell_names : np.array, optional
