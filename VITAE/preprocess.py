@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Optional
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,16 +17,16 @@ def log_norm(x, K = 1e4):
     Parameters
     ----------
     x : np.array
-        \([N, G^{raw}]\) the raw count data.
+        \([N, G^{raw}]\) The raw count data.
     K : float, optional
-        the normalizing constant.
+        The normalizing constant.
 
     Returns
     ----------
     x_normalized : np.array
-        \([N, G^{raw}]\) the log-normalized data.
+        \([N, G^{raw}]\) The log-normalized data.
     scale_factor : np.array
-        \([N, ]\) the scale factors.
+        \([N, ]\) The scale factors.
     '''          
     scale_factor = np.sum(x,axis=1, keepdims=True)/K
     x_normalized = np.log(x/scale_factor + 1)
@@ -42,16 +43,16 @@ def feature_select(x, gene_num = 2000):
     Parameters
     ----------
     x : np.array
-        \([N, G^{raw}]\) the raw count data.
+        \([N, G^{raw}]\) The raw count data.
     gene_num : int, optional
-        the number of genes to retain.
+        The number of genes to retain.
 
     Returns
     ----------
     x : np.array
-        \([N, G]\) the count data after gene selection.
+        \([N, G]\) The count data after gene selection.
     index : np.array
-        \([G, ]\) the selected index of genes.
+        \([G, ]\) The selected index of genes.
     '''     
     
 
@@ -89,63 +90,64 @@ def feature_select(x, gene_num = 2000):
     return x[:, index], index
 
 
-def preprocess(adata, processed, dimred, x, c, label_names, raw_cell_names,
-               raw_gene_names, data_type, K = 1e4, gene_num = 2000,  npc = 64):
+def preprocess(adata = None, processed = None, dimred: bool = None, 
+            x = None, c = None, label_names = None, raw_cell_names = None, raw_gene_names = None,  
+            K: float = 1e4, gene_num: int = 2000, data_type: str = 'UMI', npc: int = 64):
     '''Preprocess count data.
 
     Parameters
     ----------
-    adata : AnnData
-        a scanpy object.
+    adata : AnnData, optional
+        The scanpy object.
     processed : boolean
-        whether adata has been processed.
+        Whether adata has been processed.
     dimred : boolean
-        whether the processed adata is after dimension reduction.
-    x : np.array
-        \([N^{raw}, G^{raw}]\) raw count matrix.
+        Whether the processed adata is after dimension reduction.
+    x : np.array, optional
+        \([N^{raw}, G^{raw}]\) The raw count matrix.
     c : np.array
-        \([N^{raw}, s]\) covariate matrix.
+        \([N^{raw}, s]\) The covariate matrix.
     label_names : np.array 
-        \([N^{raw}, ]\) true or estimated cell types.
+        \([N^{raw}, ]\) The true or estimated cell types.
     raw_cell_names : np.array  
-        \([N^{raw}, ]\) the names of cells.
+        \([N^{raw}, ]\) The names of cells.
     raw_gene_names : np.array
-        \([G^{raw}, ]\) the names of genes.
+        \([G^{raw}, ]\) The names of genes.
     K : int, optional
-        the normalizing constant.
+        The normalizing constant.
     gene_num : int, optional
-        the number of genes to retain.
+        The number of genes to retain.
     data_type : str, optional
         'UMI', 'non-UMI', or 'Gaussian'.
     npc : int, optional
-        the number of PCs to retain, only used if `data_type='Gaussian'`.
+        The number of PCs to retain, only used if `data_type='Gaussian'`.
 
     Returns
     ----------
     x_normalized : np.array
-        \([N, G]\) the preprocessed matrix.
+        \([N, G]\) The preprocessed matrix.
     expression : np.array
-        \([N, G^{raw}]\) the expression matrix after log-normalization and before scaling.
+        \([N, G^{raw}]\) The expression matrix after log-normalization and before scaling.
     x : np.array
-        \([N, G]\) the raw count matrix after gene selections.
+        \([N, G]\) The raw count matrix after gene selections.
     c : np.array
-        \([N, s]\) the covariates.
+        \([N, s]\) The covariates.
     cell_names : np.array
-        \([N, ]\) the cell names.
+        \([N, ]\) The cell names.
     gene_names : np.array
-        \([G^{raw}, ]\) the gene names.
+        \([G^{raw}, ]\) The gene names.
     selected_gene_names : 
-        \([G, ]\) the selected gene names.
+        \([G, ]\) The selected gene names.
     scale_factor : 
-        \([N, ]\) the scale factors.
+        \([N, ]\) The scale factors.
     labels : np.array
-        \([N, ]\) the encoded labels.
+        \([N, ]\) The encoded labels.
     label_names : np.array
-        \([N, ]\) the label names.
+        \([N, ]\) The label names.
     le : sklearn.preprocessing.LabelEncoder
-        the label encoder.
+        The label encoder.
     gene_scalar : sklearn.preprocessing.StandardScaler
-        the gene scaler.
+        The gene scaler.
     '''
     # if input is a scanpy data
     if adata is not None:

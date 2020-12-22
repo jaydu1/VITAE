@@ -92,16 +92,16 @@ def get_embedding(z, dimred='umap', **kwargs):
     Parameters
     ----------
     z : np.array
-        \([N, d]\) latent variables.
+        \([N, d]\) The latent variables.
     dimred : str, optional
         'pca', 'tsne', or umap'.      
     **kwargs :  
-        extra key-value arguments for dimension reduction algorithms.  
+        Extra key-value arguments for dimension reduction algorithms.  
 
     Returns:
     ----------
     embed : np.array
-        \([N, 2]\) latent variables after dimension reduction.
+        \([N, 2]\) The latent variables after dimension reduction.
     '''
     if dimred=='umap':
         # umap has some bugs that it may change the original matrix when doing transform
@@ -123,13 +123,13 @@ def get_igraph(z, random_state=0):
     Parameters
     ----------
     z : np.array
-        \([N, d]\) latent variables.
+        \([N, d]\) The latent variables.
     random_state : int, optional
-        the random state.
+        The random state.
     Returns:
     ----------
     g : igraph
-        the igraph object of connectivities.      
+        The igraph object of connectivities.      
     '''    
     # Find knn
     n_neighbors = 15
@@ -170,16 +170,16 @@ def louvain_igraph(g, res, random_state=0):
     Parameters
     ----------
     g : igraph
-        the igraph object of connectivities.
+        The igraph object of connectivities.
     res : float
-        the resolution parameter for Louvain clustering.
+        The resolution parameter for Louvain clustering.
     random_state : int, optional
-        the random state.      
+        The random state.      
 
     Returns
     ----------
     labels : np.array     
-        \([N, ]\) the clustered labels.
+        \([N, ]\) The clustered labels.
     '''
     # Louvain
     partition_kwargs = {}
@@ -200,13 +200,13 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
     Parameters
     ----------
     embed_z : np.array
-        \([N, 2]\) latent variables after dimension reduction.
+        \([N, 2]\) The latent variables after dimension reduction.
     labels : np.array     
-        \([N, ]\) the clustered labels.
+        \([N, ]\) The clustered labels.
     plot_labels : boolean, optional
-        whether to plot text of labels or not.
+        Whether to plot text of labels or not.
     path : str, optional
-        the path to save the figure.
+        The path to save the figure.
     '''    
     n_labels = len(np.unique(labels))
     colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
@@ -236,13 +236,13 @@ def plot_marker_gene(expression, gene_name, embed_z, path=None):
     Parameters
     ----------
     expression : np.array
-        \([N, ]\) the expression of the marker gene.
+        \([N, ]\) The expression of the marker gene.
     gene_name : str
-        the name of the marker gene.
+        The name of the marker gene.
     embed_z : np.array
-        \([N, 2]\) latent variables after dimension reduction.
+        \([N, 2]\) The latent variables after dimension reduction.
     path : str, optional
-        the path to save the figure.
+        The path to save the figure.
     '''      
     fig, ax = plt.subplots(1,1, figsize=(20, 10))
     cmap = matplotlib.cm.get_cmap('Reds')
@@ -340,14 +340,14 @@ def load_data(path, file_name):
     Parameters
     ----------
     path : str
-        the path of the h5 files.
+        The path of the h5 files.
     file_name : str
-        the dataset name.
+        The dataset name.
     
     Returns:
     ----------
     data : dict
-        a dict containing count, grouping, etc. of the dataset.
+        The dict containing count, grouping, etc. of the dataset.
     '''     
     data = {}
     

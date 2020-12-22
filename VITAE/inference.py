@@ -23,7 +23,7 @@ class Inferer(object):
         Parameters
         ----------
         NUM_CLUSTER : int
-            the number of vertices in the latent space.
+            The number of vertices in the latent space.
         '''        
         self.NUM_CLUSTER = NUM_CLUSTER
         self.NUM_STATE = int(NUM_CLUSTER*(NUM_CLUSTER+1)/2)
@@ -39,16 +39,16 @@ class Inferer(object):
         Parameters
         ----------
         pc_x : np.array
-            \([N, K]\) the estimated \(p(c_i|Y_i,X_i)\).        
+            \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).        
         method : string, optional
             'mean', 'modified_mean', 'map', or 'modified_map'.
         thres : float, optional 
-            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.
+            The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.
 
         Retruns
         ----------
         G : nx.Graph
-            the graph of edge scores.
+            The graph of edge scores.
         '''
         graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER))
         if method=='mean':
@@ -91,16 +91,16 @@ class Inferer(object):
         Parameters
         ----------
         w_tilde : np.array
-            \([N, k]\) the estimated \(\\tilde{w}\).        
+            \([N, k]\) The estimated \(\\tilde{w}\).        
         edges : np.array
             \([|\\mathcal{E}(\\widehat{\\mathcal{B}})|, 2]\).
         thres : float, optional 
-            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.
+            The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.
 
         Retruns
         ----------
         w : np.array
-            the projected \(\\tilde{w}\).
+            The projected \(\\tilde{w}\).
         '''
         w = np.zeros_like(w_tilde)
         
@@ -130,22 +130,22 @@ class Inferer(object):
         Parameters
         ----------
         w_tilde : np.array
-            \([N, k]\) the estimated \(\\tilde{w}\).        
+            \([N, k]\) The estimated \(\\tilde{w}\).        
         pc_x : np.array
-            \([N, K]\) the estimated \(p(c_i|Y_i,X_i)\).  
+            \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).  
         method : string, optional
             'mean', 'modified_mean', 'map', or 'modified_map'.
         thres : float, optional 
-            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.    
+            The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.    
         no_loop : boolean, optional 
-            if loops are allowed to exist in the graph.
+            if loops are allowed to exist in The graph.
 
         Retruns
         ----------
         G : np.array
-            the estimated backbone \(\\widehat{\\mathcal{B}}\).
+            The estimated backbone \(\\widehat{\\mathcal{B}}\).
         edges : np.array
-            \(|\\mathcal{E}(\\widehat{\\mathcal{B}})|,2\) the edges in the estimated backbone.
+            \(|\\mathcal{E}(\\widehat{\\mathcal{B}})|,2\) The edges in the estimated backbone.
         '''
         self.no_loop = no_loop
         self.w_tilde = w_tilde
@@ -164,13 +164,13 @@ class Inferer(object):
         Parameters
         ----------
         z : np.array
-            \([N,d]\) the latent means.
+            \([N,d]\) The latent means.
         mu : np.array
-            \([d,k]\) the value of initial \(\\mu\).
+            \([d,k]\) The value of initial \(\\mu\).
         dimred : str, optional 
-            the name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
+            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
         **kwargs : 
-            extra key-value arguments for dimension reduction algorithms.   
+            Extra key-value arguments for dimension reduction algorithms.   
 
         Retruns
         ----------
@@ -191,11 +191,11 @@ class Inferer(object):
         Parameters
         ----------
         labels : np.array     
-            \([N, ]\) the clustered labels.
+            \([N, ]\) The clustered labels.
         plot_labels : boolean, optional
-            whether to plot text of labels or not.
+            Whether to plot text of labels or not.
         path : str, optional
-            the path to save the figure.
+            The path to save the figure.
         '''  
         if labels is None:
             print('No clustering labels available!')
@@ -228,14 +228,14 @@ class Inferer(object):
         Parameters
         ----------
         subgraph : nx.Graph
-            a connected component of the backbone given the root vertex.
+            The connected component of the backbone given the root vertex.
         init_node : int
-            the root vertex.
+            The root vertex.
         
         Returns
         ----------
         df_subgraph : pd.DataFrame 
-            the milestone network.
+            The milestone network.
         '''
         if len(subgraph)==1:
             warnings.warn('Singular node.')
@@ -277,16 +277,16 @@ class Inferer(object):
         Parameters
         ----------
         milestone_net : pd.DataFrame
-            the milestone network.
+            The milestone network.
         init_node : int
-            the root vertex.
+            The root vertex.
         w : np.array
-            \([N, k]\) the projected \(\\tilde{w}\).
+            \([N, k]\) The projected \(\\tilde{w}\).
         
         Returns
         ----------
         pseudotime : np.array
-            \([N, k]\) the estimated pseudtotime.
+            \([N, k]\) The estimated pseudtotime.
         '''
         pseudotime = - np.ones(w.shape[0])
         pseudotime[w[:,init_node]==1] = 0
@@ -308,22 +308,22 @@ class Inferer(object):
         Parameters
         ----------
         init_node : int
-            the initial node for the inferred trajectory.
+            The initial node for the inferred trajectory.
         cutoff : string, optional
-            threshold for filtering edges with scores less than cutoff.
+            The threshold for filtering edges with scores less than cutoff.
         is_plot : boolean, optional
-            whether to plot or not.
+            Whether to plot or not.
         path : string, optional  
-            path to save figure, or don't save if it is None.
+            The path to save figure, or don't save if it is None.
 
         Returns
         ----------
         G : nx.Graph 
-            the modified graph that indicates the inferred trajectory.
+            The modified graph that indicates the inferred trajectory.
         w : np.array
-            \([N,k]\) modified \(\\tilde{w}\).
+            \([N,k]\) The modified \(\\tilde{w}\).
         pseudotime : np.array
-            \([N,]\) pseudotime based on projected trajectory.      
+            \([N,]\) The pseudotime based on projected trajectory.      
         '''
         # select edges
         if len(self.edges)==0:

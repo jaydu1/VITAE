@@ -105,7 +105,7 @@ class VITAE():
             self.raw_label_names,
             self.raw_cell_names,
             self.raw_gene_names,
-            data_type, K, gene_num, npc)
+            K, gene_num, data_type, npc)
         self.dim_origin = self.X.shape[1]
         self.selected_cell_subset = self.cell_names
         self.selected_cell_subset_id = np.arange(len(self.cell_names))

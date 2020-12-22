@@ -18,11 +18,11 @@ def topology(G_true, G_pred):
     Parameters
     ----------
     G_true : nx.Graph
-        the reference graph.
+        The reference graph.
     G_pred : nx.Graph
-        the estimated graph.
+        The estimated graph.
     
-    Returns:
+    Returns
     ----------
     res : dict
         a dict containing evaulation results.
@@ -76,9 +76,10 @@ def IM_dist(G1, G2):
     G1 : nx.Graph
     G2 : nx.Graph
 
-    Returns:
+    Returns
     ----------
-    IM(G1,G2)
+    IM(G1,G2) : float
+        The IM distance between G1 and G2.
     '''
     adj1 = nx.to_numpy_array(G1)
     adj2 = nx.to_numpy_array(G2)
@@ -130,7 +131,12 @@ def get_GRI(true, pred):
     ture : np.array
         [n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping
     pred : np.array
-        [n_samples, n_cluster_2] for estimated proportions
+        [n_samples, n_cluster_2] for estimated proportions or [n_samples, ] for grouping
+
+    Returns
+    ----------
+    GRI : float
+        The GRI of two groups of proportions in the trajectories.
     '''
     if len(true)!=len(pred):
         raise ValueError('Inputs should have same lengths!')
