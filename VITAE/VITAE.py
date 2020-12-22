@@ -10,7 +10,7 @@ from VITAE.utils import load_data, get_embedding, get_igraph, louvain_igraph, pl
 from VITAE.metric import topology, get_GRI
 
 from sklearn.metrics.cluster import adjusted_rand_score
-from scipy.spatial.distance import pdist as dist
+from sklearn.model_selection import train_test_split
 import umap
 import numpy as np
 import scipy as sp
@@ -32,17 +32,17 @@ class VITAE():
         Parameters
         ----------
         X : np.array, optional
-            \([N, G]\) counts or expressions data.
+            \([N, G]\) The counts or expressions data.
         adata : AnnData, optional
-            a scanpy object.      
+            The scanpy object.      
         covariate : np.array, optional
-            \([N, s]\) covariate data.
+            \([N, s]\) The covariate data.
         labels : np.array, optional
-            \([N,]\) a list of labelss for cells.
+            \([N,]\) The list of labelss for cells.
         cell_names : np.array, optional
-            \([N,]\) a list of cell names.
+            \([N,]\) The list of cell names.
         gene_names : np.array, optional
-            \([N,]\) a list of gene names.
+            \([N,]\) The list of gene names.
         '''
         if adata is None and X is None:
             raise ValueError("Either X or adata should be given!")
@@ -72,17 +72,17 @@ class VITAE():
         Parameters
         ----------
         processed : boolean, optional
-            whether adata has been processed.
+            Whether adata has been processed.
         dimred : boolean, optional
-            whether the processed adata is after dimension reduction.
+            Whether the processed adata is after dimension reduction.
         K : float, optional              
-            the constant summing gene expression in each cell up to.
+            The constant summing gene expression in each cell up to.
         gene_num : int, optional
-            number of feature to select.
+            The number of feature to select.
         data_type : str, optional
             'UMI', 'non-UMI' and 'Gaussian', default is 'UMI'. If the input is a processed scanpy object, data type is set to Gaussian.
         npc : int, optional
-            the number of PCs to retain.
+            The number of PCs to retain.
         '''
         if data_type not in set(['UMI', 'non-UMI', 'Gaussian']):
             raise ValueError("Invalid data type, must be one of 'UMI', 'non-UMI', and 'Gaussian'.")
@@ -121,9 +121,9 @@ class VITAE():
         Parameters
         ----------
         dimensions : list, optional
-            a list of dimensions of layers of autoencoder between latent space and original space.
+            The list of dimensions of layers of autoencoder between latent space and original space.
         dim_latent : int, optional
-            dimension of latent space.
+            The dimension of latent space.
         '''
         self.dimensions = dimensions
         self.dim_latent = dim_latent
@@ -144,7 +144,7 @@ class VITAE():
         Parameters
         ----------
         path_to_file : str, optional
-            path to weight files of pre-trained or trained model           
+            The path to weight files of pre-trained or trained model           
         '''
         self.vae.save_weights(path_to_file)
         if hasattr(self, 'cluster_labels') and self.cluster_labels is not None:
@@ -169,9 +169,9 @@ class VITAE():
         Parameters
         ----------
         path_to_file : str, optional 
-            path to weight files of pre trained or trained model
+            The path to weight files of pre trained or trained model
         load_labels : boolean, optional
-            whether to load clustering labels or not.
+            Whether to load clustering labels or not.
             If load_labels is True, then the LatentSpace layer will be initialized basd on the model. 
             If load_labels is False, then the LatentSpace layer will not be initialized.
         ''' 
@@ -204,7 +204,8 @@ class VITAE():
         self.vae.load_weights(path_to_file)
 
 
-    def pre_train(self, learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.01,
+    def pre_train(self, stratify = False, test_size = 0.1, random_state: int = 0,
+            learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.01,
             num_epoch: int = 300, num_step_per_epoch: Optional[int] = None,
             early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 0, 
             path_to_weights: Optional[str] = None):
@@ -212,38 +213,58 @@ class VITAE():
 
         Parameters
         ----------
+        stratify : np.array, None, or False
+            If an array is provided, or `stratify=None` and `self.labels` is available, then they will be used to perform stratified shuffle splitting. Otherwise, general shuffle splitting is used. Set to `False` if `self.labels` is not intented for stratified shuffle splitting.
+        test_size : float or int, optional
+            The proportion or size of the test set.
+        random_state : int, optional
+            The random state for data splitting.
         learning_rate : float, optional
-            the initial learning rate for the Adam optimizer.
+            The initial learning rate for the Adam optimizer.
         batch_size : int, optional 
-            the batch size for pre-training.
+            The batch size for pre-training.
         L : int, optional 
-            the number of MC samples.
+            The number of MC samples.
         alpha : float, optional
-            the value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
+            The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
         num_epoch : int, optional 
-            the maximum number of epoches.
+            The maximum number of epoches.
         num_step_per_epoch : int, optional 
-            the number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
+            The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
         early_stopping_patience : int, optional 
-            the maximum number of epoches if there is no improvement.
+            The maximum number of epoches if there is no improvement.
         early_stopping_tolerance : float, optional 
-            the minimum change of loss to be considered as an improvement.
+            The minimum change of loss to be considered as an improvement.
         early_stopping_warmup : int, optional
-            the number of warmup epoches.
+            The number of warmup epoches.
         path_to_weights : str, optional 
-            the path of weight file to be saved; not saving weight if None.
-        '''    
-        if num_step_per_epoch is None:
-            num_step_per_epoch = self.X.shape[0]//batch_size+1
-                
+            The path of weight file to be saved; not saving weight if None.
+        '''                    
         train.clear_session()
-        self.train_dataset = train.warp_dataset(self.X_normalized, 
-                                                self.c_score,
+        if stratify is None:
+            stratify = self.labels
+        elif stratify is False:
+            stratify = None   
+        id_train, id_test = train_test_split(
+                                np.arange(self.X.shape[0]), 
+                                test_size=test_size, 
+                                stratify=stratify, 
+                                random_state=random_state)
+        if num_step_per_epoch is None:
+            num_step_per_epoch = len(id_train)//batch_size+1
+        self.train_dataset = train.warp_dataset(self.X_normalized[id_train], 
+                                                None if self.c_score is None else self.c_score[id_train],
                                                 batch_size, 
-                                                self.X, 
-                                                self.scale_factor)
+                                                self.X[id_train], 
+                                                self.scale_factor[id_train])
+        self.test_dataset = train.warp_dataset(self.X_normalized[id_test], 
+                                                None if self.c_score is None else self.c_score[id_test],
+                                                batch_size, 
+                                                self.X[id_test], 
+                                                self.scale_factor[id_test])
         self.vae = train.pre_train(
             self.train_dataset,
+            self.test_dataset,
             self.vae,
             learning_rate,                        
             L, alpha,
@@ -263,7 +284,7 @@ class VITAE():
         Returns
         ----------
         z : np.array
-            \([N,d]\) the latent means.
+            \([N,d]\) The latent means.
         ''' 
         c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
         return self.vae.get_z(self.X_normalized[self.selected_cell_subset_id,:], c)
@@ -275,7 +296,7 @@ class VITAE():
         Parameters
         ----------
         selected_cell_names : np.array, optional
-            the names of selected cells.
+            The names of selected cells.
         ''' 
         self.selected_cell_subset = np.unique(selected_cell_names)
         self.selected_cell_subset_id = np.sort(np.where(np.in1d(self.cell_names, selected_cell_names))[0])
@@ -287,14 +308,14 @@ class VITAE():
         Parameters
         ----------
         batch_size - int, optional 
-            the batch size when computing \(p(c_i|Y_i,X_i)\).
+            The batch size when computing \(p(c_i|Y_i,X_i)\).
         
         Returns
         ----------
         pi : np.array
-            \([1,K]\) the original pi.
+            \([1,K]\) The original pi.
         post_pi : np.array 
-            \([1,K]\) the posterior estimate of pi.
+            \([1,K]\) The posterior estimate of pi.
         '''      
         if len(self.selected_cell_subset_id)!=len(self.cell_names):
             warnings.warn("Only using a subset of cells to refine pi.")
@@ -317,13 +338,13 @@ class VITAE():
         Parameters
         ----------
         n_clusters : int
-            the number of cluster.
+            The number of cluster.
         cluster_labels : np.array, optional
-            \([N,]\) the  cluster labels.
+            \([N,]\) The  cluster labels.
         mu : np.array, optional
-            \([d,k]\) the value of initial \(\\mu\).
+            \([d,k]\) The value of initial \(\\mu\).
         log_pi : np.array, optional
-            \([1,K]\) the value of initial \(\\log(\\pi)\).
+            \([1,K]\) The value of initial \(\\log(\\pi)\).
         '''             
         z = self.get_latent_z()
         if (mu is None) & (cluster_labels is not None):
@@ -337,7 +358,8 @@ class VITAE():
         self.inferer = Inferer(self.n_clusters)            
 
 
-    def train(self, learning_rate: float = 1e-3, batch_size: int = 32, 
+    def train(self, stratify = False, test_size = 0.1, random_state: int = 0,
+            learning_rate: float = 1e-3, batch_size: int = 32, 
             L: int = 1, alpha: float = 0.01, beta: float = 1, 
             num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
             early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 5,
@@ -346,50 +368,73 @@ class VITAE():
 
         Parameters
         ----------
+        stratify : np.array, None, or False
+            If an array is provided, or `stratify=None` and `self.labels` is available, then they will be used to perform stratified shuffle splitting. Otherwise, general shuffle splitting is used. Set to `False` if `self.labels` is not intented for stratified shuffle splitting.
+        test_size : float or int, optional
+            The proportion or size of the test set.
+        random_state : int, optional
+            The random state for data splitting.
         learning_rate : float, optional  
-            the initial learning rate for the Adam optimizer.
+            The initial learning rate for the Adam optimizer.
         batch_size : int, optional  
-            the batch size for training.
+            The batch size for training.
         L : int, optional  
-            the number of MC samples.
+            The number of MC samples.
         alpha : float, optional  
-            the value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
+            The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
         beta : float, optional  
-            the value of beta in beta-VAE.
+            The value of beta in beta-VAE.
         num_epoch : int, optional  
-            the number of epoch.
+            The number of epoch.
         num_step_per_epoch : int, optional 
-            the number of step per epoch, it will be inferred from number of cells and batch size if it is None.
+            The number of step per epoch, it will be inferred from number of cells and batch size if it is None.
         early_stopping_patience : int, optional 
-            the maximum number of epoches if there is no improvement.
+            The maximum number of epoches if there is no improvement.
         early_stopping_tolerance : float, optional 
-            the minimum change of loss to be considered as an improvement.
+            The minimum change of loss to be considered as an improvement.
         early_stopping_warmup : int, optional 
-            the number of warmup epoches.            
+            The number of warmup epoches.            
         path_to_weights : str, optional 
-            the path of weight file to be saved; not saving weight if None.
+            The path of weight file to be saved; not saving weight if None.
         plot_every_num_epoch : int, optional 
-            plot the intermediate result every few epoches, or not plotting if it is None.            
+            Plot the intermediate result every few epoches, or not plotting if it is None.            
         dimred : str, optional 
-            the name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
+            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
         **kwargs :  
-            extra key-value arguments for dimension reduction algorithms.        
-        '''
+            Extra key-value arguments for dimension reduction algorithms.        
+        '''        
+        if stratify is None:
+            stratify = self.labels[self.selected_cell_subset_id]
+        elif stratify is False:
+            stratify = None    
+        id_train, id_test = train_test_split(
+                                np.arange(len(self.selected_cell_subset_id)), 
+                                test_size=test_size, 
+                                stratify=stratify, 
+                                random_state=random_state)
         if num_step_per_epoch is None:
-            num_step_per_epoch = len(self.selected_cell_subset_id)//batch_size+1
-            
+            num_step_per_epoch = len(id_train)//batch_size+1
         c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
-        self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:],
-                                                c,
+        self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_train],
+                                                None if c is None else c[id_train],
                                                 batch_size, 
-                                                self.X[self.selected_cell_subset_id,:], 
-                                                self.scale_factor[self.selected_cell_subset_id])
-        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
-                                               c,
-                                               batch_size)
+                                                self.X[self.selected_cell_subset_id,:][id_train], 
+                                                self.scale_factor[self.selected_cell_subset_id][id_train])
+        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_test],
+                                                None if c is None else c[id_test],
+                                                batch_size, 
+                                                self.X[self.selected_cell_subset_id,:][id_test], 
+                                                self.scale_factor[self.selected_cell_subset_id][id_test])    
+        if plot_every_num_epoch is None:
+            self.whole_dataset = None    
+        else:
+            self.whole_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+                                                    c,
+                                                    batch_size)                                    
         self.vae = train.train(
             self.train_dataset,
             self.test_dataset,
+            self.whole_dataset,
             self.vae,
             learning_rate,
             L,
@@ -417,15 +462,15 @@ class VITAE():
         Parameters
         ----------
         batch_size : int, optional
-            batch size when doing inference.
+            The batch size when doing inference.
         L : int, optional
-            number of MC samples when doing inference.
+            The number of MC samples when doing inference.
         dimred : str, optional
-            name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
+            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
         refit_dimred : boolean, optional 
-            if refit the dimension reduction algorithm or not.
+            Whether to refit the dimension reduction algorithm or not.
         **kwargs :  
-            extra key-value arguments for dimension reduction algorithms.              
+            Extra key-value arguments for dimension reduction algorithms.              
         '''
         c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
         self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
@@ -449,20 +494,20 @@ class VITAE():
         method : string, optional
             'mean', 'modified_mean', 'map', or 'modified_map'.
         thres : float, optional 
-            threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.
+            The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.
         no_loop : boolean, optional 
-            if loops are allowed to exist in the graph.
+            Whether loops are allowed to exist in the graph.
         is_plot : boolean, optional  
-            whether to plot or not.
+            Whether to plot or not.
         plot_labels : boolean, optional  
-            whether to plot label names or not, only used when `is_plot=True`.
+            Whether to plot label names or not, only used when `is_plot=True`.
         path : string, optional
-            path to save figure, or don't save if it is None.
+            The path to save figure, or don't save if it is None.
         
         Returns
         ----------
         G : nx.Graph 
-            a weighted graph with weight on each edge indicating its score of existence.
+            The weighted graph with weight on each edge indicating its score of existence.
         '''
         G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
         if is_plot:
@@ -476,22 +521,22 @@ class VITAE():
         Parameters
         ----------
         init_node : int
-            the initial node for the inferred trajectory.
+            The initial node for the inferred trajectory.
         cutoff : string, optional
-            threshold for filtering edges with scores less than cutoff.
+            The threshold for filtering edges with scores less than cutoff.
         is_plot : boolean, optional
-            whether to plot or not.
+            Whether to plot or not.
         path : string, optional  
-            path to save figure, or don't save if it is None.
+            The path to save figure, or don't save if it is None.
 
         Returns
         ----------
         G : nx.Graph 
-            the modified graph that indicates the inferred trajectory.
+            The modified graph that indicates the inferred trajectory.
         w : np.array
-            \([N,k]\) modified \(\\tilde{w}\).
+            \([N,k]\) The modified \(\\tilde{w}\).
         pseudotime : np.array
-            \([N,]\) pseudotime based on projected trajectory.
+            \([N,]\) The pseudotime based on projected trajectory.
         '''
         G, w, pseudotime = self.inferer.infer_trajectory(init_node, 
                                                          self.label_names[self.selected_cell_subset_id], 
@@ -507,15 +552,15 @@ class VITAE():
         Parameters
         ----------
         gene_name : str 
-            name of the marker gene.
+            The name of the marker gene.
         refit_dimred : boolean, optional 
-            whether to refit dimension reduction or use the existing embedding after inference.
+            Whether to refit dimension reduction or use the existing embedding after inference.
         dimred : str, optional
-            name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
+            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
         path : str, optional
-            path to save the figure, or not saving if it is None.
+            The path to save the figure, or not saving if it is None.
         **kwargs :  
-            extra key-value arguments for dimension reduction algorithms.
+            Extra key-value arguments for dimension reduction algorithms.
         '''
         if gene_name not in self.gene_names:
             raise ValueError("Gene '{}' does not exist!".format(gene_name))
@@ -543,7 +588,7 @@ class VITAE():
         Parameters
         ----------
         milestone_net : pd.DataFrame
-            the true milestone network. For real data, milestone_net will be a DataFrame of the graph of nodes.
+            The true milestone network. For real data, milestone_net will be a DataFrame of the graph of nodes.
             Eg.
 
             from|to
@@ -560,14 +605,14 @@ class VITAE():
             cluster 1 | cluster 1 | 1
             cluster 1 | cluster 2 | 0.1
         begin_node_true : str or int
-            the true begin node of the milestone.
+            The true begin node of the milestone.
         grouping : np.array, optional
-            \([N,]\) for real data, grouping must be provided.
+            \([N,]\) The labels. For real data, grouping must be provided.
 
         Returns
         ----------
         res : pd.DataFrame
-            the evaluation result.
+            The evaluation result.
         '''
         # Evaluate for the whole dataset will ignore selected_cell_subset.
         if len(self.selected_cell_subset)!=len(self.cell_names):

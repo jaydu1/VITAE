@@ -22,20 +22,20 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
     Parameters
     ----------
     X_normalized : np.array
-        \([N, G]\) the preprocessed data.
+        \([N, G]\) The preprocessed data.
     c_score : float, optional
-        the normalizing constant.
+        The normalizing constant.
     batch_size : int
-        the batch size.
+        The batch size.
     X : np.array, optional
-        \([N, G]\) the raw count data.
+        \([N, G]\) The raw count data.
     scale_factor : np.array, optional
-        \([N, ]\) the raw count data.
+        \([N, ]\) The raw count data.
 
     Returns
     ----------
     dataset : tf.Dataset
-        the Tensorflow Dataset object.
+        The Tensorflow Dataset object.
     '''
     # fake c_score
     if c_score is None:
@@ -52,7 +52,7 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
         return test_dataset
 
 
-def pre_train(train_dataset, vae, learning_rate: float, L: int, alpha: float,
+def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, alpha: float,
               num_epoch_pre: int, num_step_per_epoch: int, 
               early_stopping_patience: int, early_stopping_tolerance: int, early_stopping_warmup: int):
     '''Pretraining.
@@ -60,33 +60,36 @@ def pre_train(train_dataset, vae, learning_rate: float, L: int, alpha: float,
     Parameters
     ----------
     train_dataset : tf.Dataset
-        the Tensorflow Dataset object.
+        The Tensorflow Dataset object.
+    test_dataset : tf.Dataset
+        The Tensorflow Dataset object.
     vae : VariationalAutoEncoder
-        the model.
+        The model.
     learning_rate : float
-        the initial learning rate for the Adam optimizer.
+        The initial learning rate for the Adam optimizer.
     L : int
-        the number of MC samples.
+        The number of MC samples.
     alpha : float, optional
-        the value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
+        The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
     num_epoch_pre : int
-        the maximum number of epoches.
+        The maximum number of epoches.
     num_step_per_epoch : int
-        the number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
+        The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
     early_stopping_patience : int
-        the maximum number of epoches if there is no improvement.
+        The maximum number of epoches if there is no improvement.
     early_stopping_tolerance : float
-        the minimum change of loss to be considered as an improvement.
+        The minimum change of loss to be considered as an improvement.
     early_stopping_warmup : int, optional
-        the number of warmup epoches.
+        The number of warmup epoches.
 
     Returns
     ----------
     vae : VariationalAutoEncoder
-        the pretrained model.
+        The pretrained model.
     '''    
     optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
-    loss_metric = tf.keras.metrics.Mean()
+    loss_train = tf.keras.metrics.Mean()
+    loss_test = tf.keras.metrics.Mean()
     early_stopping = Early_Stopping(patience=early_stopping_patience, tolerance=early_stopping_tolerance, warmup=early_stopping_warmup)
 
     for epoch in range(num_epoch_pre):
@@ -103,21 +106,28 @@ def pre_train(train_dataset, vae, learning_rate: float, L: int, alpha: float,
             grads = tape.gradient(loss, vae.trainable_weights,
                         unconnected_gradients=tf.UnconnectedGradients.ZERO)
             optimizer.apply_gradients(zip(grads, vae.trainable_weights))                                
-            loss_metric(loss)
+            loss_train(loss)
             
             if (step+1)%10==0 or step+1==num_step_per_epoch:
                 progbar.update(step+1, [('Reconstructed Loss', float(loss))])
-        if early_stopping(float(loss_metric.result())):
+                
+        for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(test_dataset):
+            losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, alpha=alpha)
+            loss = tf.reduce_sum(losses[0])
+            loss_test(loss)
+        print(' Training loss over epoch: %s. Testing loss over epoch: %s' % (float(loss_train.result()),
+                                                                            float(loss_test.result())))
+        if early_stopping(float(loss_test.result())):
             print('Early stopping.')
             break
-        print(' Training loss over epoch: %s' % (float(loss_metric.result()),))
-        loss_metric.reset_states()
+        loss_train.reset_states()
+        loss_test.reset_states()
 
     print('Pretrain Done.')
     return vae
 
 
-def train(train_dataset, test_dataset, vae,
+def train(train_dataset, test_dataset, whole_dataset, vae,
         learning_rate: float, 
         L: int, alpha: float, beta: float,
         num_epoch: int, num_step_per_epoch: int, 
@@ -128,48 +138,48 @@ def train(train_dataset, test_dataset, vae,
     Parameters
     ----------
     train_dataset : tf.Dataset
-        the Tensorflow Dataset object.
+        The Tensorflow Dataset object.
     test_dataset : tf.Dataset
-        the Tensorflow Dataset object for visualizations.
+        The Tensorflow Dataset object.
+    whole_dataset : tf.Dataset
+        The Tensorflow Dataset object for visualizations.
     vae : VariationalAutoEncoder
-        the model.
+        The model.
     learning_rate : float
-        the initial learning rate for the Adam optimizer.
+        The initial learning rate for the Adam optimizer.
     L : int
-        the number of MC samples.
+        The number of MC samples.
     alpha : float
-        the value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
+        The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
     beta : float
-        the value of beta in beta-VAE.
+        The value of beta in beta-VAE.
     num_epoch : int
-        the maximum number of epoches.
+        The maximum number of epoches.
     num_step_per_epoch : int
-        the number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
+        The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
     early_stopping_patience : int
-        the maximum number of epoches if there is no improvement.
+        The maximum number of epoches if there is no improvement.
     early_stopping_tolerance : float, optional 
-        the minimum change of loss to be considered as an improvement.
+        The minimum change of loss to be considered as an improvement.
     early_stopping_warmup : int
-        the number of warmup epoches.
+        The number of warmup epoches.
     labels: np.array
-        the labels for visualizations of the intermediate results.
+        The labels for visualizations of the intermediate results.
     plot_every_num_epoch : int, optional 
-        plot the intermediate result every few epoches, or not plotting if it is None.            
+        Plot the intermediate result every few epoches, or not plotting if it is None.            
     dimred : str, optional 
-        the name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
+        The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
     **kwargs : 
-        extra key-value arguments for dimension reduction algorithms.    
+        Extra key-value arguments for dimension reduction algorithms.    
 
     Returns
     ----------
     vae : VariationalAutoEncoder
-        the trained model.
+        The trained model.
     '''   
     optimizer = tf.keras.optimizers.Adam(learning_rate)
-    loss_total = tf.keras.metrics.Mean()
-    loss_neg_E_nb = tf.keras.metrics.Mean()
-    loss_neg_E_pz = tf.keras.metrics.Mean()
-    loss_E_qzx = tf.keras.metrics.Mean()
+    loss_test = [tf.keras.metrics.Mean() for _ in range(4)]
+    loss_train = [tf.keras.metrics.Mean() for _ in range(4)]
     early_stopping = Early_Stopping(patience = early_stopping_patience, tolerance = early_stopping_tolerance, warmup=early_stopping_warmup)
 
     print('Warmup:%d'%early_stopping_warmup)
@@ -199,33 +209,46 @@ def train(train_dataset, test_dataset, vae,
                             unconnected_gradients=tf.UnconnectedGradients.ZERO)
                 optimizer.apply_gradients(zip(grads, vae.trainable_weights))
 
-            loss_total(loss)
-            loss_neg_E_nb(losses[0])
-            loss_neg_E_pz(losses[1])
-            loss_E_qzx(losses[2])
+            loss_train[0](losses[0])
+            loss_train[1](losses[1])
+            loss_train[2](losses[2])
+            loss_train[3](loss)
 
             if (step+1)%10==0 or step+1==num_step_per_epoch:
                 progbar.update(step+1, [
                         ('loss_neg_E_nb'    ,   float(losses[0])),
                         ('loss_neg_E_pz'    ,   float(losses[1])),
                         ('loss_E_qzx   '    ,   float(losses[2])),
-                        ('loss_total'       ,   float(loss_total.result()))
+                        ('loss_total'       ,   float(loss))
                         ])
-        
-        if early_stopping(float(loss_total.result())):
+                        
+        for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(test_dataset):
+            losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha)
+            loss = tf.reduce_sum(losses*weight)
+            loss_test[0](losses[0])
+            loss_test[1](losses[1])
+            loss_test[2](losses[2])
+            loss_test[3](loss)
+            
+        if early_stopping(float(loss_test[3].result())):
             print('Early stopping.')
             break
-        print(' Training loss over epoch: %s' % (float(loss_total.result())))
-        print('% 4.6f, % 4.6f, % 4.6f' % (float(loss_neg_E_nb.result()),
-                                          float(loss_neg_E_pz.result()),
-                                          float(loss_E_qzx.result())))
-        loss_total.reset_states()
-        loss_neg_E_nb.reset_states()
-        loss_neg_E_pz.reset_states()
-        loss_E_qzx.reset_states()
+        
+        print(' Training loss over epoch: %s (% 4.6f, % 4.6f, % 4.6f) Testing loss over epoch: %s (% 4.6f, % 4.6f, % 4.6f)' % (
+            float(loss_train[3].result()),
+            float(loss_train[0].result()),
+            float(loss_train[1].result()),
+            float(loss_train[2].result()),
+            float(loss_test[3].result()),
+            float(loss_test[0].result()),
+            float(loss_test[1].result()),
+            float(loss_test[2].result())))
+        [l.reset_states() for l in loss_train]
+        [l.reset_states() for l in loss_test]
+
 
         if plot_every_num_epoch is not None and (epoch%plot_every_num_epoch==0 or epoch==num_epoch-1):
-            _, mu, _, w_tilde, _, _, z_mean = vae.inference(test_dataset, 1)
+            _, mu, _, w_tilde, _, _, z_mean = vae.inference(whole_dataset, 1)
             c = np.argmax(w_tilde, axis=-1)
             
             concate_z = np.concatenate((z_mean, mu.T), axis=0)
