@@ -47,11 +47,11 @@ def topology(G_true, G_pred):
     Parameters
     ----------
     G_true : nx.Graph
-        the reference graph.
+        The reference graph.
     G_pred : nx.Graph
-        the estimated graph.
+        The estimated graph.
     
-    Returns:
+    Returns
     ----------
     res : dict
         a dict containing evaulation results.
@@ -105,9 +105,10 @@ def IM_dist(G1, G2):
     G1 : nx.Graph
     G2 : nx.Graph
 
-    Returns:
+    Returns
     ----------
-    IM(G1,G2)
+    IM(G1,G2) : float
+        The IM distance between G1 and G2.
     &#39;&#39;&#39;
     adj1 = nx.to_numpy_array(G1)
     adj2 = nx.to_numpy_array(G2)
@@ -159,7 +160,12 @@ def get_GRI(true, pred):
     ture : np.array
         [n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping
     pred : np.array
-        [n_samples, n_cluster_2] for estimated proportions
+        [n_samples, n_cluster_2] for estimated proportions or [n_samples, ] for grouping
+
+    Returns
+    ----------
+    GRI : float
+        The GRI of two groups of proportions in the trajectories.
     &#39;&#39;&#39;
     if len(true)!=len(pred):
         raise ValueError(&#39;Inputs should have same lengths!&#39;)
@@ -190,13 +196,15 @@ def get_GRI(true, pred):
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>G_true</code></strong> :&ensp;<code>nx.Graph</code></dt>
-<dd>the reference graph.</dd>
+<dd>The reference graph.</dd>
 <dt><strong><code>G_pred</code></strong> :&ensp;<code>nx.Graph</code></dt>
-<dd>the estimated graph.</dd>
+<dd>The estimated graph.</dd>
 </dl>
-<h2 id="returns">Returns:</h2>
-<p>res : dict
-a dict containing evaulation results.</p></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>res</code></strong> :&ensp;<code>dict</code></dt>
+<dd>a dict containing evaulation results.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -207,11 +215,11 @@ a dict containing evaulation results.</p></div>
     Parameters
     ----------
     G_true : nx.Graph
-        the reference graph.
+        The reference graph.
     G_pred : nx.Graph
-        the estimated graph.
+        The estimated graph.
     
-    Returns:
+    Returns
     ----------
     res : dict
         a dict containing evaulation results.
@@ -268,8 +276,11 @@ Laplacian spectrum for each graph.</p>
 <dt><strong><code>G2</code></strong> :&ensp;<code>nx.Graph</code></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns:</h2>
-<p>IM(G1,G2)</p></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>IM(G1,G2) : float</code></dt>
+<dd>The IM distance between G1 and G2.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -287,9 +298,10 @@ Laplacian spectrum for each graph.</p>
     G1 : nx.Graph
     G2 : nx.Graph
 
-    Returns:
+    Returns
     ----------
-    IM(G1,G2)
+    IM(G1,G2) : float
+        The IM distance between G1 and G2.
     &#39;&#39;&#39;
     adj1 = nx.to_numpy_array(G1)
     adj2 = nx.to_numpy_array(G2)
@@ -326,7 +338,12 @@ Laplacian spectrum for each graph.</p>
 <dt><strong><code>ture</code></strong> :&ensp;<code>np.array</code></dt>
 <dd>[n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping</dd>
 <dt><strong><code>pred</code></strong> :&ensp;<code>np.array</code></dt>
-<dd>[n_samples, n_cluster_2] for estimated proportions</dd>
+<dd>[n_samples, n_cluster_2] for estimated proportions or [n_samples, ] for grouping</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>GRI</code></strong> :&ensp;<code>float</code></dt>
+<dd>The GRI of two groups of proportions in the trajectories.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -340,7 +357,12 @@ Laplacian spectrum for each graph.</p>
     ture : np.array
         [n_samples, n_cluster_1] for proportions or [n_samples, ] for grouping
     pred : np.array
-        [n_samples, n_cluster_2] for estimated proportions
+        [n_samples, n_cluster_2] for estimated proportions or [n_samples, ] for grouping
+
+    Returns
+    ----------
+    GRI : float
+        The GRI of two groups of proportions in the trajectories.
     &#39;&#39;&#39;
     if len(true)!=len(pred):
         raise ValueError(&#39;Inputs should have same lengths!&#39;)

@@ -121,16 +121,16 @@ def get_embedding(z, dimred=&#39;umap&#39;, **kwargs):
     Parameters
     ----------
     z : np.array
-        \([N, d]\) latent variables.
+        \([N, d]\) The latent variables.
     dimred : str, optional
         &#39;pca&#39;, &#39;tsne&#39;, or umap&#39;.      
     **kwargs :  
-        extra key-value arguments for dimension reduction algorithms.  
+        Extra key-value arguments for dimension reduction algorithms.  
 
     Returns:
     ----------
     embed : np.array
-        \([N, 2]\) latent variables after dimension reduction.
+        \([N, 2]\) The latent variables after dimension reduction.
     &#39;&#39;&#39;
     if dimred==&#39;umap&#39;:
         # umap has some bugs that it may change the original matrix when doing transform
@@ -152,13 +152,13 @@ def get_igraph(z, random_state=0):
     Parameters
     ----------
     z : np.array
-        \([N, d]\) latent variables.
+        \([N, d]\) The latent variables.
     random_state : int, optional
-        the random state.
+        The random state.
     Returns:
     ----------
     g : igraph
-        the igraph object of connectivities.      
+        The igraph object of connectivities.      
     &#39;&#39;&#39;    
     # Find knn
     n_neighbors = 15
@@ -199,16 +199,16 @@ def louvain_igraph(g, res, random_state=0):
     Parameters
     ----------
     g : igraph
-        the igraph object of connectivities.
+        The igraph object of connectivities.
     res : float
-        the resolution parameter for Louvain clustering.
+        The resolution parameter for Louvain clustering.
     random_state : int, optional
-        the random state.      
+        The random state.      
 
     Returns
     ----------
     labels : np.array     
-        \([N, ]\) the clustered labels.
+        \([N, ]\) The clustered labels.
     &#39;&#39;&#39;
     # Louvain
     partition_kwargs = {}
@@ -229,13 +229,13 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
     Parameters
     ----------
     embed_z : np.array
-        \([N, 2]\) latent variables after dimension reduction.
+        \([N, 2]\) The latent variables after dimension reduction.
     labels : np.array     
-        \([N, ]\) the clustered labels.
+        \([N, ]\) The clustered labels.
     plot_labels : boolean, optional
-        whether to plot text of labels or not.
+        Whether to plot text of labels or not.
     path : str, optional
-        the path to save the figure.
+        The path to save the figure.
     &#39;&#39;&#39;    
     n_labels = len(np.unique(labels))
     colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
@@ -265,13 +265,13 @@ def plot_marker_gene(expression, gene_name, embed_z, path=None):
     Parameters
     ----------
     expression : np.array
-        \([N, ]\) the expression of the marker gene.
+        \([N, ]\) The expression of the marker gene.
     gene_name : str
-        the name of the marker gene.
+        The name of the marker gene.
     embed_z : np.array
-        \([N, 2]\) latent variables after dimension reduction.
+        \([N, 2]\) The latent variables after dimension reduction.
     path : str, optional
-        the path to save the figure.
+        The path to save the figure.
     &#39;&#39;&#39;      
     fig, ax = plt.subplots(1,1, figsize=(20, 10))
     cmap = matplotlib.cm.get_cmap(&#39;Reds&#39;)
@@ -369,14 +369,14 @@ def load_data(path, file_name):
     Parameters
     ----------
     path : str
-        the path of the h5 files.
+        The path of the h5 files.
     file_name : str
-        the dataset name.
+        The dataset name.
     
     Returns:
     ----------
     data : dict
-        a dict containing count, grouping, etc. of the dataset.
+        The dict containing count, grouping, etc. of the dataset.
     &#39;&#39;&#39;     
     data = {}
     
@@ -445,15 +445,15 @@ def load_data(path, file_name):
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>z</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N, d]</span><script type="math/tex">[N, d]</script></span> latent variables.</dd>
+<dd><span><span class="MathJax_Preview">[N, d]</span><script type="math/tex">[N, d]</script></span> The latent variables.</dd>
 <dt><strong><code>dimred</code></strong> :&ensp;<code>str</code>, optional</dt>
 <dd>'pca', 'tsne', or umap'.</dd>
 <dt><strong><code>**kwargs</code></strong> :&ensp;<code> </code></dt>
-<dd>extra key-value arguments for dimension reduction algorithms.</dd>
+<dd>Extra key-value arguments for dimension reduction algorithms.</dd>
 </dl>
 <h2 id="returns">Returns:</h2>
 <p>embed : np.array
-<span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> latent variables after dimension reduction.</p></div>
+<span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> The latent variables after dimension reduction.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -464,16 +464,16 @@ def load_data(path, file_name):
     Parameters
     ----------
     z : np.array
-        \([N, d]\) latent variables.
+        \([N, d]\) The latent variables.
     dimred : str, optional
         &#39;pca&#39;, &#39;tsne&#39;, or umap&#39;.      
     **kwargs :  
-        extra key-value arguments for dimension reduction algorithms.  
+        Extra key-value arguments for dimension reduction algorithms.  
 
     Returns:
     ----------
     embed : np.array
-        \([N, 2]\) latent variables after dimension reduction.
+        \([N, 2]\) The latent variables after dimension reduction.
     &#39;&#39;&#39;
     if dimred==&#39;umap&#39;:
         # umap has some bugs that it may change the original matrix when doing transform
@@ -497,13 +497,13 @@ def load_data(path, file_name):
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>z</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N, d]</span><script type="math/tex">[N, d]</script></span> latent variables.</dd>
+<dd><span><span class="MathJax_Preview">[N, d]</span><script type="math/tex">[N, d]</script></span> The latent variables.</dd>
 <dt><strong><code>random_state</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>the random state.</dd>
+<dd>The random state.</dd>
 </dl>
 <h2 id="returns">Returns:</h2>
 <p>g : igraph
-the igraph object of connectivities.</p></div>
+The igraph object of connectivities.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -514,13 +514,13 @@ the igraph object of connectivities.</p></div>
     Parameters
     ----------
     z : np.array
-        \([N, d]\) latent variables.
+        \([N, d]\) The latent variables.
     random_state : int, optional
-        the random state.
+        The random state.
     Returns:
     ----------
     g : igraph
-        the igraph object of connectivities.      
+        The igraph object of connectivities.      
     &#39;&#39;&#39;    
     # Find knn
     n_neighbors = 15
@@ -563,17 +563,17 @@ the igraph object of connectivities.</p></div>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>g</code></strong> :&ensp;<code>igraph</code></dt>
-<dd>the igraph object of connectivities.</dd>
+<dd>The igraph object of connectivities.</dd>
 <dt><strong><code>res</code></strong> :&ensp;<code>float</code></dt>
-<dd>the resolution parameter for Louvain clustering.</dd>
+<dd>The resolution parameter for Louvain clustering.</dd>
 <dt><strong><code>random_state</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>the random state.</dd>
+<dd>The random state.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><strong><code>labels</code></strong> :&ensp;<code>np.array
 </code></dt>
-<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> the clustered labels.</dd>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> The clustered labels.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -585,16 +585,16 @@ the igraph object of connectivities.</p></div>
     Parameters
     ----------
     g : igraph
-        the igraph object of connectivities.
+        The igraph object of connectivities.
     res : float
-        the resolution parameter for Louvain clustering.
+        The resolution parameter for Louvain clustering.
     random_state : int, optional
-        the random state.      
+        The random state.      
 
     Returns
     ----------
     labels : np.array     
-        \([N, ]\) the clustered labels.
+        \([N, ]\) The clustered labels.
     &#39;&#39;&#39;
     # Louvain
     partition_kwargs = {}
@@ -617,14 +617,14 @@ the igraph object of connectivities.</p></div>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>embed_z</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> latent variables after dimension reduction.</dd>
+<dd><span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> The latent variables after dimension reduction.</dd>
 <dt><strong><code>labels</code></strong> :&ensp;<code>np.array
 </code></dt>
-<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> the clustered labels.</dd>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> The clustered labels.</dd>
 <dt><strong><code>plot_labels</code></strong> :&ensp;<code>boolean</code>, optional</dt>
-<dd>whether to plot text of labels or not.</dd>
+<dd>Whether to plot text of labels or not.</dd>
 <dt><strong><code>path</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>the path to save the figure.</dd>
+<dd>The path to save the figure.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -636,13 +636,13 @@ the igraph object of connectivities.</p></div>
     Parameters
     ----------
     embed_z : np.array
-        \([N, 2]\) latent variables after dimension reduction.
+        \([N, 2]\) The latent variables after dimension reduction.
     labels : np.array     
-        \([N, ]\) the clustered labels.
+        \([N, ]\) The clustered labels.
     plot_labels : boolean, optional
-        whether to plot text of labels or not.
+        Whether to plot text of labels or not.
     path : str, optional
-        the path to save the figure.
+        The path to save the figure.
     &#39;&#39;&#39;    
     n_labels = len(np.unique(labels))
     colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
@@ -674,13 +674,13 @@ the igraph object of connectivities.</p></div>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>expression</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> the expression of the marker gene.</dd>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> The expression of the marker gene.</dd>
 <dt><strong><code>gene_name</code></strong> :&ensp;<code>str</code></dt>
-<dd>the name of the marker gene.</dd>
+<dd>The name of the marker gene.</dd>
 <dt><strong><code>embed_z</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> latent variables after dimension reduction.</dd>
+<dd><span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> The latent variables after dimension reduction.</dd>
 <dt><strong><code>path</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>the path to save the figure.</dd>
+<dd>The path to save the figure.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -692,13 +692,13 @@ the igraph object of connectivities.</p></div>
     Parameters
     ----------
     expression : np.array
-        \([N, ]\) the expression of the marker gene.
+        \([N, ]\) The expression of the marker gene.
     gene_name : str
-        the name of the marker gene.
+        The name of the marker gene.
     embed_z : np.array
-        \([N, 2]\) latent variables after dimension reduction.
+        \([N, 2]\) The latent variables after dimension reduction.
     path : str, optional
-        the path to save the figure.
+        The path to save the figure.
     &#39;&#39;&#39;      
     fig, ax = plt.subplots(1,1, figsize=(20, 10))
     cmap = matplotlib.cm.get_cmap(&#39;Reds&#39;)
@@ -721,13 +721,13 @@ the igraph object of connectivities.</p></div>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
-<dd>the path of the h5 files.</dd>
+<dd>The path of the h5 files.</dd>
 <dt><strong><code>file_name</code></strong> :&ensp;<code>str</code></dt>
-<dd>the dataset name.</dd>
+<dd>The dataset name.</dd>
 </dl>
 <h2 id="returns">Returns:</h2>
 <p>data : dict
-a dict containing count, grouping, etc. of the dataset.</p></div>
+The dict containing count, grouping, etc. of the dataset.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -738,14 +738,14 @@ a dict containing count, grouping, etc. of the dataset.</p></div>
     Parameters
     ----------
     path : str
-        the path of the h5 files.
+        The path of the h5 files.
     file_name : str
-        the dataset name.
+        The dataset name.
     
     Returns:
     ----------
     data : dict
-        a dict containing count, grouping, etc. of the dataset.
+        The dict containing count, grouping, etc. of the dataset.
     &#39;&#39;&#39;     
     data = {}
     
