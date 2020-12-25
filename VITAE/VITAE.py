@@ -484,6 +484,41 @@ class VITAE():
             self.embed_z = self.inferer.embed_z
         return None
         
+
+    def select_root(self, days, method: str = 'sum'):
+        '''Initialze trajectory inference by computing the posterior estimations.        
+
+        Parameters
+        ----------
+        day : np.array, optional
+            The day information for selected cells used to determine the root vertex.
+            The dtype should be 'int' or 'float'.
+        method : str, optional
+            'sum' or 'mean'. 
+            For 'sum', the root is the one with maximal number of cells from the earliest day.
+            For 'mean', the root is the one with earliest mean time among cells associated with it.
+
+        Returns
+        ----------
+        root : int
+            The root vertex in the inferred trajectory based on given day information.
+        '''
+        if days is not None and len(days)!=len(self.selected_cell_subset_id):
+            raise ValueError("The length of day information ({}) is not "
+                "consistent with the number of selected cells ({})!".format(
+                    len(days), len(self.selected_cell_subset_id)))
+        if not hasattr(self.inferer, 'embed_z'):
+            raise ValueError("Need to call 'init_inference' first!")
+
+        estimated_cell_types = np.argmax(self.w_tilde, axis=-1)
+        if method=='sum':
+            root = np.argmax([np.sum(days[estimated_cell_types==i]==np.min(days)) for i in range(self.w_tilde.shape[-1])])
+        elif method=='mean':
+            root = np.argmin([np.mean(days[estimated_cell_types==i]) for i in range(self.w_tilde.shape[-1])])
+        else:
+            raise ValueError("Method can be either 'sum' or 'mean'!")
+        return root
+
         
     def comp_inference_score(self, method: str = 'modified_map', thres = 0.5, 
             no_loop: bool = False, is_plot: bool = True, plot_labels: bool = True, path: Optional[str] = None):
