@@ -35,7 +35,7 @@ scikit-misc| >=0.1.3
 louvain| >=0.7.0
 networkx| >=2.5
 
-For reproducing the results in the manuscript, the following versions of the **R** language and packages are needed.
+For reproducing the results in the manuscript, the following versions of the R language and packages are needed.
 
 package|version
 ---|---
@@ -77,12 +77,12 @@ The folder `An Application to the Developing Mouse Neocortex` contains code to r
 The intermediate results of the above scripts are in the sub-folder `result`. Then the figures in Section 5 is given by the following Python script:
 
 - `plot_sec6.py`: Reproduce the Figure 4-5 and the subfigures of Figure 6 in the manuscript.
-- `plot_sec6.py`: Reproduce the main figures of Figure 6 in the manuscript.
+- `plot_sec6.R`: Reproduce the main figures of Figure 6 in the manuscript.
 
 # Reproducibility Workflow
 
 1. Install the required Python and R packages.
-2. Clone the github repo [https://github.com/jaydu1/VITAE](https://github.com/jaydu1/VITAE) and use code in folder [paper](https://github.com/jaydu1/VITAE/paper) for the following steps. 
+2. Clone the github repo [https://github.com/jaydu1/VITAE](https://github.com/jaydu1/VITAE) and use code in folder [paper](https://github.com/jaydu1/VITAE/tree/master/paper) for the following steps. 
 3. Reproduce results in Section 5 of the manuscript. Note that we evaluate VITAE with 100 different random seeds on 25 datasets, so it will take much long time on a single desktop machine in serial. However, we have included intermediate results in the subfolder `Benchmarking with Real and Synthetic Datasets/result` and the readers can skip to the first two steps and visualize Figure 3 in the manuscript directly.
 	- (Optional) Evaluate VITAE by running `run_and_evaluate_VITAE.py`. 
 	- (Optional) Evaluate other methods by running `run_other_methods.R` and `evaluate_other_methods.py`.

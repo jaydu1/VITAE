@@ -35,7 +35,7 @@ __author__ = &#34;Jin-Hong Du, Ming Gao, and Jingshu Wang&#34;
 __copyright__ = &#34;Copyright 2020, The Trajectory Inference Project&#34;
 
 __license__ = &#34;MIT&#34;
-__version__ = &#34;1.0.0&#34;
+__version__ = &#34;1.0.6&#34;
 __maintainer__ = &#34;Jin-Hong Du&#34;
 __email__ = &#34;dujinhong@uchicago.edu&#34;
 __status__ = &#34;Development&#34;</code></pre>
@@ -552,6 +552,41 @@ __status__ = &#34;Development&#34;</code></pre>
             self.embed_z = self.inferer.embed_z
         return None
         
+
+    def select_root(self, days, method: str = &#39;sum&#39;):
+        &#39;&#39;&#39;Initialze trajectory inference by computing the posterior estimations.        
+
+        Parameters
+        ----------
+        day : np.array, optional
+            The day information for selected cells used to determine the root vertex.
+            The dtype should be &#39;int&#39; or &#39;float&#39;.
+        method : str, optional
+            &#39;sum&#39; or &#39;mean&#39;. 
+            For &#39;sum&#39;, the root is the one with maximal number of cells from the earliest day.
+            For &#39;mean&#39;, the root is the one with earliest mean time among cells associated with it.
+
+        Returns
+        ----------
+        root : int
+            The root vertex in the inferred trajectory based on given day information.
+        &#39;&#39;&#39;
+        if days is not None and len(days)!=len(self.selected_cell_subset_id):
+            raise ValueError(&#34;The length of day information ({}) is not &#34;
+                &#34;consistent with the number of selected cells ({})!&#34;.format(
+                    len(days), len(self.selected_cell_subset_id)))
+        if not hasattr(self.inferer, &#39;embed_z&#39;):
+            raise ValueError(&#34;Need to call &#39;init_inference&#39; first!&#34;)
+
+        estimated_cell_types = np.argmax(self.w_tilde, axis=-1)
+        if method==&#39;sum&#39;:
+            root = np.argmax([np.sum(days[estimated_cell_types==i]==np.min(days)) for i in range(self.w_tilde.shape[-1])])
+        elif method==&#39;mean&#39;:
+            root = np.argmin([np.mean(days[estimated_cell_types==i]) for i in range(self.w_tilde.shape[-1])])
+        else:
+            raise ValueError(&#34;Method can be either &#39;sum&#39; or &#39;mean&#39;!&#34;)
+        return root
+
         
     def comp_inference_score(self, method: str = &#39;modified_map&#39;, thres = 0.5, 
             no_loop: bool = False, is_plot: bool = True, plot_labels: bool = True, path: Optional[str] = None):
@@ -768,7 +803,7 @@ __status__ = &#34;Development&#34;</code></pre>
                         pseudotime_true[grouping==int(milestone_net_true[i,1])] = milestone_net_true[i,-1]
             pseudotime_true = pseudotime_true[pseudotime&gt;-1]
             pseudotime_pred = pseudotime[pseudotime&gt;-1]
-            res[&#39;PDT score&#39;] = np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]
+            res[&#39;PDT score&#39;] = (np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]+1)/2
         else:
             res[&#39;PDT score&#39;] = np.nan
             
@@ -1519,6 +1554,66 @@ cluster labels.</dd>
     return None</code></pre>
 </details>
 </dd>
+<dt id="VITAE.VITAE.select_root"><code class="name flex">
+<span>def <span class="ident">select_root</span></span>(<span>self, days, method: str = 'sum')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialze trajectory inference by computing the posterior estimations.
+</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>day</code></strong> :&ensp;<code>np.array</code>, optional</dt>
+<dd>The day information for selected cells used to determine the root vertex.
+The dtype should be 'int' or 'float'.</dd>
+<dt><strong><code>method</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>'sum' or 'mean'.
+For 'sum', the root is the one with maximal number of cells from the earliest day.
+For 'mean', the root is the one with earliest mean time among cells associated with it.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>root</code></strong> :&ensp;<code>int</code></dt>
+<dd>The root vertex in the inferred trajectory based on given day information.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def select_root(self, days, method: str = &#39;sum&#39;):
+    &#39;&#39;&#39;Initialze trajectory inference by computing the posterior estimations.        
+
+    Parameters
+    ----------
+    day : np.array, optional
+        The day information for selected cells used to determine the root vertex.
+        The dtype should be &#39;int&#39; or &#39;float&#39;.
+    method : str, optional
+        &#39;sum&#39; or &#39;mean&#39;. 
+        For &#39;sum&#39;, the root is the one with maximal number of cells from the earliest day.
+        For &#39;mean&#39;, the root is the one with earliest mean time among cells associated with it.
+
+    Returns
+    ----------
+    root : int
+        The root vertex in the inferred trajectory based on given day information.
+    &#39;&#39;&#39;
+    if days is not None and len(days)!=len(self.selected_cell_subset_id):
+        raise ValueError(&#34;The length of day information ({}) is not &#34;
+            &#34;consistent with the number of selected cells ({})!&#34;.format(
+                len(days), len(self.selected_cell_subset_id)))
+    if not hasattr(self.inferer, &#39;embed_z&#39;):
+        raise ValueError(&#34;Need to call &#39;init_inference&#39; first!&#34;)
+
+    estimated_cell_types = np.argmax(self.w_tilde, axis=-1)
+    if method==&#39;sum&#39;:
+        root = np.argmax([np.sum(days[estimated_cell_types==i]==np.min(days)) for i in range(self.w_tilde.shape[-1])])
+    elif method==&#39;mean&#39;:
+        root = np.argmin([np.mean(days[estimated_cell_types==i]) for i in range(self.w_tilde.shape[-1])])
+    else:
+        raise ValueError(&#34;Method can be either &#39;sum&#39; or &#39;mean&#39;!&#34;)
+    return root</code></pre>
+</details>
+</dd>
 <dt id="VITAE.VITAE.comp_inference_score"><code class="name flex">
 <span>def <span class="ident">comp_inference_score</span></span>(<span>self, method: str = 'modified_map', thres=0.5, no_loop: bool = False, is_plot: bool = True, plot_labels: bool = True, path: Union[str, NoneType] = None)</span>
 </code></dt>
@@ -1882,7 +1977,7 @@ Eg.</p>
                     pseudotime_true[grouping==int(milestone_net_true[i,1])] = milestone_net_true[i,-1]
         pseudotime_true = pseudotime_true[pseudotime&gt;-1]
         pseudotime_pred = pseudotime[pseudotime&gt;-1]
-        res[&#39;PDT score&#39;] = np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]
+        res[&#39;PDT score&#39;] = (np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]+1)/2
     else:
         res[&#39;PDT score&#39;] = np.nan
         
@@ -1938,6 +2033,7 @@ Eg.</p>
 <li><code><a title="VITAE.VITAE.init_latent_space" href="#VITAE.VITAE.init_latent_space">init_latent_space</a></code></li>
 <li><code><a title="VITAE.VITAE.train" href="#VITAE.VITAE.train">train</a></code></li>
 <li><code><a title="VITAE.VITAE.init_inference" href="#VITAE.VITAE.init_inference">init_inference</a></code></li>
+<li><code><a title="VITAE.VITAE.select_root" href="#VITAE.VITAE.select_root">select_root</a></code></li>
 <li><code><a title="VITAE.VITAE.comp_inference_score" href="#VITAE.VITAE.comp_inference_score">comp_inference_score</a></code></li>
 <li><code><a title="VITAE.VITAE.infer_trajectory" href="#VITAE.VITAE.infer_trajectory">infer_trajectory</a></code></li>
 <li><code><a title="VITAE.VITAE.plot_marker_gene" href="#VITAE.VITAE.plot_marker_gene">plot_marker_gene</a></code></li>
