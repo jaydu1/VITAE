@@ -32,3 +32,43 @@ synthetic | bifurcation | UMI | bifurcation | 2100 | 1996 | 5 | our model
 synthetic | multifurcating | UMI | multifurcating | 2700 | 2000 | 7 | our model 
 synthetic | tree | UMI | tree | 2600 | 2000 | 7 | our model 
 
+# Field
+
+All possible fields for these datasets are shown below. Note that not every datasets have all these fields. For example, `covariates` only available in the `mouse_brain_merged` dataset.
+
+key|detail
+---|---
+count | A two-dim array of counts. 
+grouping | A one-dim array of reference labels of cells.
+gene\_names | A one-dim array of gene names. 
+cell\_ids | A one-dim array of cell ids.
+covariates | A two-dim array of covariates, e.g., cell-cycle scores and the indicator of data sources.
+milestone_network | A dataframe of the reference connectivity network of cell types. For real data, it is a dataframe indicating the transition of each vertex with columns `from` and `to`. For syhthetic data, it is a dataframe indicating the transition of each cell with columns `from`, `to` and `w`.
+root\_milestone\_id | The name of the root vertex of the trajectory.
+type | 'UMI' or 'non-UMI'
+
+# Usage
+
+## Python
+
+Our package provides a function to load these datasets:
+
+```python
+from VITAE import load_data
+file_name = 'dentate'
+data = load_data(path='data/',
+                 file_name=file_name)
+print(data.keys())
+# dict_keys(['count', 'grouping', 'gene_names', 'cell_ids', 'milestone_network', 'root_milestone_id', 'type'])
+```
+
+## R
+
+```R
+library(hdf5r)
+file.h5 <- H5File$new('dentate.h5', mode='r')   # open file
+file.h5                                         # overview
+names(file.h5)                                  # keys of content
+count <- t(file.h5[['count']][,])               # transpose to get num_cells*num_genes if necessary
+file.h5$close_all()                             # close file
+```
