@@ -735,7 +735,7 @@ class VITAE():
                         pseudotime_true[grouping==int(milestone_net_true[i,1])] = milestone_net_true[i,-1]
             pseudotime_true = pseudotime_true[pseudotime>-1]
             pseudotime_pred = pseudotime[pseudotime>-1]
-            res['PDT score'] = np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]
+            res['PDT score'] = (np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]+1)/2
         else:
             res['PDT score'] = np.nan
             
