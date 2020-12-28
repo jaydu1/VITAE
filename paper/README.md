@@ -32,6 +32,7 @@ numba| >=0.52.0
 seaborn |>=0.11.0
 scikit-learn |>=0.23.2
 scikit-misc| >=0.1.3
+statsmodels | >= 0.12.1
 louvain| >=0.7.0
 networkx| >=2.5
 
