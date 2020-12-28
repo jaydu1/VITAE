@@ -73,7 +73,7 @@ The folder `An Application to the Developing Mouse Neocortex` contains code to r
 
 - `cc_scores.R`: Functions to compute cell-cycle scores.
 - `run_Seurat_Slingshot`: Run Seurat and Slingshot and record the results.
-- `run_VITAE.py`: Run VITA, and save the trained model and intermediate results.
+- `run_VITAE.py`: Run VITAE, and save the trained model and intermediate results.
 
 The intermediate results of the above scripts are in the sub-folder `result`. Then the figures in Section 5 is given by the following Python script:
 
