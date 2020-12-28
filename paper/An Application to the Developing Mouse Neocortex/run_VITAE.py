@@ -2,6 +2,7 @@
 import tensorflow as tf
 import numpy as np
 import pandas as pd
+import h5py
 import umap
 import matplotlib.pyplot as plt
 import matplotlib
@@ -100,24 +101,32 @@ id_branches = [((modified_w[:,5] > 0.0)&(modified_w[:,7] > 0.0)) | \
     (modified_w[:,4] > 0.99) | \
     (modified_w[:,6] > 0.99) | \
     (modified_w[:,1] > 0.99)   ] 
-
-for id_branch in id_branches:
+branch_names = ['branch 5-7-0-11', 'bracnh 7-4-6-1']
+for i in range(2):
+    id_branch = id_branches[i]
+    branch_name = branch_names[i]
     model.set_cell_subset(
         model.cell_names[id_branch]
-        )
-    pd.DataFrame(model.expression[model.selected_cell_subset_id,:], 
-                index=model.selected_cell_subset,
-                columns=model.gene_names
-                ).to_csv('expression.csv')
+        )    
+    with h5py.File('result/%s/expression.h5'%branch_name, 'w') as f:
+        f.create_dataset('expression', 
+                        data=model.expression[model.selected_cell_subset_id,:], compression="gzip", compression_opts=9
+                        )
+        f.create_dataset('gene_names', 
+                        data=model.gene_names.astype('bytes'), compression="gzip", compression_opts=9
+                        )
+        f.create_dataset('cell_ids', 
+                        data=model.selected_cell_subset.astype('bytes'), compression="gzip", compression_opts=9
+                        )                        
     pd.DataFrame(pseudotime[id_branch], 
                 index=model.selected_cell_subset,
                 columns=['pseudotime']
-                ).to_csv('pseudotime.csv')
+                ).to_csv('result/%s/pseudotime.csv'%branch_name)
     pd.DataFrame(data['covariates'][id_branch,:], 
                 index=model.selected_cell_subset,
                 columns=['S_score','G2M_score','id_data']
-                ).to_csv('covariate.csv')
+                ).to_csv('result/%s/covariate.csv'%branch_name)
     pd.DataFrame(np.array([i[:3] for i in data['cell_ids']])[id_branch], 
                 index=model.selected_cell_subset,
                 columns=['cell_day']
-                ).to_csv('cell_day.csv')                       
+                ).to_csv('result/%s/cell_day.csv'%branch_name)                       

@@ -4,7 +4,7 @@ library(lmtest)
 library(ggplot2)
 library(ggpubr)
 library(cowplot)
-
+library(hdf5r)
 plotGene <- function(gene.name) {
     temp.dat <- lapply(1:length(gene.name), function(i)
         temp.dat <- data.frame(rank(covariates$pdt), exp[gene.name[i], ], 
@@ -37,11 +37,15 @@ branches <- c('branch 5-7-0-11', 'bracnh 7-4-6-1')
 p1 <- list()
 p2 <- list()
 for(i in 1:2){
-    branch < branches[i]
-    exp <- fread(file.path('result',branch,"expression.csv"))
-    cell.names <- exp$V1
-    exp <- t(as.matrix(exp[, -1]))
+    branch <- branches[i]
+    
+    file.h5 <- H5File$new(sprintf('result/%s/expression.h5', branch), mode = "r")
+    exp <- as.matrix(file.h5[["expression"]][,])
+    cell.names <- as.vector(file.h5[["cell_ids"]][])
+    gene.names <- as.vector(file.h5[["gene_names"]][])
     colnames(exp) <- cell.names
+    rownames(exp) <- gene.names
+    file.h5$close_all()
     
     covariates <- fread(file.path('result',branch,"covariate.csv"))
     covariates$pdt <- fread(file.path('result',branch,"pseudotime.csv"))$pseudotime
@@ -79,19 +83,19 @@ for(i in 1:2){
     result.pos <- result[order(result$pdt_est, decreasing = T), ]
     result.neg <- result[order(-result$pdt_est, decreasing = T), ]
     
-    p1 <- plotGene(c(rownames(result.pos)[1:2], rownames(result.neg)[1:2])) + 
+    p_1 <- plotGene(c(rownames(result.pos)[1:2], rownames(result.neg)[1:2])) + 
         scale_color_brewer(palette = "Set2") + ggtitle(titles[i])
     temp.dat <- data.frame(Order = rank(covariates$pdt), Day = paste0(covariates$Day, ".5"), 
                            value = rep(1, nrow(covariates)))
-    p2 <- ggplot(temp.dat, aes(x = Order, y = value, fill= Day)) + geom_bar(stat = "identity") + 
+    p_2 <- ggplot(temp.dat, aes(x = Order, y = value, fill= Day)) + geom_bar(stat = "identity") + 
         scale_fill_manual(values = cols) + 
         theme(legend.position = "bottom", axis.title = element_blank(),
               panel.grid = element_blank(),
               axis.text = element_blank(), axis.ticks = element_blank(),
               panel.background = element_blank() ) + 
         guides(fill = guide_legend(nrow = 1)) + ylim(0, 1)
-    p1[[paste('b',i, sep='')]] <- list(p1)
-    p2[[paste('b',i, sep='')]] <- list(p2)
+    p1[[paste('b',i, sep='')]] <- p_1
+    p2[[paste('b',i, sep='')]] <- p_2
 }
 
 p3 <- ggarrange(p2$b1, p2$b2, common.legend = TRUE, legend = "bottom")
