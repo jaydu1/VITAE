@@ -584,8 +584,10 @@ class VITAE():
         return G, w, pseudotime
 
 
-    def differential_expressed_test(self, alpha: float = 0.05):
-        '''Differential gene expression test.
+    def differentially_expressed_test(self, alpha: float = 0.05):
+        '''Differentially gene expression test. All (selected and unselected) genes will be tested 
+        Only cells in `selected_cell_subset` will be used, which is useful when one need to
+        test differentially expressed genes on a branch of the inferred trajectory.
 
         Parameters
         ----------
@@ -604,13 +606,14 @@ class VITAE():
         # Prepare X and Y for regression expression ~ rank(PDT) + covariates
         Y = self.expression[self.selected_cell_subset_id,:]
         std_Y = np.std(Y, ddof=1, axis=0, keepdims=True)
-        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y).fill(np.nan), where=std_Y!=0)
+        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
         X = stats.rankdata(self.pseudotime[self.selected_cell_subset_id])
         X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
         X = np.c_[np.ones_like(X), X, self.c_score[self.selected_cell_subset_id,:]]
 
         res_df = DE_test(Y, X, self.gene_names, alpha)
         return res_df
+
 
     def plot_marker_gene(self, gene_name: str, refit_dimred: bool = False, dimred: str = 'umap', path: Optional[str] =None, **kwargs):
         '''Plot expression of the given marker gene.

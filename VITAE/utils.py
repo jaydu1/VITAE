@@ -368,17 +368,20 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
                     np.dot(normalized_cov,X.T)))  
 
     def _DE_test(wendog,pinv_wexog,h):
-        beta = np.dot(pinv_wexog, wendog)
-        resid = wendog - X @ beta
-        cov = _cov_hc3(h, pinv_wexog, resid)
-        t = beta[1]/np.sqrt(np.diag(cov)[1])
-        return np.r_[beta[1], t]
+        if np.any(np.isnan(wendog)):
+            return np.empty(2)*np.nan
+        else:
+            beta = np.dot(pinv_wexog, wendog)
+            resid = wendog - X @ beta
+            cov = _cov_hc3(h, pinv_wexog, resid)
+            t = beta[1]/np.sqrt(np.diag(cov)[1])
+            return np.r_[beta[1], t]
 
     res = np.apply_along_axis(lambda y: _DE_test(wendog=y, pinv_wexog=pinv_wexog, h=h),
                             0, 
                             Y).T
 
-    sigma = stats.median_absolute_deviation(res[:,1], nan_policy='omit')
+    sigma = stats.median_abs_deviation(res[:,1], nan_policy='omit')
     pdt_new_pval = stats.norm.sf(np.abs(res[:,1]/sigma))*2    
     new_adj_pval = _p_adjust_bh(pdt_new_pval)
     alpha = 0.05
