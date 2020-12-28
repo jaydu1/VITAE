@@ -1,7 +1,7 @@
 # Datasets
 
 
-Our datasets contain both real and synthetic data (from [dyngen](https://github.com/dynverse/dyngen) and our model), with both UMI and non-UMI counts, and various trajectory topologies.
+Our datasets contain both real and synthetic data (from [dyngen](https://github.com/dynverse/dyngen) and our model), with both UMI and non-UMI counts, and various trajectory topologies. The dataset `mouse_brain_merged` contains a dataset from Ruan 2020+, which is currently under revision and will be available at the GEO database (GSE161690) in the future when the paper is accepted.
 
 type|name|count type|topology|N|G|k|source
 ---|---|---|---|---|---|---|---
