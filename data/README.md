@@ -1,7 +1,7 @@
 # Datasets
 
 
-Our datasets contain both real and synthetic data (from [dyngen](https://github.com/dynverse/dyngen) and our model), with both UMI and non-UMI counts, and various trajectory topologies. The datasets are also available at [Zenodo](https://zenodo.org/record/4395250#.X-kxWGT0kUE). Due to the storage limit of Github, the dataset `mouse_brain_merged` is only available at Zenodo.
+Our datasets contain both real and synthetic data (from [dyngen](https://github.com/dynverse/dyngen) and our model), with both UMI and non-UMI counts, and various trajectory topologies.
 
 type|name|count type|topology|N|G|k|source
 ---|---|---|---|---|---|---|---
