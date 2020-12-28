@@ -35,7 +35,7 @@ __author__ = &#34;Jin-Hong Du, Ming Gao, and Jingshu Wang&#34;
 __copyright__ = &#34;Copyright 2020, The Trajectory Inference Project&#34;
 
 __license__ = &#34;MIT&#34;
-__version__ = &#34;1.0.6&#34;
+__version__ = &#34;1.0.7&#34;
 __maintainer__ = &#34;Jin-Hong Du&#34;
 __email__ = &#34;dujinhong@uchicago.edu&#34;
 __status__ = &#34;Development&#34;</code></pre>
@@ -646,9 +646,41 @@ __status__ = &#34;Development&#34;</code></pre>
                                                          cutoff, 
                                                          path=path, 
                                                          is_plot=is_plot)
+        self.pseudotime = pseudotime
         return G, w, pseudotime
 
-    
+
+    def differentially_expressed_test(self, alpha: float = 0.05):
+        &#39;&#39;&#39;Differentially gene expression test. All (selected and unselected) genes will be tested 
+        Only cells in `selected_cell_subset` will be used, which is useful when one need to
+        test differentially expressed genes on a branch of the inferred trajectory.
+
+        Parameters
+        ----------
+        alpha : float, optional
+            The cutoff of p-values.
+
+        Returns
+        ----------
+        res_df : pandas.DataFrame
+            The test results of expressed genes with two columns,
+            the estimated coefficients and the adjusted p-values.
+        &#39;&#39;&#39;
+        if not hasattr(self, &#39;pseudotime&#39;):
+            raise ReferenceError(&#34;Pseudotime does not exist! Please run &#39;infer_trajectory&#39; first.&#34;)
+
+        # Prepare X and Y for regression expression ~ rank(PDT) + covariates
+        Y = self.expression[self.selected_cell_subset_id,:]
+        std_Y = np.std(Y, ddof=1, axis=0, keepdims=True)
+        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
+        X = stats.rankdata(self.pseudotime[self.selected_cell_subset_id])
+        X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
+        X = np.c_[np.ones_like(X), X, self.c_score[self.selected_cell_subset_id,:]]
+
+        res_df = DE_test(Y, X, self.gene_names, alpha)
+        return res_df
+
+
     def plot_marker_gene(self, gene_name: str, refit_dimred: bool = False, dimred: str = &#39;umap&#39;, path: Optional[str] =None, **kwargs):
         &#39;&#39;&#39;Plot expression of the given marker gene.
 
@@ -1730,7 +1762,61 @@ For 'mean', the root is the one with earliest mean time among cells associated w
                                                      cutoff, 
                                                      path=path, 
                                                      is_plot=is_plot)
+    self.pseudotime = pseudotime
     return G, w, pseudotime</code></pre>
+</details>
+</dd>
+<dt id="VITAE.VITAE.differentially_expressed_test"><code class="name flex">
+<span>def <span class="ident">differentially_expressed_test</span></span>(<span>self, alpha: float = 0.05)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Differentially gene expression test. All (selected and unselected) genes will be tested
+Only cells in <code>selected_cell_subset</code> will be used, which is useful when one need to
+test differentially expressed genes on a branch of the inferred trajectory.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>alpha</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>The cutoff of p-values.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>res_df</code></strong> :&ensp;<code>pandas.DataFrame</code></dt>
+<dd>The test results of expressed genes with two columns,
+the estimated coefficients and the adjusted p-values.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def differentially_expressed_test(self, alpha: float = 0.05):
+    &#39;&#39;&#39;Differentially gene expression test. All (selected and unselected) genes will be tested 
+    Only cells in `selected_cell_subset` will be used, which is useful when one need to
+    test differentially expressed genes on a branch of the inferred trajectory.
+
+    Parameters
+    ----------
+    alpha : float, optional
+        The cutoff of p-values.
+
+    Returns
+    ----------
+    res_df : pandas.DataFrame
+        The test results of expressed genes with two columns,
+        the estimated coefficients and the adjusted p-values.
+    &#39;&#39;&#39;
+    if not hasattr(self, &#39;pseudotime&#39;):
+        raise ReferenceError(&#34;Pseudotime does not exist! Please run &#39;infer_trajectory&#39; first.&#34;)
+
+    # Prepare X and Y for regression expression ~ rank(PDT) + covariates
+    Y = self.expression[self.selected_cell_subset_id,:]
+    std_Y = np.std(Y, ddof=1, axis=0, keepdims=True)
+    Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
+    X = stats.rankdata(self.pseudotime[self.selected_cell_subset_id])
+    X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
+    X = np.c_[np.ones_like(X), X, self.c_score[self.selected_cell_subset_id,:]]
+
+    res_df = DE_test(Y, X, self.gene_names, alpha)
+    return res_df</code></pre>
 </details>
 </dd>
 <dt id="VITAE.VITAE.plot_marker_gene"><code class="name flex">
@@ -2036,6 +2122,7 @@ Eg.</p>
 <li><code><a title="VITAE.VITAE.select_root" href="#VITAE.VITAE.select_root">select_root</a></code></li>
 <li><code><a title="VITAE.VITAE.comp_inference_score" href="#VITAE.VITAE.comp_inference_score">comp_inference_score</a></code></li>
 <li><code><a title="VITAE.VITAE.infer_trajectory" href="#VITAE.VITAE.infer_trajectory">infer_trajectory</a></code></li>
+<li><code><a title="VITAE.VITAE.differentially_expressed_test" href="#VITAE.VITAE.differentially_expressed_test">differentially_expressed_test</a></code></li>
 <li><code><a title="VITAE.VITAE.plot_marker_gene" href="#VITAE.VITAE.plot_marker_gene">plot_marker_gene</a></code></li>
 <li><code><a title="VITAE.VITAE.evaluate" href="#VITAE.VITAE.evaluate">evaluate</a></code></li>
 </ul>
