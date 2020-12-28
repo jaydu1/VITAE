@@ -1,7 +1,7 @@
 # Datasets
 
 
-Our datasets contains both real and synthetic data (from [dyngen](https://github.com/dynverse/dyngen) and our model), with both UMI and non-UMI counts, and various trajectory topologies.
+Our datasets contain both real and synthetic data (from [dyngen](https://github.com/dynverse/dyngen) and our model), with both UMI and non-UMI counts, and various trajectory topologies. The datasets are also available at [Zenodo](https://zenodo.org/record/4395250#.X-kxWGT0kUE). Due to the storage limit of Github, the dataset `mouse_brain_merged` is only available at Zenodo.
 
 type|name|count type|topology|N|G|k|source
 ---|---|---|---|---|---|---|---
@@ -15,7 +15,7 @@ real | dentate | UMI | linear | 3585 | 2182 | 5 | [Hochgerner *et al.* (2018)](h
 real | planaria\_muscle | UMI | bifurcation | 2338 | 4210 | 3 | [Wolf *et al.* (2019)](https://doi.org/10.1186/s13059-019-1663-x)
 real | planaria\_full | UMI | tree | 18837 | 4210 | 33 | [Wolf *et al.* (2019)](https://doi.org/10.1186/s13059-019-1663-x)
 real | immune | UMI | disconnected | 21082 | 18750 | 3 | [zheng *et al.* (2017)](https://doi.org/10.1038/ncomms14049)
-real | mouse_brain_merged | UMI | tree | 10261 <br> 6390 | 14707 | 15 | [Yuzwa *et al.* (2017)](https://doi.org/10.1016/j.celrep.2017.12.017),<br> Ruan *et al.* (2020+)
+real | mouse\_brain\_merged | UMI | tree | 10261 <br> 6390 | 14707 | 15 | [Yuzwa *et al.* (2017)](https://doi.org/10.1016/j.celrep.2017.12.017),<br> Ruan *et al.* (2020+)
 synthetic | linear\_1 | non-UMI | linear | 2000 | 991 | 4 | dyngen 
 synthetic | linear\_2 | non-UMI | linear | 2000 | 999 | 4 | dyngen 
 synthetic | linear\_3 | non-UMI | linear | 2000 | 1000 | 4 | dyngen 
@@ -34,7 +34,7 @@ synthetic | tree | UMI | tree | 2600 | 2000 | 7 | our model
 
 # Field
 
-All possible fields for these datasets are shown below. Note that not every datasets have all these fields. For example, `covariates` only available in the `mouse_brain_merged` dataset.
+All possible fields for these datasets are shown below. Note that not every dataset have all these fields. For example, `covariates` only available in the `mouse_brain_merged` dataset.
 
 key|detail
 ---|---
@@ -43,7 +43,7 @@ grouping | A one-dim array of reference labels of cells.
 gene\_names | A one-dim array of gene names. 
 cell\_ids | A one-dim array of cell ids.
 covariates | A two-dim array of covariates, e.g., cell-cycle scores and the indicator of data sources.
-milestone_network | A dataframe of the reference connectivity network of cell types. For real data, it is a dataframe indicating the transition of each vertex with columns `from` and `to`. For syhthetic data, it is a dataframe indicating the transition of each cell with columns `from`, `to` and `w`.
+milestone_network | A dataframe of the reference connectivity network of cell types. For real data, it is a dataframe indicating the transition of each vertex with columns `from` and `to`. For synthetic data, it is a dataframe indicating the transition of each cell with columns `from`, `to` and `w`.
 root\_milestone\_id | The name of the root vertex of the trajectory.
 type | 'UMI' or 'non-UMI'
 
