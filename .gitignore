@@ -1,3 +1,6 @@
 __pycache__/
 .ipynb_checkpoints
 PyPI/
+data/mouse_brain_merged.h5
+data/mouse_brain_miller.h5
+data/mouse_brain.h5
