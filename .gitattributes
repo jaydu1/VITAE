@@ -1,7 +1,0 @@
-paper/An[[:space:]]Application[[:space:]]to[[:space:]]the[[:space:]]Developing[[:space:]]Mouse[[:space:]]Neocortex/result/data.integrated.Robj filter=lfs diff=lfs merge=lfs -text
-paper/An[[:space:]]Application[[:space:]]to[[:space:]]the[[:space:]]Developing[[:space:]]Mouse[[:space:]]Neocortex/result/data.integrated.adjusted.Robj filter=lfs diff=lfs merge=lfs -text
-paper/An[[:space:]]Application[[:space:]]to[[:space:]]the[[:space:]]Developing[[:space:]]Mouse[[:space:]]Neocortex/result/data.integrated.clustering.Robj filter=lfs diff=lfs merge=lfs -text
-paper/An[[:space:]]Application[[:space:]]to[[:space:]]the[[:space:]]Developing[[:space:]]Mouse[[:space:]]Neocortex/result/data.integrated.unadjust.Robj filter=lfs diff=lfs merge=lfs -text
-paper/An[[:space:]]Application[[:space:]]to[[:space:]]the[[:space:]]Developing[[:space:]]Mouse[[:space:]]Neocortex/result/bracnh[[:space:]]7-4-6-1/expression.csv filter=lfs diff=lfs merge=lfs -text
-paper/An[[:space:]]Application[[:space:]]to[[:space:]]the[[:space:]]Developing[[:space:]]Mouse[[:space:]]Neocortex/result/branch[[:space:]]5-7-0-11/expression.csv filter=lfs diff=lfs merge=lfs -text
-data/mouse_brain_merged.h5 filter=lfs diff=lfs merge=lfs -text
