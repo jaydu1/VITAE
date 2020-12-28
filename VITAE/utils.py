@@ -13,6 +13,7 @@ import matplotlib
 import os     
 import numpy as np
 from numba import jit, float32, int32
+from scipy import stats
 import pandas as pd
 import h5py
 
@@ -291,6 +292,101 @@ def _get_smooth_curve(xy, xy_fixed):
 
     return xx, poly(xx)
 
+
+def _pinv_extended(x, rcond=1e-15):
+    """
+    Return the pinv of an array X as well as the singular values
+    used in computation.
+    Code adapted from numpy.
+    """
+    x = np.asarray(x)
+    x = x.conjugate()
+    u, s, vt = np.linalg.svd(x, False)
+    s_orig = np.copy(s)
+    m = u.shape[0]
+    n = vt.shape[1]
+    cutoff = rcond * np.maximum.reduce(s)
+    for i in range(min(n, m)):
+        if s[i] > cutoff:
+            s[i] = 1./s[i]
+        else:
+            s[i] = 0.
+    res = np.dot(np.transpose(vt), np.multiply(s[:, np.core.newaxis],
+                                               np.transpose(u)))
+    return res, s_orig
+
+
+def _cov_hc3(h, pinv_wexog, resid):
+    het_scale = (resid/(1-h))**2
+
+    # sandwich with pinv(x) * diag(scale) * pinv(x).T
+    # where pinv(x) = (X'X)^(-1) X and scale is (nobs,)
+    cov_hc3_ = np.dot(pinv_wexog, het_scale[:,None]*pinv_wexog.T)
+    return cov_hc3_
+
+
+def _p_adjust_bh(p):
+    """Benjamini-Hochberg p-value correction for multiple hypothesis testing."""
+    n = len(p)
+    nna = ~np.isnan(p)
+    lp = np.sum(nna)
+
+    p0 = np.empty_like(p)
+    p0[~nna] = np.nan
+    p = p[nna]
+    by_descend = p.argsort()[::-1]
+    by_orig = by_descend.argsort()
+    steps = float(lp) / np.arange(lp, 0, -1)
+    p0[nna] = np.minimum(1, np.minimum.accumulate(steps * p[by_descend]))[by_orig]
+    return p0
+
+
+def DE_test(Y, X, gene_names, alpha: float = 0.05):
+    '''Differential gene expression test.
+
+    Parameters
+    ----------
+    Y : numpy.array
+        \(n,\) the expression matrix.
+    X : numpy.array
+        \(n,1+1+s\) the constant term, the pseudotime and the covariates.
+    gene_names : numpy.array
+        \(n,\) the names of all genes.
+    alpha : float, optional
+        The cutoff of p-values.
+
+    Returns
+    ----------
+    res_df : pandas.DataFrame
+        The test results of expressed genes with two columns,
+        the estimated coefficients and the adjusted p-values.
+    '''
+    pinv_wexog, singular_values = _pinv_extended(X)
+    normalized_cov = np.dot(
+            pinv_wexog, np.transpose(pinv_wexog))
+    h = np.diag(np.dot(X, 
+                    np.dot(normalized_cov,X.T)))  
+
+    def _DE_test(wendog,pinv_wexog,h):
+        beta = np.dot(pinv_wexog, wendog)
+        resid = wendog - X @ beta
+        cov = _cov_hc3(h, pinv_wexog, resid)
+        t = beta[1]/np.sqrt(np.diag(cov)[1])
+        return np.r_[beta[1], t]
+
+    res = np.apply_along_axis(lambda y: _DE_test(wendog=y, pinv_wexog=pinv_wexog, h=h),
+                            0, 
+                            Y).T
+
+    sigma = stats.median_absolute_deviation(res[:,1], nan_policy='omit')
+    pdt_new_pval = stats.norm.sf(np.abs(res[:,1]/sigma))*2    
+    new_adj_pval = _p_adjust_bh(pdt_new_pval)
+    alpha = 0.05
+    res_df = pd.DataFrame(np.c_[res[:,0], new_adj_pval], 
+                    index=gene_names,
+                    columns=['beta_PDT','p_adjusted'])
+    res_df = res_df[(new_adj_pval< alpha) & np.any(~np.isnan(Y), axis=0)]
+    return res_df
 
 #------------------------------------------------------------------------------
 # Data loader

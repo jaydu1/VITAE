@@ -6,7 +6,8 @@ import VITAE.model as model
 import VITAE.preprocess as preprocess
 import VITAE.train as train
 from VITAE.inference import Inferer
-from VITAE.utils import load_data, get_embedding, get_igraph, louvain_igraph, plot_clusters, plot_marker_gene
+from VITAE.utils import load_data, get_embedding, get_igraph, louvain_igraph, \
+    plot_clusters, plot_marker_gene, DE_test
 from VITAE.metric import topology, get_GRI
 
 from sklearn.metrics.cluster import adjusted_rand_score
@@ -16,6 +17,7 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 import networkx as nx
+from scipy import stats
 
 
 class VITAE():
@@ -578,9 +580,38 @@ class VITAE():
                                                          cutoff, 
                                                          path=path, 
                                                          is_plot=is_plot)
+        self.pseudotime = pseudotime
         return G, w, pseudotime
 
-    
+
+    def differential_expressed_test(self, alpha: float = 0.05):
+        '''Differential gene expression test.
+
+        Parameters
+        ----------
+        alpha : float, optional
+            The cutoff of p-values.
+
+        Returns
+        ----------
+        res_df : pandas.DataFrame
+            The test results of expressed genes with two columns,
+            the estimated coefficients and the adjusted p-values.
+        '''
+        if not hasattr(self, 'pseudotime'):
+            raise ReferenceError("Pseudotime does not exist! Please run 'infer_trajectory' first.")
+
+        # Prepare X and Y for regression expression ~ rank(PDT) + covariates
+        Y = self.expression[self.selected_cell_subset_id,:]
+        std_Y = np.std(Y, ddof=1, axis=0, keepdims=True)
+        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y).fill(np.nan), where=std_Y!=0)
+        X = stats.rankdata(self.pseudotime[self.selected_cell_subset_id])
+        X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
+        X = np.c_[np.ones_like(X), X, self.c_score[self.selected_cell_subset_id,:]]
+
+        res_df = DE_test(Y, X, self.gene_names, alpha)
+        return res_df
+
     def plot_marker_gene(self, gene_name: str, refit_dimred: bool = False, dimred: str = 'umap', path: Optional[str] =None, **kwargs):
         '''Plot expression of the given marker gene.
 
