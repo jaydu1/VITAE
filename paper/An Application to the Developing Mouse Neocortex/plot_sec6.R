@@ -33,7 +33,7 @@ cols <- sapply(list(c(0.3686274509803922, 0.30980392156862746, 0.635294117647058
                function(v) rgb(v[1], v[2], v[3], v[4]))
 
 titles <- c("NEC -> RGC -> OPC", "RGC -> IPC -> Immature Neuron")
-branches <- c('branch 5-7-0-11', 'bracnh 7-4-6-1')
+branches <- c('branch 5-7-0-11', 'branch 7-4-6-1')
 p1 <- list()
 p2 <- list()
 for(i in 1:2){

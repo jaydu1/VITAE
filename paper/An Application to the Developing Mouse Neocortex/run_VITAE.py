@@ -101,7 +101,7 @@ id_branches = [((modified_w[:,5] > 0.0)&(modified_w[:,7] > 0.0)) | \
     (modified_w[:,4] > 0.99) | \
     (modified_w[:,6] > 0.99) | \
     (modified_w[:,1] > 0.99)   ] 
-branch_names = ['branch 5-7-0-11', 'bracnh 7-4-6-1']
+branch_names = ['branch 5-7-0-11', 'branch 7-4-6-1']
 for i in range(2):
     id_branch = id_branches[i]
     branch_name = branch_names[i]
