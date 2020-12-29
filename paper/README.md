@@ -75,7 +75,7 @@ The folder `An Application to the Developing Mouse Neocortex` contains code to r
 - `run_Seurat_Slingshot`: Run Seurat and Slingshot and record the results.
 - `run_VITAE.py`: Run VITAE, and save the trained model and intermediate results.
 
-The intermediate results of the above scripts are in the sub-folder `result`. Then the figures in Section 5 is given by the following Python script:
+The intermediate results of the above scripts are in the sub-folder `result`. Then the figures in Section 5 is given by the following Python and R scripts:
 
 - `plot_sec6.py`: Reproduce the Figure 4-5 and the subfigures of Figure 6 in the manuscript.
 - `plot_sec6.R`: Reproduce the main figures of Figure 6 in the manuscript.
