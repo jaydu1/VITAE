@@ -16,7 +16,7 @@ def clear_session():
     return None
 
     
-def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None):
+def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None, seed=0):
     '''Get Tensorflow datasets.
 
     Parameters
@@ -31,6 +31,8 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
         \([N, G]\) The raw count data.
     scale_factor : np.array, optional
         \([N, ]\) The raw count data.
+    seed : int, optional
+        The random seed for data shuffling.
 
     Returns
     ----------
@@ -43,7 +45,7 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
         
     if X is not None:
         train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, c_score, scale_factor))
-        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0],
+        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0], seed=seed,
                                         reshuffle_each_iteration=True).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
         return train_dataset
     else:

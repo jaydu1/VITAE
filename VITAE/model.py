@@ -45,6 +45,10 @@ class Sampling(Layer):
     """Sampling latent variable \(z\) from \(N(\\mu_z, \\log \\sigma_z^2\)).    
     Used in Encoder.
     """
+    def __init__(self, seed=0, **kwargs):
+        super(Sampling, self).__init__(**kwargs)
+        self.seed = seed
+
     @tf.function
     def call(self, z_mean, z_log_var):
         '''Return cdf(x) and pdf(x).
@@ -61,7 +65,7 @@ class Sampling(Layer):
         z : tf.Tensor
             \([B, L, d]\) The sampled \(z\).
         '''   
-        epsilon = tf.random.normal(shape = tf.shape(z_mean))
+        epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=self.seed)
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
         return z
@@ -232,7 +236,8 @@ class LatentSpace(Layer):
     '''
     Layer for the Latent Space.
     '''
-    def __init__(self, n_clusters, dim_latent, M = 50, name = 'LatentSpace', **kwargs):
+    def __init__(self, n_clusters, dim_latent, M = 50, 
+            name = 'LatentSpace', seed=0, **kwargs):
         '''
         Parameters
         ----------
@@ -272,7 +277,7 @@ class LatentSpace(Layer):
         
         # [mu_1, ... , mu_K] in R^(dim_latent * n_clusters)
         self.mu = tf.Variable(tf.random.uniform([self.dim_latent, self.n_clusters],
-                                                minval = -1, maxval = 1),
+                                                minval = -1, maxval = 1, seed=seed),
                                 name = 'mu')
         self.cdf_layer = cdf_layer()       
         

@@ -92,7 +92,8 @@ def feature_select(x, gene_num = 2000):
 
 def preprocess(adata = None, processed = None, dimred: bool = None, 
             x = None, c = None, label_names = None, raw_cell_names = None, raw_gene_names = None,  
-            K: float = 1e4, gene_num: int = 2000, data_type: str = 'UMI', npc: int = 64):
+            K: float = 1e4, gene_num: int = 2000, data_type: str = 'UMI', 
+            npc: int = 64, random_state=0):
     '''Preprocess count data.
 
     Parameters
@@ -121,6 +122,8 @@ def preprocess(adata = None, processed = None, dimred: bool = None,
         'UMI', 'non-UMI', or 'Gaussian'.
     npc : int, optional
         The number of PCs to retain, only used if `data_type='Gaussian'`.
+    random_state : int, optional
+        The random state for PCA. With different random states, the resulted PCA scores are slightly different.
 
     Returns
     ----------
@@ -210,7 +213,7 @@ def preprocess(adata = None, processed = None, dimred: bool = None,
 
 
     if (data_type=='Gaussian') and (dimred is False):
-        pca = PCA(n_components = npc)
+        pca = PCA(n_components = npc, random_state=random_state)
         x_normalized = x = pca.fit_transform(x_normalized)
 
     if c is not None:
