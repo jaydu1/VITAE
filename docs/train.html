@@ -45,7 +45,7 @@ def clear_session():
     return None
 
     
-def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None):
+def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None, seed=0):
     &#39;&#39;&#39;Get Tensorflow datasets.
 
     Parameters
@@ -60,6 +60,8 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
         \([N, G]\) The raw count data.
     scale_factor : np.array, optional
         \([N, ]\) The raw count data.
+    seed : int, optional
+        The random seed for data shuffling.
 
     Returns
     ----------
@@ -72,7 +74,7 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
         
     if X is not None:
         train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, c_score, scale_factor))
-        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0],
+        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0], seed=seed,
                                         reshuffle_each_iteration=True).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
         return train_dataset
     else:
@@ -328,7 +330,7 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
 </details>
 </dd>
 <dt id="VITAE.train.warp_dataset"><code class="name flex">
-<span>def <span class="ident">warp_dataset</span></span>(<span>X_normalized, c_score, batch_size: int, X=None, scale_factor=None)</span>
+<span>def <span class="ident">warp_dataset</span></span>(<span>X_normalized, c_score, batch_size: int, X=None, scale_factor=None, seed=0)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Get Tensorflow datasets.</p>
@@ -344,6 +346,8 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
 <dd><span><span class="MathJax_Preview">[N, G]</span><script type="math/tex">[N, G]</script></span> The raw count data.</dd>
 <dt><strong><code>scale_factor</code></strong> :&ensp;<code>np.array</code>, optional</dt>
 <dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> The raw count data.</dd>
+<dt><strong><code>seed</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The random seed for data shuffling.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -354,7 +358,7 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None):
+<pre><code class="python">def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None, seed=0):
     &#39;&#39;&#39;Get Tensorflow datasets.
 
     Parameters
@@ -369,6 +373,8 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
         \([N, G]\) The raw count data.
     scale_factor : np.array, optional
         \([N, ]\) The raw count data.
+    seed : int, optional
+        The random seed for data shuffling.
 
     Returns
     ----------
@@ -381,7 +387,7 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
         
     if X is not None:
         train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, c_score, scale_factor))
-        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0],
+        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0], seed=seed,
                                         reshuffle_each_iteration=True).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
         return train_dataset
     else:

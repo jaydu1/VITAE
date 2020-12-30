@@ -121,7 +121,8 @@ def feature_select(x, gene_num = 2000):
 
 def preprocess(adata = None, processed = None, dimred: bool = None, 
             x = None, c = None, label_names = None, raw_cell_names = None, raw_gene_names = None,  
-            K: float = 1e4, gene_num: int = 2000, data_type: str = &#39;UMI&#39;, npc: int = 64):
+            K: float = 1e4, gene_num: int = 2000, data_type: str = &#39;UMI&#39;, 
+            npc: int = 64, random_state=0):
     &#39;&#39;&#39;Preprocess count data.
 
     Parameters
@@ -150,6 +151,8 @@ def preprocess(adata = None, processed = None, dimred: bool = None,
         &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
     npc : int, optional
         The number of PCs to retain, only used if `data_type=&#39;Gaussian&#39;`.
+    random_state : int, optional
+        The random state for PCA. With different random states, the resulted PCA scores are slightly different.
 
     Returns
     ----------
@@ -239,7 +242,7 @@ def preprocess(adata = None, processed = None, dimred: bool = None,
 
 
     if (data_type==&#39;Gaussian&#39;) and (dimred is False):
-        pca = PCA(n_components = npc)
+        pca = PCA(n_components = npc, random_state=random_state)
         x_normalized = x = pca.fit_transform(x_normalized)
 
     if c is not None:
@@ -426,7 +429,7 @@ Page 12-13: Data preprocessing - Feature selection for individual datasets).</p>
 </details>
 </dd>
 <dt id="VITAE.preprocess.preprocess"><code class="name flex">
-<span>def <span class="ident">preprocess</span></span>(<span>adata=None, processed=None, dimred: bool = None, x=None, c=None, label_names=None, raw_cell_names=None, raw_gene_names=None, K: float = 10000.0, gene_num: int = 2000, data_type: str = 'UMI', npc: int = 64)</span>
+<span>def <span class="ident">preprocess</span></span>(<span>adata=None, processed=None, dimred: bool = None, x=None, c=None, label_names=None, raw_cell_names=None, raw_gene_names=None, K: float = 10000.0, gene_num: int = 2000, data_type: str = 'UMI', npc: int = 64, random_state=0)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Preprocess count data.</p>
@@ -457,6 +460,8 @@ Page 12-13: Data preprocessing - Feature selection for individual datasets).</p>
 <dd>'UMI', 'non-UMI', or 'Gaussian'.</dd>
 <dt><strong><code>npc</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>The number of PCs to retain, only used if <code>data_type='Gaussian'</code>.</dd>
+<dt><strong><code>random_state</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The random state for PCA. With different random states, the resulted PCA scores are slightly different.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -491,7 +496,8 @@ Page 12-13: Data preprocessing - Feature selection for individual datasets).</p>
 </summary>
 <pre><code class="python">def preprocess(adata = None, processed = None, dimred: bool = None, 
             x = None, c = None, label_names = None, raw_cell_names = None, raw_gene_names = None,  
-            K: float = 1e4, gene_num: int = 2000, data_type: str = &#39;UMI&#39;, npc: int = 64):
+            K: float = 1e4, gene_num: int = 2000, data_type: str = &#39;UMI&#39;, 
+            npc: int = 64, random_state=0):
     &#39;&#39;&#39;Preprocess count data.
 
     Parameters
@@ -520,6 +526,8 @@ Page 12-13: Data preprocessing - Feature selection for individual datasets).</p>
         &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
     npc : int, optional
         The number of PCs to retain, only used if `data_type=&#39;Gaussian&#39;`.
+    random_state : int, optional
+        The random state for PCA. With different random states, the resulted PCA scores are slightly different.
 
     Returns
     ----------
@@ -609,7 +617,7 @@ Page 12-13: Data preprocessing - Feature selection for individual datasets).</p>
 
 
     if (data_type==&#39;Gaussian&#39;) and (dimred is False):
-        pca = PCA(n_components = npc)
+        pca = PCA(n_components = npc, random_state=random_state)
         x_normalized = x = pca.fit_transform(x_normalized)
 
     if c is not None:

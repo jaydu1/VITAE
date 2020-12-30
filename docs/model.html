@@ -74,6 +74,10 @@ class Sampling(Layer):
     &#34;&#34;&#34;Sampling latent variable \(z\) from \(N(\\mu_z, \\log \\sigma_z^2\)).    
     Used in Encoder.
     &#34;&#34;&#34;
+    def __init__(self, seed=0, **kwargs):
+        super(Sampling, self).__init__(**kwargs)
+        self.seed = seed
+
     @tf.function
     def call(self, z_mean, z_log_var):
         &#39;&#39;&#39;Return cdf(x) and pdf(x).
@@ -90,7 +94,7 @@ class Sampling(Layer):
         z : tf.Tensor
             \([B, L, d]\) The sampled \(z\).
         &#39;&#39;&#39;   
-        epsilon = tf.random.normal(shape = tf.shape(z_mean))
+        epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=self.seed)
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
         return z
@@ -261,7 +265,8 @@ class LatentSpace(Layer):
     &#39;&#39;&#39;
     Layer for the Latent Space.
     &#39;&#39;&#39;
-    def __init__(self, n_clusters, dim_latent, M = 50, name = &#39;LatentSpace&#39;, **kwargs):
+    def __init__(self, n_clusters, dim_latent, M = 50, 
+            name = &#39;LatentSpace&#39;, seed=0, **kwargs):
         &#39;&#39;&#39;
         Parameters
         ----------
@@ -301,7 +306,7 @@ class LatentSpace(Layer):
         
         # [mu_1, ... , mu_K] in R^(dim_latent * n_clusters)
         self.mu = tf.Variable(tf.random.uniform([self.dim_latent, self.n_clusters],
-                                                minval = -1, maxval = 1),
+                                                minval = -1, maxval = 1, seed=seed),
                                 name = &#39;mu&#39;)
         self.cdf_layer = cdf_layer()       
         
@@ -909,7 +914,7 @@ def func(self, x):
 </dd>
 <dt id="VITAE.model.Sampling"><code class="flex name class">
 <span>class <span class="ident">Sampling</span></span>
-<span>(</span><span>trainable=True, name=None, dtype=None, dynamic=False, **kwargs)</span>
+<span>(</span><span>seed=0, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Sampling latent variable <span><span class="MathJax_Preview">z</span><script type="math/tex">z</script></span> from <span><span class="MathJax_Preview">N(\mu_z, \log \sigma_z^2</span><script type="math/tex">N(\mu_z, \log \sigma_z^2</script></span>).
@@ -923,6 +928,10 @@ Used in Encoder.</p></div>
     &#34;&#34;&#34;Sampling latent variable \(z\) from \(N(\\mu_z, \\log \\sigma_z^2\)).    
     Used in Encoder.
     &#34;&#34;&#34;
+    def __init__(self, seed=0, **kwargs):
+        super(Sampling, self).__init__(**kwargs)
+        self.seed = seed
+
     @tf.function
     def call(self, z_mean, z_log_var):
         &#39;&#39;&#39;Return cdf(x) and pdf(x).
@@ -939,7 +948,7 @@ Used in Encoder.</p></div>
         z : tf.Tensor
             \([B, L, d]\) The sampled \(z\).
         &#39;&#39;&#39;   
-        epsilon = tf.random.normal(shape = tf.shape(z_mean))
+        epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=self.seed)
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
         return z</code></pre>
@@ -991,7 +1000,7 @@ def call(self, z_mean, z_log_var):
     z : tf.Tensor
         \([B, L, d]\) The sampled \(z\).
     &#39;&#39;&#39;   
-    epsilon = tf.random.normal(shape = tf.shape(z_mean))
+    epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=self.seed)
     z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
     z = tf.clip_by_value(z, -1e6, 1e6)
     return z</code></pre>
@@ -1387,7 +1396,7 @@ def call(self, z, is_training=True):
 </dd>
 <dt id="VITAE.model.LatentSpace"><code class="flex name class">
 <span>class <span class="ident">LatentSpace</span></span>
-<span>(</span><span>n_clusters, dim_latent, M=50, name='LatentSpace', **kwargs)</span>
+<span>(</span><span>n_clusters, dim_latent, M=50, name='LatentSpace', seed=0, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Layer for the Latent Space.</p>
@@ -1412,7 +1421,8 @@ def call(self, z, is_training=True):
     &#39;&#39;&#39;
     Layer for the Latent Space.
     &#39;&#39;&#39;
-    def __init__(self, n_clusters, dim_latent, M = 50, name = &#39;LatentSpace&#39;, **kwargs):
+    def __init__(self, n_clusters, dim_latent, M = 50, 
+            name = &#39;LatentSpace&#39;, seed=0, **kwargs):
         &#39;&#39;&#39;
         Parameters
         ----------
@@ -1452,7 +1462,7 @@ def call(self, z, is_training=True):
         
         # [mu_1, ... , mu_K] in R^(dim_latent * n_clusters)
         self.mu = tf.Variable(tf.random.uniform([self.dim_latent, self.n_clusters],
-                                                minval = -1, maxval = 1),
+                                                minval = -1, maxval = 1, seed=seed),
                                 name = &#39;mu&#39;)
         self.cdf_layer = cdf_layer()       
         
