@@ -5,7 +5,7 @@
 
 # Model-based Trajectory Inference for Single-Cell RNA Sequencing Using Deep Learning with a Mixture Prior
 
-This is a Python package, VITAE, to perform trajectory inference for single-cell RNA sequencing (scRNA-seq). VITAE is a probabilistic method combining a latent hierarchical mixture model with variational autoencoders to infer trajectories from posterior approximations. VITAE is computationally scalable and can adjust for confounding covariates to learn a shared trajectory from multiple datasets. VITAE also provides uncertainty quantification of the inferred trajectory and cell positions, and can find differentially expressed genes along the trajectory. For more information, please check out our [manucript] (https://www.biorxiv.org/content/10.1101/2020.12.26.424452v1) on BioRXiv. 
+This is a Python package, VITAE, to perform trajectory inference for single-cell RNA sequencing (scRNA-seq). VITAE is a probabilistic method combining a latent hierarchical mixture model with variational autoencoders to infer trajectories from posterior approximations. VITAE is computationally scalable and can adjust for confounding covariates to learn a shared trajectory from multiple datasets. VITAE also provides uncertainty quantification of the inferred trajectory and cell positions, and can find differentially expressed genes along the trajectory. For more information, please check out our [manucript](https://www.biorxiv.org/content/10.1101/2020.12.26.424452v1) on BioRXiv. 
 
 ## Tutorials
 
