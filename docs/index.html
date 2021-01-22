@@ -95,7 +95,17 @@ __status__ = &#34;Development&#34;</code></pre>
 
     def get_data(self, X = None, adata = None, labels = None,
                  covariate = None, cell_names = None, gene_names = None):
-        &#39;&#39;&#39;Get data for model.
+        &#39;&#39;&#39;Get data for model. 
+        
+        (1) The user can provide a 2-dim numpy array as the count matrix `X`, either preprocessed or raw. 
+        Some extra information `labels`, `cell_names` and `gene_names` (as 1-dim numpy arrays) are optional.
+
+        (2) If the package `scanpy` is installed, then the function can also accept an `annData` input as `adata`. 
+        Some extra information `labels`, `cell_names` and `gene_names` are extracted from 
+        `adata.obs.cell_types`, `adata.obs_names.values` and `adata.var_names.values`, and
+        a 1-dim numpy array `labels` can also be provided if `adata.obs.cell_types` does not exist.
+
+        Covariates can be provided as a 2-dim numpy array.
 
         Parameters
         ----------
@@ -135,12 +145,16 @@ __status__ = &#34;Development&#34;</code></pre>
         
     def preprocess_data(self, processed: bool = False, dimred: bool = False,
                         K: float = 1e4, gene_num: int = 2000, data_type: str = &#39;UMI&#39;, npc: int = 64):
-        &#39;&#39;&#39; Data preprocessing - log-normalization, feature selection, and scaling.            
+        &#39;&#39;&#39; Data preprocessing - log-normalization, feature selection, and scaling.                    
+
+        If the inputs are preprocessed by users, then `Gaussian` model will be used and PCA will be performed to reduce the input dimension.
+        Otherwise, preprocessing will be performed on `X` following Seurat&#39;s routine. 
+        If `adata` is provided, the preprocession will be done via `scanpy`.
 
         Parameters
         ----------
         processed : boolean, optional
-            Whether adata has been processed.
+            Whether adata has been processed. If `processed=True`, then `Gaussian` model will be used.
         dimred : boolean, optional
             Whether the processed adata is after dimension reduction.
         K : float, optional              
@@ -858,7 +872,14 @@ __status__ = &#34;Development&#34;</code></pre>
 <span>def <span class="ident">get_data</span></span>(<span>self, X=None, adata=None, labels=None, covariate=None, cell_names=None, gene_names=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Get data for model.</p>
+<div class="desc"><p>Get data for model. </p>
+<p>(1) The user can provide a 2-dim numpy array as the count matrix <code>X</code>, either preprocessed or raw.
+Some extra information <code>labels</code>, <code>cell_names</code> and <code>gene_names</code> (as 1-dim numpy arrays) are optional.</p>
+<p>(2) If the package <code>scanpy</code> is installed, then the function can also accept an <code>annData</code> input as <code>adata</code>.
+Some extra information <code>labels</code>, <code>cell_names</code> and <code>gene_names</code> are extracted from
+<code>adata.obs.cell_types</code>, <code>adata.obs_names.values</code> and <code>adata.var_names.values</code>, and
+a 1-dim numpy array <code>labels</code> can also be provided if <code>adata.obs.cell_types</code> does not exist.</p>
+<p>Covariates can be provided as a 2-dim numpy array.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>X</code></strong> :&ensp;<code>np.array</code>, optional</dt>
@@ -880,7 +901,17 @@ __status__ = &#34;Development&#34;</code></pre>
 </summary>
 <pre><code class="python">def get_data(self, X = None, adata = None, labels = None,
              covariate = None, cell_names = None, gene_names = None):
-    &#39;&#39;&#39;Get data for model.
+    &#39;&#39;&#39;Get data for model. 
+    
+    (1) The user can provide a 2-dim numpy array as the count matrix `X`, either preprocessed or raw. 
+    Some extra information `labels`, `cell_names` and `gene_names` (as 1-dim numpy arrays) are optional.
+
+    (2) If the package `scanpy` is installed, then the function can also accept an `annData` input as `adata`. 
+    Some extra information `labels`, `cell_names` and `gene_names` are extracted from 
+    `adata.obs.cell_types`, `adata.obs_names.values` and `adata.var_names.values`, and
+    a 1-dim numpy array `labels` can also be provided if `adata.obs.cell_types` does not exist.
+
+    Covariates can be provided as a 2-dim numpy array.
 
     Parameters
     ----------
@@ -924,10 +955,13 @@ __status__ = &#34;Development&#34;</code></pre>
 <dd>
 <div class="desc"><p>Data preprocessing - log-normalization, feature selection, and scaling.
 </p>
+<p>If the inputs are preprocessed by users, then <code>Gaussian</code> model will be used and PCA will be performed to reduce the input dimension.
+Otherwise, preprocessing will be performed on <code>X</code> following Seurat's routine.
+If <code>adata</code> is provided, the preprocession will be done via <code>scanpy</code>.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>processed</code></strong> :&ensp;<code>boolean</code>, optional</dt>
-<dd>Whether adata has been processed.</dd>
+<dd>Whether adata has been processed. If <code>processed=True</code>, then <code>Gaussian</code> model will be used.</dd>
 <dt><strong><code>dimred</code></strong> :&ensp;<code>boolean</code>, optional</dt>
 <dd>Whether the processed adata is after dimension reduction.</dd>
 <dt><strong><code>K</code></strong> :&ensp;<code>float</code>, optional</dt>
@@ -945,12 +979,16 @@ __status__ = &#34;Development&#34;</code></pre>
 </summary>
 <pre><code class="python">def preprocess_data(self, processed: bool = False, dimred: bool = False,
                     K: float = 1e4, gene_num: int = 2000, data_type: str = &#39;UMI&#39;, npc: int = 64):
-    &#39;&#39;&#39; Data preprocessing - log-normalization, feature selection, and scaling.            
+    &#39;&#39;&#39; Data preprocessing - log-normalization, feature selection, and scaling.                    
+
+    If the inputs are preprocessed by users, then `Gaussian` model will be used and PCA will be performed to reduce the input dimension.
+    Otherwise, preprocessing will be performed on `X` following Seurat&#39;s routine. 
+    If `adata` is provided, the preprocession will be done via `scanpy`.
 
     Parameters
     ----------
     processed : boolean, optional
-        Whether adata has been processed.
+        Whether adata has been processed. If `processed=True`, then `Gaussian` model will be used.
     dimred : boolean, optional
         Whether the processed adata is after dimension reduction.
     K : float, optional              

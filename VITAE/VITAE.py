@@ -29,7 +29,17 @@ class VITAE():
 
     def get_data(self, X = None, adata = None, labels = None,
                  covariate = None, cell_names = None, gene_names = None):
-        '''Get data for model.
+        '''Get data for model. 
+        
+        (1) The user can provide a 2-dim numpy array as the count matrix `X`, either preprocessed or raw. 
+        Some extra information `labels`, `cell_names` and `gene_names` (as 1-dim numpy arrays) are optional.
+
+        (2) If the package `scanpy` is installed, then the function can also accept an `annData` input as `adata`. 
+        Some extra information `labels`, `cell_names` and `gene_names` are extracted from 
+        `adata.obs.cell_types`, `adata.obs_names.values` and `adata.var_names.values`, and
+        a 1-dim numpy array `labels` can also be provided if `adata.obs.cell_types` does not exist.
+
+        Covariates can be provided as a 2-dim numpy array.
 
         Parameters
         ----------
@@ -69,12 +79,16 @@ class VITAE():
         
     def preprocess_data(self, processed: bool = False, dimred: bool = False,
                         K: float = 1e4, gene_num: int = 2000, data_type: str = 'UMI', npc: int = 64):
-        ''' Data preprocessing - log-normalization, feature selection, and scaling.            
+        ''' Data preprocessing - log-normalization, feature selection, and scaling.                    
+
+        If the inputs are preprocessed by users, then `Gaussian` model will be used and PCA will be performed to reduce the input dimension.
+        Otherwise, preprocessing will be performed on `X` following Seurat's routine. 
+        If `adata` is provided, the preprocession will be done via `scanpy`.
 
         Parameters
         ----------
         processed : boolean, optional
-            Whether adata has been processed.
+            Whether adata has been processed. If `processed=True`, then `Gaussian` model will be used.
         dimred : boolean, optional
             Whether the processed adata is after dimension reduction.
         K : float, optional              
