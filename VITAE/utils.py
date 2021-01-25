@@ -384,7 +384,6 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
     sigma = stats.median_abs_deviation(res[:,1], nan_policy='omit')
     pdt_new_pval = stats.norm.sf(np.abs(res[:,1]/sigma))*2    
     new_adj_pval = _p_adjust_bh(pdt_new_pval)
-    alpha = 0.05
     res_df = pd.DataFrame(np.c_[res[:,0], new_adj_pval], 
                     index=gene_names,
                     columns=['beta_PDT','p_adjusted'])
