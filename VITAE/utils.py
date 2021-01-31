@@ -380,8 +380,10 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
     res = np.apply_along_axis(lambda y: _DE_test(wendog=y, pinv_wexog=pinv_wexog, h=h),
                             0, 
                             Y).T
-
-    sigma = stats.median_abs_deviation(res[:,1], nan_policy='omit')
+    if 'median_abs_deviation' in dir(stats):
+        sigma = stats.median_abs_deviation(res[:,1], nan_policy='omit')
+    else:
+        sigma = stats.median_absolute_deviation(res[:,1], nan_policy='omit')
     pdt_new_pval = stats.norm.sf(np.abs(res[:,1]/sigma))*2    
     new_adj_pval = _p_adjust_bh(pdt_new_pval)
     res_df = pd.DataFrame(np.c_[res[:,0], new_adj_pval], 
