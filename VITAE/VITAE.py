@@ -256,7 +256,6 @@ class VITAE():
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
         '''                    
-        train.clear_session()
         if stratify is None:
             stratify = self.labels
         elif stratify is False:
