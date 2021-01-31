@@ -563,7 +563,7 @@ class VariationalAutoEncoder(tf.keras.Model):
 
         Parameters
         ----------
-        x_normalized : int
+        x_normalized : np.array
             \([B, G]\) The preprocessed data.
         c_score : np.array
             \([B, s]\) The covariates \(X_i\), only used when `has_cov=True`.
@@ -623,7 +623,6 @@ class VariationalAutoEncoder(tf.keras.Model):
             nu_z, tau = self.decoder(z_in)
             neg_E_Gaus = 0.5 * tf.math.log(tau + 1e-12) + 0.5 * tf.math.square(x - nu_z) / tau
             neg_E_Gaus = tf.reduce_mean(tf.reduce_sum(neg_E_Gaus, axis=-1))
-            
             return neg_E_Gaus
         else:
             if self.data_type == 'UMI':
@@ -652,7 +651,6 @@ class VariationalAutoEncoder(tf.keras.Model):
                 neg_E_nb = tf.where(tf.less(x, 1e-8), zero_case, nb_case)
 
             neg_E_nb =  tf.reduce_mean(tf.reduce_sum(neg_E_nb, axis=-1))
-            
             return neg_E_nb
     
     def get_z(self, x_normalized, c_score):    
