@@ -31,7 +31,8 @@ import networkx as nx
 G = model.comp_inference_score(method='modified_map',  # 'mean', 'modified_mean', 'map', and 'modified_map'
                                thres=0.5,              # (Optional) threshold for compute the conditional probablity, only applies to 'mean' and 'modified_mean'
                                no_loop=True            # if no_loop=True, then find the maximum spanning tree
-                               )           
+                               )   
+days = np.array([i[1:3] for i in data['cell_ids']], dtype=np.float32)
 begin_node_pred = model.select_root(days, 'sum')
 modified_G, modified_w,pseudotime = model.infer_trajectory(init_node=begin_node_pred,  # initial node for computing pseudotime.
                        cutoff=0.16              # (Optional) cutoff score for edges (the default is 0.01).
