@@ -117,7 +117,7 @@ def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, al
             losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, alpha=alpha)
             loss = tf.reduce_sum(losses[0])
             loss_test(loss)
-        print(' Training loss over epoch: %s. Testing loss over epoch: %s' % (float(loss_train.result()),
+        print(' Training loss over epoch: %.4f. Testing loss over epoch: %.4f' % (float(loss_train.result()),
                                                                             float(loss_test.result())))
         if early_stopping(float(loss_test.result())):
             print('Early stopping.')
@@ -236,7 +236,7 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
             print('Early stopping.')
             break
         
-        print(' Training loss over epoch: %s (% 4.6f, % 4.6f, % 4.6f) Testing loss over epoch: %s (% 4.6f, % 4.6f, % 4.6f)' % (
+        print(' Training loss over epoch: %.4f (%.4f, %.4f, %.4f) Testing loss over epoch: %.4f (%.4f, %.4f, %.4f)' % (
             float(loss_train[3].result()),
             float(loss_train[0].result()),
             float(loss_train[1].result()),

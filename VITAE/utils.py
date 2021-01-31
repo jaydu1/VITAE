@@ -110,7 +110,7 @@ def get_embedding(z, dimred='umap', **kwargs):
         embed = mapper.embedding_
     elif dimred=='pca':
         kwargs['n_components'] = 2            
-        embed = PCA(**kwargs).fit_transform(z)
+        embed = PCA(**kwargs).fit_transform(z.astype(np.float64)).astype(np.float32)
     elif dimred=='tsne':
         embed = TSNE(**kwargs).fit_transform(z)
     else:

@@ -211,10 +211,10 @@ def preprocess(adata = None, processed = None, dimred: bool = None,
         cell_names = raw_cell_names[expressed==1]
         selected_gene_names = gene_names[index]
 
-
     if (data_type=='Gaussian') and (dimred is False):
-        pca = PCA(n_components = npc, random_state=random_state)
-        x_normalized = x = pca.fit_transform(x_normalized)
+        # use arpack solver and extend precision to get deterministic result
+        pca = PCA(n_components = npc, random_state=random_state, svd_solver='arpack')
+        x_normalized = x = pca.fit_transform(x_normalized.astype(np.float64)).astype(np.float32)
 
     if c is not None:
         c_scalar = preprocessing.StandardScaler()
