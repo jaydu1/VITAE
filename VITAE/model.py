@@ -65,7 +65,8 @@ class Sampling(Layer):
         z : tf.Tensor
             \([B, L, d]\) The sampled \(z\).
         '''   
-        epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=self.seed)
+        seed = tfp.util.SeedStream(self.seed, salt="random_normal")
+        epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=seed())
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
         return z
@@ -321,7 +322,7 @@ class LatentSpace(Layer):
             
         # [batch_size, L, n_states]
         _inv_sig = tf.reduce_sum(a1 * a1, axis=2)
-        _mu = - tf.reduce_sum(a1 * a2, axis=2)*tf.math.reciprocal_no_nan(_inv_sig)
+        _mu = - tf.reduce_sum(a1 * a2, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
         _t = - tf.reduce_sum(a2 * a2, axis=2) + _mu**2*_inv_sig
         return temp_pi, a2, _inv_sig, _mu, _t
     
@@ -329,7 +330,7 @@ class LatentSpace(Layer):
     def _get_pz(self, temp_pi, _inv_sig, a2, log_p_z_c_L):
         # [batch_size, L, n_states]
         log_p_zc_L = - 0.5 * self.dim_latent * tf.math.log(2 * np.pi) + \
-            tf.math.log(temp_pi+1e-12) + \
+            tf.math.log(tf.clip_by_value(temp_pi, 1e-12, 1.0)) + \
             tf.where(_inv_sig==0, 
                     - 0.5 * tf.reduce_sum(a2**2, axis=2), 
                     log_p_z_c_L)
@@ -377,7 +378,7 @@ class LatentSpace(Layer):
         
         # [batch_size, L, n_states, M]
         log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(2 * np.pi) + \
-                        tf.math.log(temp_pi+1e-12) - \
+                        tf.math.log(tf.clip_by_value(temp_pi, 1e-12, 1.0)) - \
                         tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2  # this omits a term -logM for avoiding numerical issue
                         
         # [batch_size, L]
@@ -413,10 +414,12 @@ class LatentSpace(Layer):
         D_JS = tf.reduce_sum(
             tf.math.sqrt(
                 0.5 * tf.reduce_mean(
-                    _w * tf.math.log(
-                        _w/(0.5 * (_w + _wtilde) + 1e-12) + 1e-12) +
-                    _wtilde * tf.math.log(
-                        _wtilde/(0.5 * (_w + _wtilde) + 1e-12) + 1e-12),
+                    _w * tf.math.log(tf.clip_by_value(
+                        _w * tf.math.reciprocal_no_nan(0.5 * (_w + _wtilde)), 
+                        1e-12, 1e30)) +
+                    _wtilde * tf.math.log(tf.clip_by_value(
+                        _wtilde * tf.math.reciprocal_no_nan(0.5 * (_w + _wtilde)), 
+                        1e-12, 1e30)),
                     axis=2)) * \
             p_wc_x, (1,2)) / tf.cast(self.M, tf.float32)
         return w_tilde, var_w_tilde, D_JS
@@ -444,8 +447,12 @@ class LatentSpace(Layer):
                         tf.math.log(_inv_sig+1e-12) + \
                         _t
                         ) + \
-                        tf.math.log(self.cdf_layer((1-_mu)*tf.math.sqrt(_inv_sig+1e-12)) - 
-                                    self.cdf_layer(-_mu*tf.math.sqrt(_inv_sig+1e-12)) + 1e-12)
+                        tf.math.log(tf.clip_by_value(
+                            self.cdf_layer((1-_mu) * 
+                                tf.math.sqrt(tf.clip_by_value(_inv_sig, 1e-12, 1e30))) - 
+                            self.cdf_layer(-_mu*
+                            tf.math.sqrt(tf.clip_by_value(_inv_sig, 1e-12, 1e30))),
+                            1e-12, 1e30))
         
         log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
         return log_p_zc_L, log_p_z_L, log_p_z
@@ -621,8 +628,9 @@ class VariationalAutoEncoder(tf.keras.Model):
         if self.data_type=='Gaussian':
             # Gaussian Log-Likelihood Loss function
             nu_z, tau = self.decoder(z_in)
-            neg_E_Gaus = 0.5 * tf.math.log(tau + 1e-12) + 0.5 * tf.math.square(x - nu_z) / tau
+            neg_E_Gaus = 0.5 * tf.math.log(tf.clip_by_value(tau, 1e-12, 1e30)) + 0.5 * tf.math.square(x - nu_z) / tau
             neg_E_Gaus = tf.reduce_mean(tf.reduce_sum(neg_E_Gaus, axis=-1))
+
             return neg_E_Gaus
         else:
             if self.data_type == 'UMI':
@@ -641,16 +649,17 @@ class VariationalAutoEncoder(tf.keras.Model):
             neg_E_nb = tf.math.lgamma(r) + tf.math.lgamma(x+1.0) \
                         - tf.math.lgamma(x+r) + \
                         (r+x) * tf.math.log(1.0 + (x_hat/r)) + \
-                        x * (tf.math.log(r) - tf.math.log(x_hat+1e-12))
+                        x * (tf.math.log(r) - tf.math.log(tf.clip_by_value(x_hat, 1e-12, 1e30)))
             
             if self.data_type == 'non-UMI':
                 # Zero-Inflated Negative Binomial loss
-                nb_case = neg_E_nb - tf.math.log(1.0-phi+1e-12)
-                zero_case = - tf.math.log(phi + (1.0-phi) *
-                                     tf.pow(r/(r + x_hat + 1e-12), r) + 1e-12)
+                nb_case = neg_E_nb - tf.math.log(tf.clip_by_value(1.0-phi, 1e-12, 1e30))
+                zero_case = - tf.math.log(tf.clip_by_value(
+                    phi + (1.0-phi) * tf.pow(r * tf.math.reciprocal_no_nan(r + x_hat), r),
+                    1e-12, 1e30))
                 neg_E_nb = tf.where(tf.less(x, 1e-8), zero_case, nb_case)
 
-            neg_E_nb =  tf.reduce_mean(tf.reduce_sum(neg_E_nb, axis=-1))
+            neg_E_nb = tf.reduce_mean(tf.reduce_sum(neg_E_nb, axis=-1))
             return neg_E_nb
     
     def get_z(self, x_normalized, c_score):    
