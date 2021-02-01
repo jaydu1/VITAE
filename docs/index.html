@@ -35,7 +35,7 @@ __author__ = &#34;Jin-Hong Du, Ming Gao, and Jingshu Wang&#34;
 __copyright__ = &#34;Copyright 2020, The Trajectory Inference Project&#34;
 
 __license__ = &#34;MIT&#34;
-__version__ = &#34;1.0.9&#34;
+__version__ = &#34;1.1.0&#34;
 __maintainer__ = &#34;Jin-Hong Du&#34;
 __email__ = &#34;dujinhong@uchicago.edu&#34;
 __status__ = &#34;Development&#34;</code></pre>
@@ -233,16 +233,14 @@ __status__ = &#34;Development&#34;</code></pre>
             with open(path_to_file+&#39;.label&#39;, &#39;wb&#39;) as f:
                 np.save(f, self.cluster_labels)
         with open(path_to_file+&#39;.config&#39;, &#39;wb&#39;) as f:
-            np.save(f, [self.dim_origin,
-                        self.dimensions,
-                        self.dim_latent,
-                        self.data_type,
-                        False if self.c_score is None else True])
+            np.save(f, np.array([
+                self.dim_origin, self.dimensions, self.dim_latent,
+                self.data_type, False if self.c_score is None else True], dtype=object))
         if hasattr(self, &#39;pi&#39;):
             with open(path_to_file+&#39;.inference&#39;, &#39;wb&#39;) as f:
-                np.save(f, [self.pi, self.mu, self.pc_x,
-                            self.w_tilde, self.var_w_tilde,
-                            self.D_JS, self.z, self.embed_z, self.inferer.embed_mu])
+                np.save(f, np.array([
+                    self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                    self.D_JS, self.z, self.embed_z, self.inferer.embed_mu], dtype=object))
     
 
     def load_model(self, path_to_file: str = &#39;model.checkpoint&#39;, load_labels: bool = False):
@@ -322,7 +320,6 @@ __status__ = &#34;Development&#34;</code></pre>
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
         &#39;&#39;&#39;                    
-        train.clear_session()
         if stratify is None:
             stratify = self.labels
         elif stratify is False:
@@ -1097,16 +1094,14 @@ If <code>adata</code> is provided, the preprocession will be done via <code>scan
         with open(path_to_file+&#39;.label&#39;, &#39;wb&#39;) as f:
             np.save(f, self.cluster_labels)
     with open(path_to_file+&#39;.config&#39;, &#39;wb&#39;) as f:
-        np.save(f, [self.dim_origin,
-                    self.dimensions,
-                    self.dim_latent,
-                    self.data_type,
-                    False if self.c_score is None else True])
+        np.save(f, np.array([
+            self.dim_origin, self.dimensions, self.dim_latent,
+            self.data_type, False if self.c_score is None else True], dtype=object))
     if hasattr(self, &#39;pi&#39;):
         with open(path_to_file+&#39;.inference&#39;, &#39;wb&#39;) as f:
-            np.save(f, [self.pi, self.mu, self.pc_x,
-                        self.w_tilde, self.var_w_tilde,
-                        self.D_JS, self.z, self.embed_z, self.inferer.embed_mu])</code></pre>
+            np.save(f, np.array([
+                self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                self.D_JS, self.z, self.embed_z, self.inferer.embed_mu], dtype=object))</code></pre>
 </details>
 </dd>
 <dt id="VITAE.VITAE.load_model"><code class="name flex">
@@ -1242,7 +1237,6 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
     path_to_weights : str, optional 
         The path of weight file to be saved; not saving weight if None.
     &#39;&#39;&#39;                    
-    train.clear_session()
     if stratify is None:
         stratify = self.labels
     elif stratify is False:

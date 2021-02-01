@@ -139,7 +139,7 @@ def get_embedding(z, dimred=&#39;umap&#39;, **kwargs):
         embed = mapper.embedding_
     elif dimred==&#39;pca&#39;:
         kwargs[&#39;n_components&#39;] = 2            
-        embed = PCA(**kwargs).fit_transform(z)
+        embed = PCA(**kwargs).fit_transform(z.astype(np.float64)).astype(np.float32)
     elif dimred==&#39;tsne&#39;:
         embed = TSNE(**kwargs).fit_transform(z)
     else:
@@ -409,11 +409,12 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
     res = np.apply_along_axis(lambda y: _DE_test(wendog=y, pinv_wexog=pinv_wexog, h=h),
                             0, 
                             Y).T
-
-    sigma = stats.median_abs_deviation(res[:,1], nan_policy=&#39;omit&#39;)
+    if &#39;median_abs_deviation&#39; in dir(stats):
+        sigma = stats.median_abs_deviation(res[:,1], nan_policy=&#39;omit&#39;)
+    else:
+        sigma = stats.median_absolute_deviation(res[:,1], nan_policy=&#39;omit&#39;)
     pdt_new_pval = stats.norm.sf(np.abs(res[:,1]/sigma))*2    
     new_adj_pval = _p_adjust_bh(pdt_new_pval)
-    alpha = 0.05
     res_df = pd.DataFrame(np.c_[res[:,0], new_adj_pval], 
                     index=gene_names,
                     columns=[&#39;beta_PDT&#39;,&#39;p_adjusted&#39;])
@@ -580,7 +581,7 @@ def load_data(path, file_name):
         embed = mapper.embedding_
     elif dimred==&#39;pca&#39;:
         kwargs[&#39;n_components&#39;] = 2            
-        embed = PCA(**kwargs).fit_transform(z)
+        embed = PCA(**kwargs).fit_transform(z.astype(np.float64)).astype(np.float32)
     elif dimred==&#39;tsne&#39;:
         embed = TSNE(**kwargs).fit_transform(z)
     else:
@@ -877,11 +878,12 @@ the estimated coefficients and the adjusted p-values.</dd>
     res = np.apply_along_axis(lambda y: _DE_test(wendog=y, pinv_wexog=pinv_wexog, h=h),
                             0, 
                             Y).T
-
-    sigma = stats.median_abs_deviation(res[:,1], nan_policy=&#39;omit&#39;)
+    if &#39;median_abs_deviation&#39; in dir(stats):
+        sigma = stats.median_abs_deviation(res[:,1], nan_policy=&#39;omit&#39;)
+    else:
+        sigma = stats.median_absolute_deviation(res[:,1], nan_policy=&#39;omit&#39;)
     pdt_new_pval = stats.norm.sf(np.abs(res[:,1]/sigma))*2    
     new_adj_pval = _p_adjust_bh(pdt_new_pval)
-    alpha = 0.05
     res_df = pd.DataFrame(np.c_[res[:,0], new_adj_pval], 
                     index=gene_names,
                     columns=[&#39;beta_PDT&#39;,&#39;p_adjusted&#39;])
