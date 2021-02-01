@@ -167,16 +167,14 @@ class VITAE():
             with open(path_to_file+'.label', 'wb') as f:
                 np.save(f, self.cluster_labels)
         with open(path_to_file+'.config', 'wb') as f:
-            np.save(f, [self.dim_origin,
-                        self.dimensions,
-                        self.dim_latent,
-                        self.data_type,
-                        False if self.c_score is None else True])
+            np.save(f, np.array([
+                self.dim_origin, self.dimensions, self.dim_latent,
+                self.data_type, False if self.c_score is None else True], dtype=object))
         if hasattr(self, 'pi'):
             with open(path_to_file+'.inference', 'wb') as f:
-                np.save(f, [self.pi, self.mu, self.pc_x,
-                            self.w_tilde, self.var_w_tilde,
-                            self.D_JS, self.z, self.embed_z, self.inferer.embed_mu])
+                np.save(f, np.array([
+                    self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                    self.D_JS, self.z, self.embed_z, self.inferer.embed_mu], dtype=object))
     
 
     def load_model(self, path_to_file: str = 'model.checkpoint', load_labels: bool = False):
