@@ -29,13 +29,13 @@
 </summary>
 <pre><code class="python">__all__ = [&#39;VITAE&#39;]
 
-from VITAE.VITAE import VITAE, get_embedding, get_igraph, louvain_igraph, plot_clusters, load_data
+from VITAE.VITAE import VITAE, get_embedding, get_igraph, leidenalg_igraph, plot_clusters, load_data
 
 __author__ = &#34;Jin-Hong Du, Ming Gao, and Jingshu Wang&#34;
 __copyright__ = &#34;Copyright 2020, The Trajectory Inference Project&#34;
 
 __license__ = &#34;MIT&#34;
-__version__ = &#34;1.1.0&#34;
+__version__ = &#34;1.1.2&#34;
 __maintainer__ = &#34;Jin-Hong Du&#34;
 __email__ = &#34;dujinhong@uchicago.edu&#34;
 __status__ = &#34;Development&#34;</code></pre>
@@ -331,16 +331,16 @@ __status__ = &#34;Development&#34;</code></pre>
                                 random_state=random_state)
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
-        self.train_dataset = train.warp_dataset(self.X_normalized[id_train], 
-                                                None if self.c_score is None else self.c_score[id_train],
+        self.train_dataset = train.warp_dataset(self.X_normalized[id_train].astype(tf.keras.backend.floatx()), 
+                                                None if self.c_score is None else self.c_score[id_train].astype(tf.keras.backend.floatx()),
                                                 batch_size, 
-                                                self.X[id_train], 
-                                                self.scale_factor[id_train])
+                                                self.X[id_train].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[id_train].astype(tf.keras.backend.floatx()))
         self.test_dataset = train.warp_dataset(self.X_normalized[id_test], 
-                                                None if self.c_score is None else self.c_score[id_test],
+                                                None if self.c_score is None else self.c_score[id_test].astype(tf.keras.backend.floatx()),
                                                 batch_size, 
-                                                self.X[id_test], 
-                                                self.scale_factor[id_test])
+                                                self.X[id_test].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[id_test].astype(tf.keras.backend.floatx()))
         self.vae = train.pre_train(
             self.train_dataset,
             self.test_dataset,
@@ -493,21 +493,21 @@ __status__ = &#34;Development&#34;</code></pre>
                                 random_state=random_state)
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
-        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
-        self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_train],
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx())
+        self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_train].astype(tf.keras.backend.floatx()),
                                                 None if c is None else c[id_train],
                                                 batch_size, 
-                                                self.X[self.selected_cell_subset_id,:][id_train], 
-                                                self.scale_factor[self.selected_cell_subset_id][id_train])
-        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_test],
+                                                self.X[self.selected_cell_subset_id,:][id_train].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[self.selected_cell_subset_id][id_train].astype(tf.keras.backend.floatx()))
+        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_test].astype(tf.keras.backend.floatx()),
                                                 None if c is None else c[id_test],
                                                 batch_size, 
-                                                self.X[self.selected_cell_subset_id,:][id_test], 
-                                                self.scale_factor[self.selected_cell_subset_id][id_test])    
+                                                self.X[self.selected_cell_subset_id,:][id_test].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[self.selected_cell_subset_id][id_test].astype(tf.keras.backend.floatx()))    
         if plot_every_num_epoch is None:
             self.whole_dataset = None    
         else:
-            self.whole_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+            self.whole_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx()), 
                                                     c,
                                                     batch_size)                                    
         self.vae = train.train(
@@ -536,7 +536,7 @@ __status__ = &#34;Development&#34;</code></pre>
 
     def init_inference(self, batch_size: int = 32, L: int = 5, 
             dimred: str = &#39;umap&#39;, refit_dimred: bool = True, **kwargs):
-        &#39;&#39;&#39;Initialze trajectory inference by computing the posterior estimations.        
+        &#39;&#39;&#39;Initialize trajectory inference by computing the posterior estimations.        
 
         Parameters
         ----------
@@ -551,21 +551,21 @@ __status__ = &#34;Development&#34;</code></pre>
         **kwargs :  
             Extra key-value arguments for dimension reduction algorithms.              
         &#39;&#39;&#39;
-        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
-        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx())
+        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx()), 
                                                c,
                                                batch_size)
         self.pi, self.mu, self.pc_x,\
             self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
         if refit_dimred or not hasattr(self.inferer, &#39;embed_z&#39;):
-            self.embed_z = self.inferer.init_embedding(self.z, self.mu, **kwargs)
+            self.embed_z = self.inferer.init_embedding(self.z, self.mu, dimred, **kwargs)
         else:
             self.embed_z = self.inferer.embed_z
         return None
         
 
     def select_root(self, days, method: str = &#39;sum&#39;):
-        &#39;&#39;&#39;Initialze trajectory inference by computing the posterior estimations.        
+        &#39;&#39;&#39;Select the root vertex based on days information.      
 
         Parameters
         ----------
@@ -1248,16 +1248,16 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
                             random_state=random_state)
     if num_step_per_epoch is None:
         num_step_per_epoch = len(id_train)//batch_size+1
-    self.train_dataset = train.warp_dataset(self.X_normalized[id_train], 
-                                            None if self.c_score is None else self.c_score[id_train],
+    self.train_dataset = train.warp_dataset(self.X_normalized[id_train].astype(tf.keras.backend.floatx()), 
+                                            None if self.c_score is None else self.c_score[id_train].astype(tf.keras.backend.floatx()),
                                             batch_size, 
-                                            self.X[id_train], 
-                                            self.scale_factor[id_train])
+                                            self.X[id_train].astype(tf.keras.backend.floatx()), 
+                                            self.scale_factor[id_train].astype(tf.keras.backend.floatx()))
     self.test_dataset = train.warp_dataset(self.X_normalized[id_test], 
-                                            None if self.c_score is None else self.c_score[id_test],
+                                            None if self.c_score is None else self.c_score[id_test].astype(tf.keras.backend.floatx()),
                                             batch_size, 
-                                            self.X[id_test], 
-                                            self.scale_factor[id_test])
+                                            self.X[id_test].astype(tf.keras.backend.floatx()), 
+                                            self.scale_factor[id_test].astype(tf.keras.backend.floatx()))
     self.vae = train.pre_train(
         self.train_dataset,
         self.test_dataset,
@@ -1524,21 +1524,21 @@ cluster labels.</dd>
                             random_state=random_state)
     if num_step_per_epoch is None:
         num_step_per_epoch = len(id_train)//batch_size+1
-    c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
-    self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_train],
+    c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx())
+    self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_train].astype(tf.keras.backend.floatx()),
                                             None if c is None else c[id_train],
                                             batch_size, 
-                                            self.X[self.selected_cell_subset_id,:][id_train], 
-                                            self.scale_factor[self.selected_cell_subset_id][id_train])
-    self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_test],
+                                            self.X[self.selected_cell_subset_id,:][id_train].astype(tf.keras.backend.floatx()), 
+                                            self.scale_factor[self.selected_cell_subset_id][id_train].astype(tf.keras.backend.floatx()))
+    self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_test].astype(tf.keras.backend.floatx()),
                                             None if c is None else c[id_test],
                                             batch_size, 
-                                            self.X[self.selected_cell_subset_id,:][id_test], 
-                                            self.scale_factor[self.selected_cell_subset_id][id_test])    
+                                            self.X[self.selected_cell_subset_id,:][id_test].astype(tf.keras.backend.floatx()), 
+                                            self.scale_factor[self.selected_cell_subset_id][id_test].astype(tf.keras.backend.floatx()))    
     if plot_every_num_epoch is None:
         self.whole_dataset = None    
     else:
-        self.whole_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+        self.whole_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx()), 
                                                 c,
                                                 batch_size)                                    
     self.vae = train.train(
@@ -1569,7 +1569,7 @@ cluster labels.</dd>
 <span>def <span class="ident">init_inference</span></span>(<span>self, batch_size: int = 32, L: int = 5, dimred: str = 'umap', refit_dimred: bool = True, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Initialze trajectory inference by computing the posterior estimations.
+<div class="desc"><p>Initialize trajectory inference by computing the posterior estimations.
 </p>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -1590,7 +1590,7 @@ cluster labels.</dd>
 </summary>
 <pre><code class="python">def init_inference(self, batch_size: int = 32, L: int = 5, 
         dimred: str = &#39;umap&#39;, refit_dimred: bool = True, **kwargs):
-    &#39;&#39;&#39;Initialze trajectory inference by computing the posterior estimations.        
+    &#39;&#39;&#39;Initialize trajectory inference by computing the posterior estimations.        
 
     Parameters
     ----------
@@ -1605,14 +1605,14 @@ cluster labels.</dd>
     **kwargs :  
         Extra key-value arguments for dimension reduction algorithms.              
     &#39;&#39;&#39;
-    c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
-    self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+    c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx())
+    self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx()), 
                                            c,
                                            batch_size)
     self.pi, self.mu, self.pc_x,\
         self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
     if refit_dimred or not hasattr(self.inferer, &#39;embed_z&#39;):
-        self.embed_z = self.inferer.init_embedding(self.z, self.mu, **kwargs)
+        self.embed_z = self.inferer.init_embedding(self.z, self.mu, dimred, **kwargs)
     else:
         self.embed_z = self.inferer.embed_z
     return None</code></pre>
@@ -1622,7 +1622,7 @@ cluster labels.</dd>
 <span>def <span class="ident">select_root</span></span>(<span>self, days, method: str = 'sum')</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Initialze trajectory inference by computing the posterior estimations.
+<div class="desc"><p>Select the root vertex based on days information.
 </p>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -1644,7 +1644,7 @@ For 'mean', the root is the one with earliest mean time among cells associated w
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def select_root(self, days, method: str = &#39;sum&#39;):
-    &#39;&#39;&#39;Initialze trajectory inference by computing the posterior estimations.        
+    &#39;&#39;&#39;Select the root vertex based on days information.      
 
     Parameters
     ----------

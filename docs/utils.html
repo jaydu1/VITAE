@@ -30,18 +30,18 @@
 <pre><code class="python"># -*- coding: utf-8 -*-
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-from umap.umap_ import nearest_neighbors
-from umap.umap_ import fuzzy_simplicial_set
+from umap.umap_ import nearest_neighbors, smooth_knn_dist
 import umap
 from sklearn.utils import check_random_state
 from scipy.sparse import coo_matrix
 import igraph as ig
-import louvain
+import leidenalg
 import matplotlib.pyplot as plt
 import matplotlib
 import os     
 import numpy as np
 from numba import jit, float32, int32
+import scipy
 from scipy import stats
 import pandas as pd
 import h5py
@@ -134,12 +134,14 @@ def get_embedding(z, dimred=&#39;umap&#39;, **kwargs):
         \([N, 2]\) The latent variables after dimension reduction.
     &#39;&#39;&#39;
     if dimred==&#39;umap&#39;:
+        if &#39;random_state&#39; in kwargs:
+            kwargs[&#39;random_state&#39;] = np.random.RandomState(kwargs[&#39;random_state&#39;])
         # umap has some bugs that it may change the original matrix when doing transform
         mapper = umap.UMAP(**kwargs).fit(z.copy())
         embed = mapper.embedding_
     elif dimred==&#39;pca&#39;:
         kwargs[&#39;n_components&#39;] = 2            
-        embed = PCA(**kwargs).fit_transform(z.astype(np.float64)).astype(np.float32)
+        embed = PCA(**kwargs).fit_transform(z)
     elif dimred==&#39;tsne&#39;:
         embed = TSNE(**kwargs).fit_transform(z)
     else:
@@ -147,8 +149,98 @@ def get_embedding(z, dimred=&#39;umap&#39;, **kwargs):
     return embed
 
 
+def _compute_membership_strengths(knn_indices, knn_dists, sigmas, rhos, return_dists=False, bipartite=False):
+    &#39;&#39;&#39;
+    Overwrite the UMAP `compute_membership_strengths` function to allow computation with float64.
+    &#39;&#39;&#39;
+    n_samples = knn_indices.shape[0]
+    n_neighbors = knn_indices.shape[1]
+
+    rows = np.zeros(knn_indices.size, dtype=np.int32)
+    cols = np.zeros(knn_indices.size, dtype=np.int32)
+    vals = np.zeros(knn_indices.size, dtype=np.float64)
+    if return_dists:
+        dists = np.zeros(knn_indices.size, dtype=np.float64)
+    else:
+        dists = None
+
+    for i in range(n_samples):
+        for j in range(n_neighbors):
+            if knn_indices[i, j] == -1:
+                continue  # We didn&#39;t get the full knn for i
+            # If applied to an adjacency matrix points shouldn&#39;t be similar to themselves.
+            # If applied to an incidence matrix (or bipartite) then the row and column indices are different.
+            if (bipartite == False) &amp; (knn_indices[i, j] == i):
+                val = 0.0
+            elif knn_dists[i, j] - rhos[i] &lt;= 0.0 or sigmas[i] == 0.0:
+                val = 1.0
+            else:
+                val = np.exp(-((knn_dists[i, j] - rhos[i]) / (sigmas[i])))
+
+            rows[i * n_neighbors + j] = i
+            cols[i * n_neighbors + j] = knn_indices[i, j]
+            vals[i * n_neighbors + j] = val
+            if return_dists:
+                dists[i * n_neighbors + j] = knn_dists[i, j]
+
+    return rows, cols, vals, dists
+
+
+def _fuzzy_simplicial_set(X, n_neighbors, random_state,
+    metric, metric_kwds={}, knn_indices=None, knn_dists=None, angular=False,
+    set_op_mix_ratio=1.0, local_connectivity=1.0, apply_set_operations=True,
+    verbose=False, return_dists=None):
+    &#39;&#39;&#39;
+    Overwrite the UMAP `fuzzy_simplicial_set` function to allow computation with float64.
+    &#39;&#39;&#39;
+
+    if knn_indices is None or knn_dists is None:
+        knn_indices, knn_dists, _ = nearest_neighbors(
+            X, n_neighbors, metric, metric_kwds, angular, random_state, verbose=verbose,
+        )
+
+    sigmas, rhos = smooth_knn_dist(
+        knn_dists, float(n_neighbors), local_connectivity=float(local_connectivity),
+    )
+
+    rows, cols, vals, dists = _compute_membership_strengths(
+        knn_indices, knn_dists, sigmas, rhos, return_dists
+    )
+
+    result = scipy.sparse.coo_matrix(
+        (vals, (rows, cols)), shape=(X.shape[0], X.shape[0])
+    )
+    result.eliminate_zeros()
+
+    if apply_set_operations:
+        transpose = result.transpose()
+
+        prod_matrix = result.multiply(transpose)
+
+        result = (
+            set_op_mix_ratio * (result + transpose - prod_matrix)
+            + (1.0 - set_op_mix_ratio) * prod_matrix
+        )
+
+    result.eliminate_zeros()
+
+    if return_dists is None:
+        return result, sigmas, rhos
+    else:
+        if return_dists:
+            dmat = scipy.sparse.coo_matrix(
+                (dists, (rows, cols)), shape=(X.shape[0], X.shape[0])
+            )
+
+            dists = dmat.maximum(dmat.transpose()).todok()
+        else:
+            dists = None
+
+        return result, sigmas, rhos, dists
+
+
 def get_igraph(z, random_state=0):
-    &#39;&#39;&#39;Get igraph for running Louvain clustering.
+    &#39;&#39;&#39;Get igraph for running Leidenalg clustering.
 
     Parameters
     ----------
@@ -173,11 +265,11 @@ def get_igraph(z, random_state=0):
     # Build graph
     n_obs = z.shape[0]
     X = coo_matrix(([], ([], [])), shape=(n_obs, 1))
-    connectivities = fuzzy_simplicial_set(
+    connectivities = _fuzzy_simplicial_set(
         X,
         n_neighbors,
-        None,
-        None,
+        random_state=np.random.RandomState(random_state),
+        metric=None,
         knn_indices=knn_indices,
         knn_dists=knn_dists,
         set_op_mix_ratio=1.0,
@@ -194,15 +286,15 @@ def get_igraph(z, random_state=0):
     return g
 
 
-def louvain_igraph(g, res, random_state=0):
-    &#39;&#39;&#39;Louvain clustering on an igraph object.
+def leidenalg_igraph(g, res, random_state=0):
+    &#39;&#39;&#39;Leidenalg clustering on an igraph object.
 
     Parameters
     ----------
     g : igraph
         The igraph object of connectivities.
     res : float
-        The resolution parameter for Louvain clustering.
+        The resolution parameter for Leidenalg clustering.
     random_state : int, optional
         The random state.      
 
@@ -211,12 +303,11 @@ def louvain_igraph(g, res, random_state=0):
     labels : np.array     
         \([N, ]\) The clustered labels.
     &#39;&#39;&#39;
-    # Louvain
     partition_kwargs = {}
-    partition_type = louvain.RBConfigurationVertexPartition
+    partition_type = leidenalg.RBConfigurationVertexPartition
     partition_kwargs[&#34;resolution_parameter&#34;] = res
     partition_kwargs[&#34;seed&#34;] = random_state
-    part = louvain.find_partition(
+    part = leidenalg.find_partition(
                     g, partition_type,
                     **partition_kwargs,
                 )
@@ -288,6 +379,10 @@ def plot_marker_gene(expression, gene_name, embed_z, path=None):
     
 
 def _polyfit_with_fixed_points(n, x, y, xf, yf):
+    &#39;&#39;&#39;
+    Fix a polynomial with degree n that goes through 
+    fixed points (xf_j, yf_j).
+    &#39;&#39;&#39;
     mat = np.empty((n + 1 + len(xf),) * 2)
     vec = np.empty((n + 1 + len(xf),))
     x_n = x**np.arange(2 * n + 1)[:, None]
@@ -519,7 +614,7 @@ def load_data(path, file_name):
             data[&#39;covariates&#39;] = np.array(np.array(list(f[&#39;covariates&#39;])).tolist(), dtype=np.float32)
         if file_name in [&#39;mouse_brain_merged&#39;]:
             data[&#39;grouping&#39;] = np.array(data[&#39;grouping&#39;], dtype=object)
-            data[&#39;root_milestone_id&#39;] = &#39;NEC&#39;
+            data[&#39;root_milestone_id&#39;] = np.array(f[&#39;root_milestone_id&#39;]).astype(str)[0]
             data[&#39;covariates&#39;] = np.array(np.array(list(f[&#39;covariates&#39;])).tolist(), dtype=np.float32)
 
     data[&#39;type&#39;] = type_dict[file_name]
@@ -576,12 +671,14 @@ def load_data(path, file_name):
         \([N, 2]\) The latent variables after dimension reduction.
     &#39;&#39;&#39;
     if dimred==&#39;umap&#39;:
+        if &#39;random_state&#39; in kwargs:
+            kwargs[&#39;random_state&#39;] = np.random.RandomState(kwargs[&#39;random_state&#39;])
         # umap has some bugs that it may change the original matrix when doing transform
         mapper = umap.UMAP(**kwargs).fit(z.copy())
         embed = mapper.embedding_
     elif dimred==&#39;pca&#39;:
         kwargs[&#39;n_components&#39;] = 2            
-        embed = PCA(**kwargs).fit_transform(z.astype(np.float64)).astype(np.float32)
+        embed = PCA(**kwargs).fit_transform(z)
     elif dimred==&#39;tsne&#39;:
         embed = TSNE(**kwargs).fit_transform(z)
     else:
@@ -593,7 +690,7 @@ def load_data(path, file_name):
 <span>def <span class="ident">get_igraph</span></span>(<span>z, random_state=0)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Get igraph for running Louvain clustering.</p>
+<div class="desc"><p>Get igraph for running Leidenalg clustering.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>z</code></strong> :&ensp;<code>np.array</code></dt>
@@ -609,7 +706,7 @@ The igraph object of connectivities.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_igraph(z, random_state=0):
-    &#39;&#39;&#39;Get igraph for running Louvain clustering.
+    &#39;&#39;&#39;Get igraph for running Leidenalg clustering.
 
     Parameters
     ----------
@@ -634,11 +731,11 @@ The igraph object of connectivities.</p></div>
     # Build graph
     n_obs = z.shape[0]
     X = coo_matrix(([], ([], [])), shape=(n_obs, 1))
-    connectivities = fuzzy_simplicial_set(
+    connectivities = _fuzzy_simplicial_set(
         X,
         n_neighbors,
-        None,
-        None,
+        random_state=np.random.RandomState(random_state),
+        metric=None,
         knn_indices=knn_indices,
         knn_dists=knn_dists,
         set_op_mix_ratio=1.0,
@@ -655,17 +752,17 @@ The igraph object of connectivities.</p></div>
     return g</code></pre>
 </details>
 </dd>
-<dt id="VITAE.utils.louvain_igraph"><code class="name flex">
-<span>def <span class="ident">louvain_igraph</span></span>(<span>g, res, random_state=0)</span>
+<dt id="VITAE.utils.leidenalg_igraph"><code class="name flex">
+<span>def <span class="ident">leidenalg_igraph</span></span>(<span>g, res, random_state=0)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Louvain clustering on an igraph object.</p>
+<div class="desc"><p>Leidenalg clustering on an igraph object.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>g</code></strong> :&ensp;<code>igraph</code></dt>
 <dd>The igraph object of connectivities.</dd>
 <dt><strong><code>res</code></strong> :&ensp;<code>float</code></dt>
-<dd>The resolution parameter for Louvain clustering.</dd>
+<dd>The resolution parameter for Leidenalg clustering.</dd>
 <dt><strong><code>random_state</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>The random state.</dd>
 </dl>
@@ -679,15 +776,15 @@ The igraph object of connectivities.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def louvain_igraph(g, res, random_state=0):
-    &#39;&#39;&#39;Louvain clustering on an igraph object.
+<pre><code class="python">def leidenalg_igraph(g, res, random_state=0):
+    &#39;&#39;&#39;Leidenalg clustering on an igraph object.
 
     Parameters
     ----------
     g : igraph
         The igraph object of connectivities.
     res : float
-        The resolution parameter for Louvain clustering.
+        The resolution parameter for Leidenalg clustering.
     random_state : int, optional
         The random state.      
 
@@ -696,12 +793,11 @@ The igraph object of connectivities.</p></div>
     labels : np.array     
         \([N, ]\) The clustered labels.
     &#39;&#39;&#39;
-    # Louvain
     partition_kwargs = {}
-    partition_type = louvain.RBConfigurationVertexPartition
+    partition_type = leidenalg.RBConfigurationVertexPartition
     partition_kwargs[&#34;resolution_parameter&#34;] = res
     partition_kwargs[&#34;seed&#34;] = random_state
-    part = louvain.find_partition(
+    part = leidenalg.find_partition(
                     g, partition_type,
                     **partition_kwargs,
                 )
@@ -966,7 +1062,7 @@ The dict containing count, grouping, etc. of the dataset.</p></div>
             data[&#39;covariates&#39;] = np.array(np.array(list(f[&#39;covariates&#39;])).tolist(), dtype=np.float32)
         if file_name in [&#39;mouse_brain_merged&#39;]:
             data[&#39;grouping&#39;] = np.array(data[&#39;grouping&#39;], dtype=object)
-            data[&#39;root_milestone_id&#39;] = &#39;NEC&#39;
+            data[&#39;root_milestone_id&#39;] = np.array(f[&#39;root_milestone_id&#39;]).astype(str)[0]
             data[&#39;covariates&#39;] = np.array(np.array(list(f[&#39;covariates&#39;])).tolist(), dtype=np.float32)
 
     data[&#39;type&#39;] = type_dict[file_name]
@@ -1045,7 +1141,7 @@ The dict containing count, grouping, etc. of the dataset.</p></div>
 <ul class="two-column">
 <li><code><a title="VITAE.utils.get_embedding" href="#VITAE.utils.get_embedding">get_embedding</a></code></li>
 <li><code><a title="VITAE.utils.get_igraph" href="#VITAE.utils.get_igraph">get_igraph</a></code></li>
-<li><code><a title="VITAE.utils.louvain_igraph" href="#VITAE.utils.louvain_igraph">louvain_igraph</a></code></li>
+<li><code><a title="VITAE.utils.leidenalg_igraph" href="#VITAE.utils.leidenalg_igraph">leidenalg_igraph</a></code></li>
 <li><code><a title="VITAE.utils.plot_clusters" href="#VITAE.utils.plot_clusters">plot_clusters</a></code></li>
 <li><code><a title="VITAE.utils.plot_marker_gene" href="#VITAE.utils.plot_marker_gene">plot_marker_gene</a></code></li>
 <li><code><a title="VITAE.utils.DE_test" href="#VITAE.utils.DE_test">DE_test</a></code></li>
