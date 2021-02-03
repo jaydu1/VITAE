@@ -41,7 +41,7 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
     '''
     # fake c_score
     if c_score is None:
-        c_score = np.zeros((X_normalized.shape[0],1), np.float32)
+        c_score = np.zeros((X_normalized.shape[0],1), tf.keras.backend.floatx())
         
     if X is not None:
         train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, c_score, scale_factor))
@@ -185,7 +185,7 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
     early_stopping = Early_Stopping(patience = early_stopping_patience, tolerance = early_stopping_tolerance, warmup=early_stopping_warmup)
 
     print('Warmup:%d'%early_stopping_warmup)
-    weight = np.array([1,beta,beta], dtype=np.float32)
+    weight = np.array([1,beta,beta], dtype=tf.keras.backend.floatx())
     weight = tf.convert_to_tensor(weight)
     
     for epoch in range(num_epoch):

@@ -33,7 +33,10 @@ class cdf_layer(Layer):
         grad : tf.Tensor
             pdf(x).
         '''   
-        dist = tfp.distributions.Normal(loc=0., scale=1., allow_nan_stats=False)
+        dist = tfp.distributions.Normal(
+            loc = tf.constant(0.0, tf.keras.backend.floatx()), 
+            scale = tf.constant(1.0, tf.keras.backend.floatx()), 
+            allow_nan_stats=False)
         f = dist.cdf(x)
         def grad(dy):
             gradient = dist.prob(x)
@@ -66,7 +69,7 @@ class Sampling(Layer):
             \([B, L, d]\) The sampled \(z\).
         '''   
         seed = tfp.util.SeedStream(self.seed, salt="random_normal")
-        epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=seed())
+        epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=seed(), dtype=tf.keras.backend.floatx())
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
         return z
@@ -161,14 +164,14 @@ class Decoder(Layer):
         if data_type=='Gaussian':
             self.nu_z = Dense(dim_origin, name = 'nu_z')
             # common variance
-            self.log_tau = tf.Variable(tf.zeros([1, dim_origin]),
+            self.log_tau = tf.Variable(tf.zeros([1, dim_origin], dtype=tf.keras.backend.floatx()),
                                  constraint = lambda t: tf.clip_by_value(t,-30.,6.),
                                  name = "log_tau")
         else:
             self.log_lambda_z = Dense(dim_origin, name = 'log_lambda_z')
 
             # dispersion parameter
-            self.log_r = tf.Variable(tf.zeros([1, dim_origin]),
+            self.log_r = tf.Variable(tf.zeros([1, dim_origin], dtype=tf.keras.backend.floatx()),
                                      constraint = lambda t: tf.clip_by_value(t,-30.,6.),
                                      name = "log_r")
             
@@ -270,15 +273,15 @@ class LatentSpace(Layer):
         # Uniform random variable
         self.M = tf.convert_to_tensor(M, tf.int32)
         self.w =  tf.convert_to_tensor(
-            np.resize(np.arange(0, M)/M, (1, M)), tf.float32)
+            np.resize(np.arange(0, M)/M, (1, M)), tf.keras.backend.floatx())
 
         # [pi_1, ... , pi_K] in R^(n_states)
-        self.pi = tf.Variable(tf.ones([1, self.n_states]) / self.n_states,
+        self.pi = tf.Variable(tf.ones([1, self.n_states], dtype=tf.keras.backend.floatx()) / self.n_states,
                                 name = 'pi')
         
         # [mu_1, ... , mu_K] in R^(dim_latent * n_clusters)
         self.mu = tf.Variable(tf.random.uniform([self.dim_latent, self.n_clusters],
-                                                minval = -1, maxval = 1, seed=seed),
+                                                minval = -1, maxval = 1, seed=seed, dtype=tf.keras.backend.floatx()),
                                 name = 'mu')
         self.cdf_layer = cdf_layer()       
         
@@ -329,7 +332,7 @@ class LatentSpace(Layer):
     @tf.function
     def _get_pz(self, temp_pi, _inv_sig, a2, log_p_z_c_L):
         # [batch_size, L, n_states]
-        log_p_zc_L = - 0.5 * self.dim_latent * tf.math.log(2 * np.pi) + \
+        log_p_zc_L = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(tf.clip_by_value(temp_pi, 1e-12, 1.0)) + \
             tf.where(_inv_sig==0, 
                     - 0.5 * tf.reduce_sum(a2**2, axis=2), 
@@ -350,7 +353,7 @@ class LatentSpace(Layer):
         # [batch_size, n_states]
         log_p_c_x = tf.reduce_logsumexp(
                         log_p_zc_L - log_p_z_L,
-                    axis=1) - tf.math.log(tf.cast(L, tf.float32))
+                    axis=1) - tf.math.log(tf.cast(L, tf.keras.backend.floatx()))
         return log_p_c_x
 
     @tf.function
@@ -377,7 +380,7 @@ class LatentSpace(Layer):
                         (batch_size,L,1,self.M))
         
         # [batch_size, L, n_states, M]
-        log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(2 * np.pi) + \
+        log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
                         tf.math.log(tf.clip_by_value(temp_pi, 1e-12, 1.0)) - \
                         tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2  # this omits a term -logM for avoiding numerical issue
                         
@@ -388,15 +391,15 @@ class LatentSpace(Layer):
         p_wc_x = tf.exp(tf.reduce_logsumexp(
                     log_p_zc_w -
                     tf.expand_dims(log_p_z_L, -1),
-                    1) - tf.math.log(tf.cast(L, tf.float32)))
+                    1) - tf.math.log(tf.cast(L, tf.keras.backend.floatx())))
                     
         # [batch_size, n_states, n_clusters, M]
         _w = tf.tile(tf.expand_dims(
                 tf.tile(tf.expand_dims(
-                    tf.one_hot(self.A, self.n_clusters),
+                    tf.one_hot(self.A, self.n_clusters, dtype=tf.keras.backend.floatx()),
                     -1), (1,1,self.M)) * self.w +
                 tf.tile(tf.expand_dims(
-                    tf.one_hot(self.B, self.n_clusters),
+                    tf.one_hot(self.B, self.n_clusters, dtype=tf.keras.backend.floatx()),
                     -1), (1,1,self.M)) * (1-self.w), 0), (batch_size,1,1,1))
                     
         # [batch_size, n_clusters]
@@ -421,7 +424,7 @@ class LatentSpace(Layer):
                         _wtilde * tf.math.reciprocal_no_nan(0.5 * (_w + _wtilde)), 
                         1e-12, 1e30)),
                     axis=2)) * \
-            p_wc_x, (1,2)) / tf.cast(self.M, tf.float32)
+            p_wc_x, (1,2)) / tf.cast(self.M, tf.keras.backend.floatx())
         return w_tilde, var_w_tilde, D_JS
     
     def get_pz(self, z):
@@ -443,8 +446,8 @@ class LatentSpace(Layer):
         '''        
         temp_pi, a2, _inv_sig, _mu, _t = self._get_normal_params(z)
         
-        log_p_z_c_L =  0.5 * (tf.math.log(2 * np.pi) - \
-                        tf.math.log(_inv_sig+1e-12) + \
+        log_p_z_c_L =  0.5 * (tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) - \
+                        tf.math.log(tf.clip_by_value(_inv_sig, 1e-12, 1e30)) + \
                         _t
                         ) + \
                         tf.math.log(tf.clip_by_value(
@@ -602,7 +605,8 @@ class VariationalAutoEncoder(tf.keras.Model):
         reconstruction_z_loss = self._get_reconstruction_loss(x, z_in, scale_factor, L)
         
         if self.has_cov and alpha>0.0:
-            zero_in = tf.concat([tf.zeros([z.shape[0],1,z.shape[2]]), tf.tile(tf.expand_dims(c_score,1), (1,1,1))], -1)
+            zero_in = tf.concat([tf.zeros([z.shape[0],1,z.shape[2]], dtype=tf.keras.backend.floatx()), 
+                                tf.tile(tf.expand_dims(c_score,1), (1,1,1))], -1)
             reconstruction_zero_loss = self._get_reconstruction_loss(x, zero_in, scale_factor, 1)
             reconstruction_z_loss = (1-alpha)*reconstruction_z_loss + alpha*reconstruction_zero_loss
         
@@ -617,7 +621,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             # - Eq[log q(z|x)]
             E_qzx = - tf.reduce_mean(
                             0.5 * self.dim_latent *
-                            (tf.math.log(2 * np.pi) + 1) +
+                            (tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + 1.0) +
                             0.5 * tf.reduce_sum(z_log_var, axis=-1)
                             )
             self.add_loss(E_qzx)

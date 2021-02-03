@@ -6,9 +6,10 @@ import VITAE.model as model
 import VITAE.preprocess as preprocess
 import VITAE.train as train
 from VITAE.inference import Inferer
-from VITAE.utils import load_data, get_embedding, get_igraph, louvain_igraph, \
+from VITAE.utils import load_data, get_embedding, get_igraph, leidenalg_igraph, \
     plot_clusters, plot_marker_gene, DE_test
 from VITAE.metric import topology, get_GRI
+import tensorflow as tf
 
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.model_selection import train_test_split
@@ -265,16 +266,16 @@ class VITAE():
                                 random_state=random_state)
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
-        self.train_dataset = train.warp_dataset(self.X_normalized[id_train], 
-                                                None if self.c_score is None else self.c_score[id_train],
+        self.train_dataset = train.warp_dataset(self.X_normalized[id_train].astype(tf.keras.backend.floatx()), 
+                                                None if self.c_score is None else self.c_score[id_train].astype(tf.keras.backend.floatx()),
                                                 batch_size, 
-                                                self.X[id_train], 
-                                                self.scale_factor[id_train])
+                                                self.X[id_train].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[id_train].astype(tf.keras.backend.floatx()))
         self.test_dataset = train.warp_dataset(self.X_normalized[id_test], 
-                                                None if self.c_score is None else self.c_score[id_test],
+                                                None if self.c_score is None else self.c_score[id_test].astype(tf.keras.backend.floatx()),
                                                 batch_size, 
-                                                self.X[id_test], 
-                                                self.scale_factor[id_test])
+                                                self.X[id_test].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[id_test].astype(tf.keras.backend.floatx()))
         self.vae = train.pre_train(
             self.train_dataset,
             self.test_dataset,
@@ -427,21 +428,21 @@ class VITAE():
                                 random_state=random_state)
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
-        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
-        self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_train],
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx())
+        self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_train].astype(tf.keras.backend.floatx()),
                                                 None if c is None else c[id_train],
                                                 batch_size, 
-                                                self.X[self.selected_cell_subset_id,:][id_train], 
-                                                self.scale_factor[self.selected_cell_subset_id][id_train])
-        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_test],
+                                                self.X[self.selected_cell_subset_id,:][id_train].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[self.selected_cell_subset_id][id_train].astype(tf.keras.backend.floatx()))
+        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_test].astype(tf.keras.backend.floatx()),
                                                 None if c is None else c[id_test],
                                                 batch_size, 
-                                                self.X[self.selected_cell_subset_id,:][id_test], 
-                                                self.scale_factor[self.selected_cell_subset_id][id_test])    
+                                                self.X[self.selected_cell_subset_id,:][id_test].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[self.selected_cell_subset_id][id_test].astype(tf.keras.backend.floatx()))    
         if plot_every_num_epoch is None:
             self.whole_dataset = None    
         else:
-            self.whole_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+            self.whole_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx()), 
                                                     c,
                                                     batch_size)                                    
         self.vae = train.train(
@@ -470,7 +471,7 @@ class VITAE():
 
     def init_inference(self, batch_size: int = 32, L: int = 5, 
             dimred: str = 'umap', refit_dimred: bool = True, **kwargs):
-        '''Initialze trajectory inference by computing the posterior estimations.        
+        '''Initialize trajectory inference by computing the posterior estimations.        
 
         Parameters
         ----------
@@ -485,21 +486,21 @@ class VITAE():
         **kwargs :  
             Extra key-value arguments for dimension reduction algorithms.              
         '''
-        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
-        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:], 
+        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx())
+        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx()), 
                                                c,
                                                batch_size)
         self.pi, self.mu, self.pc_x,\
             self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
         if refit_dimred or not hasattr(self.inferer, 'embed_z'):
-            self.embed_z = self.inferer.init_embedding(self.z, self.mu, **kwargs)
+            self.embed_z = self.inferer.init_embedding(self.z, self.mu, dimred, **kwargs)
         else:
             self.embed_z = self.inferer.embed_z
         return None
         
 
     def select_root(self, days, method: str = 'sum'):
-        '''Initialze trajectory inference by computing the posterior estimations.        
+        '''Select the root vertex based on days information.      
 
         Parameters
         ----------
