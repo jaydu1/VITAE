@@ -180,6 +180,7 @@ class Inferer(object):
         self.mu = mu.copy()
         concate_z = np.concatenate((z, mu.T), axis=0)
         embed = get_embedding(concate_z, dimred, **kwargs)
+        embed = (embed - np.min(embed, axis=0, keepdims=True)) / (np.max(embed, axis=0, keepdims=True) - np.min(embed, axis=0, keepdims=True))
         
         self.embed_z = embed[:-self.NUM_CLUSTER,:]
         self.embed_mu = embed[-self.NUM_CLUSTER:,:]
@@ -400,14 +401,14 @@ class Inferer(object):
 
                 delta_x = self.embed_mu[select_edges[i,1], 0]-x_smooth[-2]
                 delta_y = self.embed_mu[select_edges[i,1], 1]-y_smooth[-2]
-                length = np.sqrt(delta_x**2 + delta_y**2) * 1.5                
+                length = np.sqrt(delta_x**2 + delta_y**2) * 50              
                 ax.arrow(
                         self.embed_mu[select_edges[i,1], 0]-delta_x/length, 
                         self.embed_mu[select_edges[i,1], 1]-delta_y/length, 
                         delta_x/length,
                         delta_y/length,
                         color='black', alpha=1.0,
-                        shape='full', lw=0, length_includes_head=True, head_width=0.4, zorder=2)
+                        shape='full', lw=0, length_includes_head=True, head_width=0.02, zorder=2)
             
             for i in range(len(self.CLUSTER_CENTER)):
                 ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
