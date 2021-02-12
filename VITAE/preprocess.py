@@ -2,7 +2,6 @@
 from typing import Optional
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from skmisc import loess
 from sklearn import preprocessing
 import warnings
@@ -81,12 +80,6 @@ def feature_select(x, gene_num = 2000):
     # feature selection
     index = feature_score.argsort()[::-1][0:gene_num]
 
-    # plot scores
-    plt.plot(np.log(np.sort(feature_score)))
-    threshold = feature_score[index[-1]]
-    plt.hlines(np.log(threshold), 1, p)
-    plt.show()
-    
     return x[:, index], index
 
 
