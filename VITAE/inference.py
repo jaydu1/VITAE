@@ -345,6 +345,9 @@ class Inferer(object):
             subG = G.subgraph(connected_comps)
             if len(subG.edges)>0:                
                 milestone_net = self.build_milestone_net(subG,init_node)
+                if self.no_loop is False and milestone_net.shape[0]<len(G.edges):
+                    warnings.warn("The directed graph shown is a minimum spanning tree of the estimated " +
+                    "trajectory backbone to avoid arbitrary assignment of the directions.")
                 select_edges = milestone_net[:,:2]
                 select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
                 if select_edges_score.max() - select_edges_score.min() == 0:
