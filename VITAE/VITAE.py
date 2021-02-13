@@ -225,9 +225,9 @@ class VITAE():
 
 
     def pre_train(self, stratify = False, test_size = 0.1, random_state: int = 0,
-            learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.01,
+            learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.10,
             num_epoch: int = 300, num_step_per_epoch: Optional[int] = None,
-            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 0, 
+            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0,
             path_to_weights: Optional[str] = None):
         '''Pretrain the model with specified learning rate.
 
@@ -255,8 +255,6 @@ class VITAE():
             The maximum number of epoches if there is no improvement.
         early_stopping_tolerance : float, optional 
             The minimum change of loss to be considered as an improvement.
-        early_stopping_warmup : int, optional
-            The number of warmup epoches.
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
         '''                    
@@ -291,7 +289,7 @@ class VITAE():
             num_step_per_epoch,
             early_stopping_patience,
             early_stopping_tolerance,
-            early_stopping_warmup)
+            0)
 
         if path_to_weights is not None:
             self.save_model(path_to_weights)
@@ -379,9 +377,9 @@ class VITAE():
 
     def train(self, stratify = False, test_size = 0.1, random_state: int = 0,
             learning_rate: float = 1e-3, batch_size: int = 32, 
-            L: int = 1, alpha: float = 0.01, beta: float = 1, 
+            L: int = 1, alpha: float = 0.10, beta: float = 1, 
             num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
-            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 5,
+            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 10,
             path_to_weights: Optional[str] = None, plot_every_num_epoch: Optional[int] = None, dimred: str = 'umap', **kwargs):
         '''Train the model.
 
