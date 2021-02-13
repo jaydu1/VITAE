@@ -210,8 +210,13 @@ class VITAE():
             self.init_latent_space(n_clusters, cluster_labels)
             if os.path.exists(path_to_file+'.inference'):
                 with open(path_to_file+'.inference', 'rb') as f:
-                    [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                        self.D_JS, self.z, self.embed_z, embed_mu] = np.load(f, allow_pickle=True)
+                    arr = np.load(f, allow_pickle=True)
+                    if len(arr)==9:
+                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                            self.D_JS, self.z, self.embed_z, embed_mu] = arr
+                    else:
+                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                            self.z, self.embed_z, embed_mu] = arr
                 self.inferer.mu = self.mu
                 self.inferer.embed_z = self.embed_z
                 self.inferer.embed_mu = embed_mu
@@ -491,7 +496,7 @@ class VITAE():
                                                c,
                                                batch_size)
         self.pi, self.mu, self.pc_x,\
-            self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
+            self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
         if refit_dimred or not hasattr(self.inferer, 'embed_z'):
             self.embed_z = self.inferer.init_embedding(self.z, self.mu, dimred, **kwargs)
         else:

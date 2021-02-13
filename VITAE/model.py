@@ -240,7 +240,7 @@ class LatentSpace(Layer):
     '''
     Layer for the Latent Space.
     '''
-    def __init__(self, n_clusters, dim_latent, M = 50, 
+    def __init__(self, n_clusters, dim_latent,
             name = 'LatentSpace', seed=0, **kwargs):
         '''
         Parameters
@@ -269,11 +269,6 @@ class LatentSpace(Layer):
         self.B = tf.convert_to_tensor(self.B, tf.int32)
         self.clusters_ind = tf.boolean_mask(
             tf.range(0,self.n_states,1), self.A==self.B)
-
-        # Uniform random variable
-        self.M = tf.convert_to_tensor(M, tf.int32)
-        self.w =  tf.convert_to_tensor(
-            np.resize(np.arange(0, M)/M, (1, M)), tf.keras.backend.floatx())
 
         # [pi_1, ... , pi_K] in R^(n_states)
         self.pi = tf.Variable(tf.ones([1, self.n_states], dtype=tf.keras.backend.floatx()) / self.n_states,
@@ -312,9 +307,9 @@ class LatentSpace(Layer):
         L = tf.shape(z)[1]
         
         # [batch_size, L, n_states]
-        temp_pi = tf.tile(
+        temp_pi = tf.clip_by_value(tf.tile(
             tf.expand_dims(tf.nn.softmax(self.pi), 1),
-            (batch_size,L,1))
+            (batch_size,L,1)), 1e-12, 1.0)
                         
         # [batch_size, L, d, n_states]
         a1 = tf.expand_dims(tf.expand_dims(
@@ -325,9 +320,9 @@ class LatentSpace(Layer):
             
         # [batch_size, L, n_states]
         _inv_sig = tf.reduce_sum(a1 * a1, axis=2)
-        _mu = - tf.reduce_sum(a1 * a2, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
-        _t = - tf.reduce_sum(a2 * a2, axis=2) + _mu**2*_inv_sig
-        return temp_pi, a2, _inv_sig, _mu, _t
+        _nu = - tf.reduce_sum(a1 * a2, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
+        _t = - tf.reduce_sum(a2 * a2, axis=2) + _nu**2*_inv_sig
+        return temp_pi, a2, _inv_sig, _nu, _t
     
     @tf.function
     def _get_pz(self, temp_pi, _inv_sig, a2, log_p_z_c_L):
@@ -357,76 +352,63 @@ class LatentSpace(Layer):
         return log_p_c_x
 
     @tf.function
-    def _get_inference(self, z, log_p_zc_L, log_p_z_L):
+    def _get_inference(self, z, log_p_z_L, temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2):
         batch_size = tf.shape(z)[0]
         L = tf.shape(z)[1]
+        dist = tfp.distributions.Normal(
+            loc = tf.constant(0.0, tf.keras.backend.floatx()), 
+            scale = tf.constant(1.0, tf.keras.backend.floatx()), 
+            allow_nan_stats=False)
         
-        # [batch_size, L, dim_latent, n_states, M]
-        temp_Z = tf.tile(tf.expand_dims(tf.expand_dims(z,-1), -1),
-                    (1,1,1,self.n_states,self.M))
-        temp_mu = tf.tile(
-                        tf.expand_dims(tf.expand_dims(
-                            tf.gather(self.mu, self.A, axis=1),0),-1),
-                        (batch_size,1,1,self.M)) * self.w + \
-                tf.tile(
-                        tf.expand_dims(tf.expand_dims(
-                            tf.gather(self.mu, self.B, axis=1),0),-1),
-                        (batch_size,1,1,self.M)) * (1-self.w)
-        temp_mu = tf.tile(tf.expand_dims(temp_mu, 1), (1,L,1,1,1))
+        # [batch_size, L, n_states, n_clusters]
+        _inv_sig = tf.expand_dims(_inv_sig, -1)
+        _sig = tf.tile(tf.math.reciprocal_no_nan(_inv_sig), (1,1,1,self.n_clusters))
+        log_eta0 = tf.tile(tf.expand_dims(log_eta0, -1), (1,1,1,self.n_clusters))
+        eta1 = tf.tile(tf.expand_dims(eta1, -1), (1,1,1,self.n_clusters))
+        eta2 = tf.tile(tf.expand_dims(eta2, -1), (1,1,1,self.n_clusters))
+        _nu = tf.tile(tf.expand_dims(_nu, -1), (1,1,1,1))
+        A = tf.tile(tf.expand_dims(tf.expand_dims(
+            tf.one_hot(self.A, self.n_clusters, dtype=tf.keras.backend.floatx()), 
+            0),0), (batch_size,L,1,1))
+        B = tf.tile(tf.expand_dims(tf.expand_dims(
+            tf.one_hot(self.B, self.n_clusters, dtype=tf.keras.backend.floatx()), 
+            0),0), (batch_size,L,1,1))
+        temp_pi = tf.expand_dims(temp_pi, -1)
+
+        # w_tilde [batch_size, L, n_clusters]
+        w_tilde = log_eta0 + tf.math.log(
+            tf.clip_by_value(
+                (dist.cdf(eta1) - dist.cdf(eta2)) * (_nu * A + (1-_nu) * B)  -
+                (dist.prob(eta1) - dist.prob(eta2)) * tf.math.sqrt(tf.clip_by_value(_sig, 1e-12, 1e30)) * (A-B), 
+                0.0, 1e30)
+            )
+        w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
+            tf.math.log(temp_pi) + \
+            tf.where(_inv_sig==0, 
+                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(a2**2, axis=2), -1), -np.inf), 
+                    w_tilde)
+        w_tilde = tf.exp(tf.reduce_logsumexp(w_tilde, 2) - log_p_z_L)
             
-        # [batch_size, L, n_states, M]
-        temp_pi = tf.tile(tf.expand_dims(
-                        tf.expand_dims(tf.nn.softmax(self.pi), -1), 1),
-                        (batch_size,L,1,self.M))
-        
-        # [batch_size, L, n_states, M]
-        log_p_zc_w = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
-                        tf.math.log(tf.clip_by_value(temp_pi, 1e-12, 1.0)) - \
-                        tf.reduce_sum(tf.math.square(temp_Z - temp_mu), 2)/2  # this omits a term -logM for avoiding numerical issue
-                        
-        # [batch_size, L]
-        log_p_z_L = tf.expand_dims(tf.reduce_logsumexp(log_p_zc_w, axis=[2,3]), -1) # this omits a term -logM for avoiding numerical issue
-                    
-        # [batch_size, n_states, M]
-        p_wc_x = tf.exp(tf.reduce_logsumexp(
-                    log_p_zc_w -
-                    tf.expand_dims(log_p_z_L, -1),
-                    1) - tf.math.log(tf.cast(L, tf.keras.backend.floatx())))
-                    
-        # [batch_size, n_states, n_clusters, M]
-        _w = tf.tile(tf.expand_dims(
-                tf.tile(tf.expand_dims(
-                    tf.one_hot(self.A, self.n_clusters, dtype=tf.keras.backend.floatx()),
-                    -1), (1,1,self.M)) * self.w +
-                tf.tile(tf.expand_dims(
-                    tf.one_hot(self.B, self.n_clusters, dtype=tf.keras.backend.floatx()),
-                    -1), (1,1,self.M)) * (1-self.w), 0), (batch_size,1,1,1))
-                    
-        # [batch_size, n_clusters]
-        w_tilde = tf.reduce_sum(
-            _w  * \
-            tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-            (1,3))
-            
-        var_w_tilde = tf.reduce_sum(
-            tf.math.square(_w)  *
-            tf.tile(tf.expand_dims(p_wc_x, 2), (1,1,self.n_clusters,1)),
-            (1,3)) - tf.square(w_tilde)
-        
-        _wtilde = tf.expand_dims(tf.expand_dims(w_tilde, 1), -1)
-        D_JS = tf.reduce_sum(
-            tf.math.sqrt(
-                0.5 * tf.reduce_mean(
-                    _w * tf.math.log(tf.clip_by_value(
-                        _w * tf.math.reciprocal_no_nan(0.5 * (_w + _wtilde)), 
-                        1e-12, 1e30)) +
-                    _wtilde * tf.math.log(tf.clip_by_value(
-                        _wtilde * tf.math.reciprocal_no_nan(0.5 * (_w + _wtilde)), 
-                        1e-12, 1e30)),
-                    axis=2)) * \
-            p_wc_x, (1,2)) / tf.cast(self.M, tf.keras.backend.floatx())
-        return w_tilde, var_w_tilde, D_JS
-    
+        # var_w_tilde [batch_size, L, n_clusters]
+        var_w_tilde = log_eta0 + tf.math.log(
+            tf.clip_by_value(
+                (dist.cdf(eta1) -  dist.cdf(eta2)) * ((_sig + _nu**2) * (A+B) + (1-2*_nu) * B)  -
+                (dist.prob(eta1) - dist.prob(eta2)) * tf.math.sqrt(_sig) * (_nu *(A+B)-B )*2 -
+                (eta1*dist.prob(eta1) - eta2*dist.prob(eta2)) * _sig *(A+B), 
+                0.0, 1e30)
+            )
+        var_w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
+            tf.math.log(temp_pi) + \
+            tf.where(_inv_sig==0, 
+                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(a2**2, axis=2), -1), -np.inf), 
+                    var_w_tilde) 
+        var_w_tilde = tf.exp(tf.reduce_logsumexp(var_w_tilde, 2) - log_p_z_L) - w_tilde**2  
+
+
+        w_tilde = tf.reduce_mean(w_tilde, 1)
+        var_w_tilde = tf.reduce_mean(var_w_tilde, 1)
+        return w_tilde, var_w_tilde
+
     def get_pz(self, z):
         '''Get \(\\log p(Z_i|Y_i,X_i)\).
 
@@ -444,21 +426,19 @@ class LatentSpace(Layer):
         log_p_z : tf.Tensor
             \([B, 1]\) The estimated \(\\log p(Z_i|Y_i,X_i)\). 
         '''        
-        temp_pi, a2, _inv_sig, _mu, _t = self._get_normal_params(z)
+        temp_pi, a2, _inv_sig, _nu, _t = self._get_normal_params(z)
         
-        log_p_z_c_L =  0.5 * (tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) - \
-                        tf.math.log(tf.clip_by_value(_inv_sig, 1e-12, 1e30)) + \
-                        _t
-                        ) + \
-                        tf.math.log(tf.clip_by_value(
-                            self.cdf_layer((1-_mu) * 
-                                tf.math.sqrt(tf.clip_by_value(_inv_sig, 1e-12, 1e30))) - 
-                            self.cdf_layer(-_mu*
-                            tf.math.sqrt(tf.clip_by_value(_inv_sig, 1e-12, 1e30))),
-                            1e-12, 1e30))
+        log_eta0 = 0.5 * (tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) - \
+                    tf.math.log(tf.clip_by_value(_inv_sig, 1e-12, 1e30)) + _t)
+        eta1 = (1-_nu) * tf.math.sqrt(tf.clip_by_value(_inv_sig, 1e-12, 1e30))
+        eta2 = -_nu * tf.math.sqrt(tf.clip_by_value(_inv_sig, 1e-12, 1e30))
+
+        log_p_z_c_L =  log_eta0 + tf.math.log(tf.clip_by_value(
+            self.cdf_layer(eta1) - self.cdf_layer(eta2),
+            1e-12, 1e30))
         
         log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
-        return log_p_zc_L, log_p_z_L, log_p_z
+        return temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z
 
     def get_posterior_c(self, z):
         '''Get \(p(c_i|Y_i,X_i)\).
@@ -502,19 +482,18 @@ class LatentSpace(Layer):
         res : dict
             The dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
         '''                 
-        log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
+        temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
         if not inference:
             return log_p_z
         else:
             log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-            w_tilde, var_w_tilde, D_JS = self._get_inference(z, log_p_zc_L, log_p_z_L)
+            w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2)
             
             res = {}
             res['p_c_x'] = tf.exp(log_p_c_x).numpy()
             res['w_tilde'] = w_tilde.numpy()
             res['var_w_tilde'] = var_w_tilde.numpy()
-            res['D_JS'] = D_JS.numpy()
             return res
             
             
@@ -749,7 +728,6 @@ class VariationalAutoEncoder(tf.keras.Model):
         p_c_x = []
         w_tilde = []
         var_w_tilde = []
-        D_JS = []
         for x,c_score in test_dataset:
             x = tf.concat([x, c_score], -1) if self.has_cov else x
             _z_mean, _, z = self.encoder(x, L, False)
@@ -759,11 +737,9 @@ class VariationalAutoEncoder(tf.keras.Model):
             p_c_x.append(res['p_c_x'])            
             w_tilde.append(res['w_tilde'])
             var_w_tilde.append(res['var_w_tilde'])
-            D_JS.append(res['D_JS'])
-        
-        D_JS = np.concatenate(D_JS)
+
         z_mean = np.concatenate(z_mean)
         p_c_x = np.concatenate(p_c_x)
         w_tilde = np.concatenate(w_tilde)
         var_w_tilde = np.concatenate(var_w_tilde)
-        return pi_norm, mu, p_c_x, w_tilde, var_w_tilde, D_JS, z_mean
+        return pi_norm, mu, p_c_x, w_tilde, var_w_tilde, z_mean
