@@ -35,7 +35,7 @@ __author__ = &#34;Jin-Hong Du, Ming Gao, and Jingshu Wang&#34;
 __copyright__ = &#34;Copyright 2020, The Trajectory Inference Project&#34;
 
 __license__ = &#34;MIT&#34;
-__version__ = &#34;1.1.2&#34;
+__version__ = &#34;1.1.3&#34;
 __maintainer__ = &#34;Jin-Hong Du&#34;
 __email__ = &#34;dujinhong@uchicago.edu&#34;
 __status__ = &#34;Development&#34;</code></pre>
@@ -240,7 +240,7 @@ __status__ = &#34;Development&#34;</code></pre>
             with open(path_to_file+&#39;.inference&#39;, &#39;wb&#39;) as f:
                 np.save(f, np.array([
                     self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                    self.D_JS, self.z, self.embed_z, self.inferer.embed_mu], dtype=object))
+                    self.z, self.embed_z, self.inferer.embed_mu], dtype=object))
     
 
     def load_model(self, path_to_file: str = &#39;model.checkpoint&#39;, load_labels: bool = False):
@@ -275,8 +275,13 @@ __status__ = &#34;Development&#34;</code></pre>
             self.init_latent_space(n_clusters, cluster_labels)
             if os.path.exists(path_to_file+&#39;.inference&#39;):
                 with open(path_to_file+&#39;.inference&#39;, &#39;rb&#39;) as f:
-                    [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                        self.D_JS, self.z, self.embed_z, embed_mu] = np.load(f, allow_pickle=True)
+                    arr = np.load(f, allow_pickle=True)
+                    if len(arr)==9:
+                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                            self.D_JS, self.z, self.embed_z, embed_mu] = arr
+                    else:
+                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                            self.z, self.embed_z, embed_mu] = arr
                 self.inferer.mu = self.mu
                 self.inferer.embed_z = self.embed_z
                 self.inferer.embed_mu = embed_mu
@@ -285,9 +290,9 @@ __status__ = &#34;Development&#34;</code></pre>
 
 
     def pre_train(self, stratify = False, test_size = 0.1, random_state: int = 0,
-            learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.01,
+            learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.10,
             num_epoch: int = 300, num_step_per_epoch: Optional[int] = None,
-            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 0, 
+            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0,
             path_to_weights: Optional[str] = None):
         &#39;&#39;&#39;Pretrain the model with specified learning rate.
 
@@ -315,8 +320,6 @@ __status__ = &#34;Development&#34;</code></pre>
             The maximum number of epoches if there is no improvement.
         early_stopping_tolerance : float, optional 
             The minimum change of loss to be considered as an improvement.
-        early_stopping_warmup : int, optional
-            The number of warmup epoches.
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
         &#39;&#39;&#39;                    
@@ -351,7 +354,7 @@ __status__ = &#34;Development&#34;</code></pre>
             num_step_per_epoch,
             early_stopping_patience,
             early_stopping_tolerance,
-            early_stopping_warmup)
+            0)
 
         if path_to_weights is not None:
             self.save_model(path_to_weights)
@@ -439,9 +442,9 @@ __status__ = &#34;Development&#34;</code></pre>
 
     def train(self, stratify = False, test_size = 0.1, random_state: int = 0,
             learning_rate: float = 1e-3, batch_size: int = 32, 
-            L: int = 1, alpha: float = 0.01, beta: float = 1, 
+            L: int = 1, alpha: float = 0.10, beta: float = 1, 
             num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
-            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 5,
+            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 10,
             path_to_weights: Optional[str] = None, plot_every_num_epoch: Optional[int] = None, dimred: str = &#39;umap&#39;, **kwargs):
         &#39;&#39;&#39;Train the model.
 
@@ -556,7 +559,7 @@ __status__ = &#34;Development&#34;</code></pre>
                                                c,
                                                batch_size)
         self.pi, self.mu, self.pc_x,\
-            self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
+            self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
         if refit_dimred or not hasattr(self.inferer, &#39;embed_z&#39;):
             self.embed_z = self.inferer.init_embedding(self.z, self.mu, dimred, **kwargs)
         else:
@@ -1101,7 +1104,7 @@ If <code>adata</code> is provided, the preprocession will be done via <code>scan
         with open(path_to_file+&#39;.inference&#39;, &#39;wb&#39;) as f:
             np.save(f, np.array([
                 self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                self.D_JS, self.z, self.embed_z, self.inferer.embed_mu], dtype=object))</code></pre>
+                self.z, self.embed_z, self.inferer.embed_mu], dtype=object))</code></pre>
 </details>
 </dd>
 <dt id="VITAE.VITAE.load_model"><code class="name flex">
@@ -1154,8 +1157,13 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
         self.init_latent_space(n_clusters, cluster_labels)
         if os.path.exists(path_to_file+&#39;.inference&#39;):
             with open(path_to_file+&#39;.inference&#39;, &#39;rb&#39;) as f:
-                [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                    self.D_JS, self.z, self.embed_z, embed_mu] = np.load(f, allow_pickle=True)
+                arr = np.load(f, allow_pickle=True)
+                if len(arr)==9:
+                    [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                        self.D_JS, self.z, self.embed_z, embed_mu] = arr
+                else:
+                    [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                        self.z, self.embed_z, embed_mu] = arr
             self.inferer.mu = self.mu
             self.inferer.embed_z = self.embed_z
             self.inferer.embed_mu = embed_mu
@@ -1164,7 +1172,7 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
 </details>
 </dd>
 <dt id="VITAE.VITAE.pre_train"><code class="name flex">
-<span>def <span class="ident">pre_train</span></span>(<span>self, stratify=False, test_size=0.1, random_state: int = 0, learning_rate: float = 0.001, batch_size: int = 32, L: int = 1, alpha: float = 0.01, num_epoch: int = 300, num_step_per_epoch: Union[int, NoneType] = None, early_stopping_patience: int = 10, early_stopping_tolerance: float = 0.001, early_stopping_warmup: int = 0, path_to_weights: Union[str, NoneType] = None)</span>
+<span>def <span class="ident">pre_train</span></span>(<span>self, stratify=False, test_size=0.1, random_state: int = 0, learning_rate: float = 0.001, batch_size: int = 32, L: int = 1, alpha: float = 0.1, num_epoch: int = 300, num_step_per_epoch: Union[int, NoneType] = None, early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, path_to_weights: Union[str, NoneType] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Pretrain the model with specified learning rate.</p>
@@ -1192,8 +1200,6 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
 <dd>The maximum number of epoches if there is no improvement.</dd>
 <dt><strong><code>early_stopping_tolerance</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>The minimum change of loss to be considered as an improvement.</dd>
-<dt><strong><code>early_stopping_warmup</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>The number of warmup epoches.</dd>
 <dt><strong><code>path_to_weights</code></strong> :&ensp;<code>str</code>, optional</dt>
 <dd>The path of weight file to be saved; not saving weight if None.</dd>
 </dl></div>
@@ -1202,9 +1208,9 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def pre_train(self, stratify = False, test_size = 0.1, random_state: int = 0,
-        learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.01,
+        learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.10,
         num_epoch: int = 300, num_step_per_epoch: Optional[int] = None,
-        early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 0, 
+        early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0,
         path_to_weights: Optional[str] = None):
     &#39;&#39;&#39;Pretrain the model with specified learning rate.
 
@@ -1232,8 +1238,6 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
         The maximum number of epoches if there is no improvement.
     early_stopping_tolerance : float, optional 
         The minimum change of loss to be considered as an improvement.
-    early_stopping_warmup : int, optional
-        The number of warmup epoches.
     path_to_weights : str, optional 
         The path of weight file to be saved; not saving weight if None.
     &#39;&#39;&#39;                    
@@ -1268,7 +1272,7 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
         num_step_per_epoch,
         early_stopping_patience,
         early_stopping_tolerance,
-        early_stopping_warmup)
+        0)
 
     if path_to_weights is not None:
         self.save_model(path_to_weights)</code></pre>
@@ -1423,7 +1427,7 @@ cluster labels.</dd>
 </details>
 </dd>
 <dt id="VITAE.VITAE.train"><code class="name flex">
-<span>def <span class="ident">train</span></span>(<span>self, stratify=False, test_size=0.1, random_state: int = 0, learning_rate: float = 0.001, batch_size: int = 32, L: int = 1, alpha: float = 0.01, beta: float = 1, num_epoch: int = 300, num_step_per_epoch: Union[int, NoneType] = None, early_stopping_patience: int = 10, early_stopping_tolerance: float = 0.001, early_stopping_warmup: int = 5, path_to_weights: Union[str, NoneType] = None, plot_every_num_epoch: Union[int, NoneType] = None, dimred: str = 'umap', **kwargs)</span>
+<span>def <span class="ident">train</span></span>(<span>self, stratify=False, test_size=0.1, random_state: int = 0, learning_rate: float = 0.001, batch_size: int = 32, L: int = 1, alpha: float = 0.1, beta: float = 1, num_epoch: int = 300, num_step_per_epoch: Union[int, NoneType] = None, early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 10, path_to_weights: Union[str, NoneType] = None, plot_every_num_epoch: Union[int, NoneType] = None, dimred: str = 'umap', **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Train the model.</p>
@@ -1470,9 +1474,9 @@ cluster labels.</dd>
 </summary>
 <pre><code class="python">def train(self, stratify = False, test_size = 0.1, random_state: int = 0,
         learning_rate: float = 1e-3, batch_size: int = 32, 
-        L: int = 1, alpha: float = 0.01, beta: float = 1, 
+        L: int = 1, alpha: float = 0.10, beta: float = 1, 
         num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
-        early_stopping_patience: int = 10, early_stopping_tolerance: float = 1e-3, early_stopping_warmup: int = 5,
+        early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 10,
         path_to_weights: Optional[str] = None, plot_every_num_epoch: Optional[int] = None, dimred: str = &#39;umap&#39;, **kwargs):
     &#39;&#39;&#39;Train the model.
 
@@ -1610,7 +1614,7 @@ cluster labels.</dd>
                                            c,
                                            batch_size)
     self.pi, self.mu, self.pc_x,\
-        self.w_tilde,self.var_w_tilde,self.D_JS,self.z = self.vae.inference(self.test_dataset, L=L)
+        self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
     if refit_dimred or not hasattr(self.inferer, &#39;embed_z&#39;):
         self.embed_z = self.inferer.init_embedding(self.z, self.mu, dimred, **kwargs)
     else:
