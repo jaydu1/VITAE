@@ -496,6 +496,7 @@ class VITAE():
         self.pi, self.mu, self.pc_x,\
             self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
         if refit_dimred or not hasattr(self.inferer, 'embed_z'):
+            print('Computing embeddings.')
             self.embed_z = self.inferer.init_embedding(self.z, self.mu, dimred, **kwargs)
         else:
             self.embed_z = self.inferer.embed_z

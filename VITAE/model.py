@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Layer, Dense, BatchNormalization
 import tensorflow_probability as tfp
+from tensorflow.keras.utils import Progbar
 
  
 class cdf_layer(Layer):
@@ -721,14 +722,16 @@ class VariationalAutoEncoder(tf.keras.Model):
         '''   
         if self.latent_space is None:
             raise ReferenceError('Have not initialized the latent space.')
-            
+        
+        print('Computing posterior estimations over mini-batches.')
+        progbar = Progbar(test_dataset.cardinality().numpy())
         pi_norm = tf.nn.softmax(self.latent_space.pi).numpy()
         mu = self.latent_space.mu.numpy()
         z_mean = []
         p_c_x = []
         w_tilde = []
         var_w_tilde = []
-        for x,c_score in test_dataset:
+        for step, (x,c_score) in enumerate(test_dataset):
             x = tf.concat([x, c_score], -1) if self.has_cov else x
             _z_mean, _, z = self.encoder(x, L, False)
             res = self.latent_space(z, inference=True)
@@ -737,6 +740,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             p_c_x.append(res['p_c_x'])            
             w_tilde.append(res['w_tilde'])
             var_w_tilde.append(res['var_w_tilde'])
+            progbar.update(step+1)
 
         z_mean = np.concatenate(z_mean)
         p_c_x = np.concatenate(p_c_x)
