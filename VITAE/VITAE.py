@@ -175,7 +175,7 @@ class VITAE():
             with open(path_to_file+'.inference', 'wb') as f:
                 np.save(f, np.array([
                     self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                    self.D_JS, self.z, self.embed_z, self.inferer.embed_mu], dtype=object))
+                    self.z, self.embed_z, self.inferer.embed_mu], dtype=object))
     
 
     def load_model(self, path_to_file: str = 'model.checkpoint', load_labels: bool = False):
