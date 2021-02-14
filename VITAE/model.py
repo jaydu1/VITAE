@@ -454,7 +454,7 @@ class LatentSpace(Layer):
         p_c_x : np.array
             \([B, K]\) \(p(c_i|Y_i,X_i)\).
         '''  
-        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
+        _,_,_,_,_,_,_, log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
         log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
         p_c_x = tf.exp(log_p_c_x).numpy()
         return p_c_x
