@@ -322,7 +322,7 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
     plt.plot()
 
     
-def plot_marker_gene(expression, gene_name, embed_z, path=None):
+def plot_marker_gene(expression, gene_name: str, embed_z, path=None):
     '''Plot the marker gene.
 
     Parameters
@@ -340,14 +340,38 @@ def plot_marker_gene(expression, gene_name, embed_z, path=None):
     cmap = matplotlib.cm.get_cmap('Reds')
     sc = ax.scatter(*embed_z.T, c='yellow', s=15, alpha=0.1)
     sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=10, alpha=0.5)
-    sc.set_clim(0,1) 
     plt.colorbar(sc, ax=[ax], location='right')
+    plt.setp(ax, xticks=[], yticks=[])
     ax.set_title('Normalized expression of {}'.format(gene_name))
     if path is not None:
         plt.savefig(path, dpi=300)
     plt.show()
     return None
-    
+
+
+def plot_uncertainty(uncertainty, embed_z, path=None):
+    '''Plot the uncertainty for all selected cells.
+
+    Parameters
+    ----------
+    uncertainty : np.array
+        \([N, ]\) The uncertainty of the all cells.    
+    embed_z : np.array
+        \([N, 2]\) The latent variables after dimension reduction.
+    path : str, optional
+        The path to save the figure.
+    '''          
+    fig, ax = plt.subplots(1,1, figsize=(20, 10))
+    cmap = matplotlib.cm.get_cmap('RdBu_r')
+    sc = ax.scatter(*embed_z.T, cmap=cmap, c=uncertainty, s=10, alpha=1.0)
+    plt.colorbar(sc, ax=[ax], location='right')
+    plt.setp(ax, xticks=[], yticks=[])
+    ax.set_title("Cells' Uncertainty")
+    if path is not None:
+        plt.savefig(path, dpi=300)
+    plt.show()
+    return None
+
 
 def _polyfit_with_fixed_points(n, x, y, xf, yf):
     '''

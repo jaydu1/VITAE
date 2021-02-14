@@ -7,7 +7,7 @@ import VITAE.preprocess as preprocess
 import VITAE.train as train
 from VITAE.inference import Inferer
 from VITAE.utils import load_data, get_embedding, get_igraph, leidenalg_igraph, \
-    plot_clusters, plot_marker_gene, DE_test
+    plot_clusters, plot_marker_gene, plot_uncertainty, DE_test
 from VITAE.metric import topology, get_GRI
 import tensorflow as tf
 
@@ -310,6 +310,8 @@ class VITAE():
     def set_cell_subset(self, selected_cell_names):
         '''Set a subset of interested cells.
 
+        This will have influence on the downstream processes (pretraining, training, inference, DE test, ...).
+
         Parameters
         ----------
         selected_cell_names : np.array, optional
@@ -317,7 +319,8 @@ class VITAE():
         ''' 
         self.selected_cell_subset = np.unique(selected_cell_names)
         self.selected_cell_subset_id = np.sort(np.where(np.in1d(self.cell_names, selected_cell_names))[0])
-        
+        print("Setting cell subset with length %d."%len(self.selected_cell_subset))
+
     
     def refine_pi(self, batch_size: int = 64):  
         '''Refine pi by the its posterior. This function will be effected if 'selected_cell_subset_id' is set.
@@ -489,8 +492,8 @@ class VITAE():
         **kwargs :  
             Extra key-value arguments for dimension reduction algorithms.              
         '''
-        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx())
-        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx()), 
+        c = None if self.c_score is None else self.c_score.astype(tf.keras.backend.floatx())
+        self.test_dataset = train.warp_dataset(self.X_normalized.astype(tf.keras.backend.floatx()), 
                                                c,
                                                batch_size)
         self.pi, self.mu, self.pc_x,\
@@ -562,7 +565,9 @@ class VITAE():
         G : nx.Graph 
             The weighted graph with weight on each edge indicating its score of existence.
         '''
-        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
+        G, _ = self.inferer.init_inference(self.w_tilde[self.selected_cell_subset_id,:], 
+                                                self.pc_x[self.selected_cell_subset_id,:], 
+                                                thres, method, no_loop)
         if is_plot:
             self.inferer.plot_clusters(self.cluster_labels, plot_labels=plot_labels, path=path)
         return G
@@ -584,20 +589,27 @@ class VITAE():
 
         Returns
         ----------
-        G : nx.Graph 
+        modified_G : nx.Graph 
             The modified graph that indicates the inferred trajectory.
-        w : np.array
+        modified_w_tilde : np.array
             \([N,k]\) The modified \(\\tilde{w}\).
         pseudotime : np.array
             \([N,]\) The pseudotime based on projected trajectory.
         '''
-        G, w, pseudotime = self.inferer.infer_trajectory(init_node, 
+        self.modified_G, modified_w_tilde, pseudotime = self.inferer.infer_trajectory(init_node, 
                                                          self.label_names[self.selected_cell_subset_id], 
                                                          cutoff, 
                                                          path=path, 
                                                          is_plot=is_plot)
-        self.pseudotime = pseudotime
-        return G, w, pseudotime
+        if len(self.selected_cell_subset_id)<len(self.cell_names):
+            self.modified_w_tilde = np.full(self.w_tilde.shape, np.nan)
+            self.modified_w_tilde[self.selected_cell_subset_id,:] = modified_w_tilde
+            self.pseudotime = np.full(len(self.cell_names), np.nan)
+            self.pseudotime[self.selected_cell_subset_id] = pseudotime 
+        else:
+            self.modified_w_tilde = modified_w_tilde
+            self.pseudotime = pseudotime 
+        return self.modified_G, modified_w_tilde, pseudotime
 
 
     def differentially_expressed_test(self, alpha: float = 0.05):
@@ -631,6 +643,35 @@ class VITAE():
         return res_df
 
 
+    def plot_uncertainty(self, refit_dimred: bool = False, dimred: str = 'umap', path: Optional[str] =None, **kwargs):
+        '''Plot uncertainty of all selected cells.
+
+        Parameters
+        ----------        
+        refit_dimred : boolean, optional 
+            Whether to refit dimension reduction or use the existing embedding after inference.
+        dimred : str, optional
+            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
+        path : str, optional
+            The path to save the figure, or not saving if it is None.
+        **kwargs :  
+            Extra key-value arguments for dimension reduction algorithms.
+        '''
+        if not hasattr(self, 'modified_w_tilde'):
+            raise ReferenceError("The object 'modified_w_tilde' does not exist! Please infer a trajectory before calling this function.")
+        
+        uncertainty = np.sum((self.modified_w_tilde - self.w_tilde)**2, axis=-1) + np.sum(self.var_w_tilde, axis=-1)
+
+        if not hasattr(self, 'embed_z') or refit_dimred:
+            z = self.get_latent_z()       
+            embed_z = get_embedding(z, dimred, **kwargs)
+        else:
+            embed_z = self.embed_z
+        return plot_uncertainty(uncertainty[self.selected_cell_subset_id], 
+                                embed_z[self.selected_cell_subset_id,:],
+                                path)
+
+
     def plot_marker_gene(self, gene_name: str, refit_dimred: bool = False, dimred: str = 'umap', path: Optional[str] =None, **kwargs):
         '''Plot expression of the given marker gene.
 
@@ -658,11 +699,10 @@ class VITAE():
             embed_z = get_embedding(z, dimred, **kwargs)
         else:
             embed_z = self.embed_z
-        plot_marker_gene(expression, 
-                         gene_name, 
-                         embed_z[self.selected_cell_subset_id,:],
-                         path)
-        return None
+        return plot_marker_gene(expression, 
+                                gene_name, 
+                                embed_z[self.selected_cell_subset_id,:],
+                                path)
 
 
     def evaluate(self, milestone_net, begin_node_true, grouping = None,
