@@ -307,7 +307,7 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
     for i,l in enumerate(np.unique(labels)):
         ax.scatter(*embed_z[labels==l].T,
                     c=[colors[i]], label=str(l),
-                    s=8, alpha=0.4)
+                    s=16, alpha=0.4)
         if plot_labels:
             ax.text(np.mean(embed_z[labels==l,0]), np.mean(embed_z[labels==l,1]), str(l), fontsize=16)
     plt.setp(ax, xticks=[], yticks=[])

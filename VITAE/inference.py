@@ -207,7 +207,7 @@ class Inferer(object):
             fig, ax = plt.subplots(1,1, figsize=(20, 10))
             for i,x in enumerate(np.unique(labels)):
                 ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                    s=8, alpha=0.6, label=str(x))
+                    s=16, alpha=0.5, label=str(x))
                 if plot_labels:
                     ax.text(np.mean(self.embed_z[labels==x,0]), 
                             np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
@@ -372,14 +372,14 @@ class Inferer(object):
                 sc = ax.scatter(*self.embed_z[pseudotime>-1,:].T,
                     norm=norm,
                     c=pseudotime[pseudotime>-1],
-                    s=8, alpha=0.5)
+                    s=16, alpha=0.5)
                 plt.colorbar(sc, ax=[ax], location='right')
             else:
                 norm = None
                 
             if np.sum(pseudotime==-1)>0:
                 ax.scatter(*self.embed_z[pseudotime==-1,:].T,
-                            c='gray', s=8, alpha=0.4)
+                            c='gray', s=16, alpha=0.4)
             
             for i in range(len(select_edges)):
                 points = self.embed_z[np.sum(w[:,select_edges[i,:]]>0, axis=-1)==2,:]
