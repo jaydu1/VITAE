@@ -5,6 +5,7 @@ library(ggplot2)
 library(ggpubr)
 library(cowplot)
 library(hdf5r)
+
 plotGene <- function(gene.name) {
     temp.dat <- lapply(1:length(gene.name), function(i)
         temp.dat <- data.frame(rank(covariates$pdt), exp[gene.name[i], ], 
@@ -33,7 +34,7 @@ cols <- sapply(list(c(0.3686274509803922, 0.30980392156862746, 0.635294117647058
                function(v) rgb(v[1], v[2], v[3], v[4]))
 
 titles <- c("NEC -> RGC -> OPC", "RGC -> IPC -> Immature Neuron")
-branches <- c('branch 5-7-0-11', 'branch 7-4-6-1')
+branches <- c('branch 3-0-10', 'branch 0-4-1')
 p1 <- list()
 p2 <- list()
 for(i in 1:2){
@@ -51,6 +52,8 @@ for(i in 1:2){
     covariates$pdt <- fread(file.path('result',branch,"pseudotime.csv"))$pseudotime
     covariates$Day <- as.factor(fread(file.path('result',branch,"cell_day.csv"))$V2[-1])
     
+    # The following DE test is only for plotting. Use our Python
+    # implementation for efficient testing.
     system.time(result <- sapply(1:nrow(exp), function(i) {
         if (var(exp[i, ]) == 0) { 
             r2 <- rep(NA, 3)
@@ -100,8 +103,8 @@ for(i in 1:2){
 
 p3 <- ggarrange(p2$b1, p2$b2, common.legend = TRUE, legend = "bottom")
 p <- ggdraw() +
-    draw_plot(p1$b1, x = 0, y = 0.15, width = .5, height = .85) +
-    draw_plot(p1$b2, x = 0.5, y = 0.15, width = .5, height = .85) +
-    draw_plot(p3, x = 0.034, y = 0, width = .95, height = .15)
+    draw_plot(p1$b1, x = 0, y = 0.15, width = .5, height = .8) +
+    draw_plot(p1$b2, x = 0.5, y = 0.15, width = .5, height = .8) +
+    draw_plot(p3, x = 0.0, y = 0, width = 1.0, height = .12)
 ggsave(plot = p, filename = 'mainFigure6.pdf')
 
