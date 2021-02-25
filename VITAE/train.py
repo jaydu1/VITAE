@@ -179,6 +179,7 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
     vae : VariationalAutoEncoder
         The trained model.
     '''   
+    optimizer_ = tf.keras.optimizers.Adam(learning_rate)
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_test = [tf.keras.metrics.Mean() for _ in range(4)]
     loss_train = [tf.keras.metrics.Mean() for _ in range(4)]
@@ -201,7 +202,7 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
                     loss = tf.reduce_sum(losses[1:])
                 grads = tape.gradient(loss, vae.latent_space.trainable_weights,
                             unconnected_gradients=tf.UnconnectedGradients.ZERO)
-                optimizer.apply_gradients(zip(grads, vae.latent_space.trainable_weights))
+                optimizer_.apply_gradients(zip(grads, vae.latent_space.trainable_weights))
             else:
                 with tf.GradientTape() as tape:
                     losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha)
