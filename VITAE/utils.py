@@ -315,7 +315,7 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
     ax.set_position([box.x0, box.y0 + box.height * 0.1,
                         box.width, box.height * 0.9])
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-        fancybox=True, shadow=True, markerscale=5, ncol=5)
+        fancybox=True, shadow=True, markerscale=3, ncol=5)
     ax.set_title('Clustering')
     if path is not None:
         plt.savefig(path, dpi=300)
