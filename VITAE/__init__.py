@@ -6,7 +6,7 @@ __author__ = "Jin-Hong Du, Ming Gao, and Jingshu Wang"
 __copyright__ = "Copyright 2020, The Trajectory Inference Project"
 
 __license__ = "MIT"
-__version__ = "1.1.3"
+__version__ = "1.1.4"
 __maintainer__ = "Jin-Hong Du"
 __email__ = "dujinhong@uchicago.edu"
 __status__ = "Development"
