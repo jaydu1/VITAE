@@ -179,7 +179,7 @@ class Decoder(Layer):
         dim_origin : int
             The output dimension of the decoder.
         data_type : str, optional
-            &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
+            `&#39;UMI&#39;`, `&#39;non-UMI&#39;`, or `&#39;Gaussian&#39;`.
         name : str, optional
             The name of the layer.
         &#39;&#39;&#39;
@@ -342,25 +342,25 @@ class LatentSpace(Layer):
             (batch_size,L,1)), 1e-12, 1.0)
                         
         # [batch_size, L, d, n_states]
-        a1 = tf.expand_dims(tf.expand_dims(
+        alpha_zc = tf.expand_dims(tf.expand_dims(
             tf.gather(self.mu, self.B, axis=1) - tf.gather(self.mu, self.A, axis=1), 0), 0)
-        a2 = tf.expand_dims(z,-1) - \
+        beta_zc = tf.expand_dims(z,-1) - \
             tf.expand_dims(tf.expand_dims(
             tf.gather(self.mu, self.B, axis=1), 0), 0)
             
         # [batch_size, L, n_states]
-        _inv_sig = tf.reduce_sum(a1 * a1, axis=2)
-        _nu = - tf.reduce_sum(a1 * a2, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
-        _t = - tf.reduce_sum(a2 * a2, axis=2) + _nu**2*_inv_sig
-        return temp_pi, a2, _inv_sig, _nu, _t
+        _inv_sig = tf.reduce_sum(alpha_zc * alpha_zc, axis=2)
+        _nu = - tf.reduce_sum(alpha_zc * beta_zc, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
+        _t = - tf.reduce_sum(beta_zc * beta_zc, axis=2) + _nu**2*_inv_sig
+        return temp_pi, beta_zc, _inv_sig, _nu, _t
     
     @tf.function
-    def _get_pz(self, temp_pi, _inv_sig, a2, log_p_z_c_L):
+    def _get_pz(self, temp_pi, _inv_sig, beta_zc, log_p_z_c_L):
         # [batch_size, L, n_states]
         log_p_zc_L = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(tf.clip_by_value(temp_pi, 1e-12, 1.0)) + \
             tf.where(_inv_sig==0, 
-                    - 0.5 * tf.reduce_sum(a2**2, axis=2), 
+                    - 0.5 * tf.reduce_sum(beta_zc**2, axis=2), 
                     log_p_z_c_L)
         
         # [batch_size, L, 1]
@@ -382,7 +382,7 @@ class LatentSpace(Layer):
         return log_p_c_x
 
     @tf.function
-    def _get_inference(self, z, log_p_z_L, temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2):
+    def _get_inference(self, z, log_p_z_L, temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2):
         batch_size = tf.shape(z)[0]
         L = tf.shape(z)[1]
         dist = tfp.distributions.Normal(
@@ -415,7 +415,7 @@ class LatentSpace(Layer):
         w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(temp_pi) + \
             tf.where(_inv_sig==0, 
-                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(a2**2, axis=2), -1), -np.inf), 
+                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(beta_zc**2, axis=2), -1), -np.inf), 
                     w_tilde)
         w_tilde = tf.exp(tf.reduce_logsumexp(w_tilde, 2) - log_p_z_L)
             
@@ -430,7 +430,7 @@ class LatentSpace(Layer):
         var_w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(temp_pi) + \
             tf.where(_inv_sig==0, 
-                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(a2**2, axis=2), -1), -np.inf), 
+                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(beta_zc**2, axis=2), -1), -np.inf), 
                     var_w_tilde) 
         var_w_tilde = tf.exp(tf.reduce_logsumexp(var_w_tilde, 2) - log_p_z_L) - w_tilde**2  
 
@@ -449,14 +449,28 @@ class LatentSpace(Layer):
 
         Returns
         ----------
+        temp_pi : tf.Tensor
+            \([B, L, K]\) \(\\pi\).
+        _inv_sig : tf.Tensor
+            \([B, L, K]\) \(\\sigma_{Z_ic_i}^{-1}\).
+        _nu : tf.Tensor
+            \([B, L, K]\) \(\\nu_{Z_ic_i}\).
+        beta_zc : tf.Tensor
+            \([B, L, d, K]\) \(\\beta_{Z_ic_i}\).
+        log_eta0 : tf.Tensor
+            \([B, L, K]\) \(\\log\\eta_{Z_ic_i,0}\).
+        eta1 : tf.Tensor
+            \([B, L, K]\) \(\\eta_{Z_ic_i,1}\).
+        eta2 : tf.Tensor
+            \([B, L, K]\) \(\\eta_{Z_ic_i,2}\).
         log_p_zc_L : tf.Tensor
-            \([B, L, K]\) \(\\log p(Z_i^{(l)},c_i|Y_i,X_i)\).
+            \([B, L, K]\) \(\\log p(Z_i,c_i|Y_i,X_i)\).
         log_p_z_L : tf.Tensor
-            \([B, L]\) \(\\log p(Z_i^{(l)}|Y_i,X_i)\).
+            \([B, L]\) \(\\log p(Z_i|Y_i,X_i)\).
         log_p_z : tf.Tensor
             \([B, 1]\) The estimated \(\\log p(Z_i|Y_i,X_i)\). 
         &#39;&#39;&#39;        
-        temp_pi, a2, _inv_sig, _nu, _t = self._get_normal_params(z)
+        temp_pi, beta_zc, _inv_sig, _nu, _t = self._get_normal_params(z)
         
         log_eta0 = 0.5 * (tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) - \
                     tf.math.log(tf.clip_by_value(_inv_sig, 1e-12, 1e30)) + _t)
@@ -467,8 +481,8 @@ class LatentSpace(Layer):
             self.cdf_layer(eta1) - self.cdf_layer(eta2),
             1e-12, 1e30))
         
-        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
-        return temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z
+        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, beta_zc, log_p_z_c_L)
+        return temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z
 
     def get_posterior_c(self, z):
         &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
@@ -512,13 +526,13 @@ class LatentSpace(Layer):
         res : dict
             The dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
         &#39;&#39;&#39;                 
-        temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
+        temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
         if not inference:
             return log_p_z
         else:
             log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-            w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2)
+            w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2)
             
             res = {}
             res[&#39;p_c_x&#39;] = tf.exp(log_p_c_x).numpy()
@@ -544,7 +558,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         dim_latent : int
             The latent dimension.
         data_type : str, optional
-            &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
+            `&#39;UMI&#39;`, `&#39;non-UMI&#39;`, or `&#39;Gaussian&#39;`.
         has_cov : boolean
             Whether has covariates or not.
         name : str, optional
@@ -587,9 +601,9 @@ class VariationalAutoEncoder(tf.keras.Model):
         c_score : np.array
             \([B, s]\) The covariates \(X_i\), only used when `has_cov=True`.
         x : np.array, optional
-            \([B, G]\) The original count data \(Y_i\), only used when data_type is not &#39;Gaussian&#39;.
+            \([B, G]\) The original count data \(Y_i\), only used when data_type is not `&#39;Gaussian&#39;`.
         scale_factor : np.array, optional
-            \([B, ]\) The scale factors, only used when data_type is not &#39;Gaussian&#39;.
+            \([B, ]\) The scale factors, only used when data_type is not `&#39;Gaussian&#39;`.
         pre_train : boolean, optional
             Whether in the pre-training phare or not.
         L : int, optional
@@ -744,8 +758,6 @@ class VariationalAutoEncoder(tf.keras.Model):
             \([N, k]\) The estimated \(E(\\tilde{w}_i|Y_i,X_i)\).
         var_w_tilde  : np.array 
             \([N, k]\) The estimated \(Var(\\tilde{w}_i|Y_i,X_i)\).
-        D_JS : np.array 
-            \([N, k]\) The estimated JS divergence.
         z_mean : np.array
             \([N, d]\) The estimated latent mean.
         &#39;&#39;&#39;   
@@ -1173,7 +1185,7 @@ def call(self, x, L=1, is_training=True):
 <dt><strong><code>dim_origin</code></strong> :&ensp;<code>int</code></dt>
 <dd>The output dimension of the decoder.</dd>
 <dt><strong><code>data_type</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>'UMI', 'non-UMI', or 'Gaussian'.</dd>
+<dd><code>'UMI'</code>, <code>'non-UMI'</code>, or <code>'Gaussian'</code>.</dd>
 <dt><strong><code>name</code></strong> :&ensp;<code>str</code>, optional</dt>
 <dd>The name of the layer.</dd>
 </dl></div>
@@ -1195,7 +1207,7 @@ def call(self, x, L=1, is_training=True):
         dim_origin : int
             The output dimension of the decoder.
         data_type : str, optional
-            &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
+            `&#39;UMI&#39;`, `&#39;non-UMI&#39;`, or `&#39;Gaussian&#39;`.
         name : str, optional
             The name of the layer.
         &#39;&#39;&#39;
@@ -1492,25 +1504,25 @@ def call(self, z, is_training=True):
             (batch_size,L,1)), 1e-12, 1.0)
                         
         # [batch_size, L, d, n_states]
-        a1 = tf.expand_dims(tf.expand_dims(
+        alpha_zc = tf.expand_dims(tf.expand_dims(
             tf.gather(self.mu, self.B, axis=1) - tf.gather(self.mu, self.A, axis=1), 0), 0)
-        a2 = tf.expand_dims(z,-1) - \
+        beta_zc = tf.expand_dims(z,-1) - \
             tf.expand_dims(tf.expand_dims(
             tf.gather(self.mu, self.B, axis=1), 0), 0)
             
         # [batch_size, L, n_states]
-        _inv_sig = tf.reduce_sum(a1 * a1, axis=2)
-        _nu = - tf.reduce_sum(a1 * a2, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
-        _t = - tf.reduce_sum(a2 * a2, axis=2) + _nu**2*_inv_sig
-        return temp_pi, a2, _inv_sig, _nu, _t
+        _inv_sig = tf.reduce_sum(alpha_zc * alpha_zc, axis=2)
+        _nu = - tf.reduce_sum(alpha_zc * beta_zc, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
+        _t = - tf.reduce_sum(beta_zc * beta_zc, axis=2) + _nu**2*_inv_sig
+        return temp_pi, beta_zc, _inv_sig, _nu, _t
     
     @tf.function
-    def _get_pz(self, temp_pi, _inv_sig, a2, log_p_z_c_L):
+    def _get_pz(self, temp_pi, _inv_sig, beta_zc, log_p_z_c_L):
         # [batch_size, L, n_states]
         log_p_zc_L = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(tf.clip_by_value(temp_pi, 1e-12, 1.0)) + \
             tf.where(_inv_sig==0, 
-                    - 0.5 * tf.reduce_sum(a2**2, axis=2), 
+                    - 0.5 * tf.reduce_sum(beta_zc**2, axis=2), 
                     log_p_z_c_L)
         
         # [batch_size, L, 1]
@@ -1532,7 +1544,7 @@ def call(self, z, is_training=True):
         return log_p_c_x
 
     @tf.function
-    def _get_inference(self, z, log_p_z_L, temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2):
+    def _get_inference(self, z, log_p_z_L, temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2):
         batch_size = tf.shape(z)[0]
         L = tf.shape(z)[1]
         dist = tfp.distributions.Normal(
@@ -1565,7 +1577,7 @@ def call(self, z, is_training=True):
         w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(temp_pi) + \
             tf.where(_inv_sig==0, 
-                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(a2**2, axis=2), -1), -np.inf), 
+                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(beta_zc**2, axis=2), -1), -np.inf), 
                     w_tilde)
         w_tilde = tf.exp(tf.reduce_logsumexp(w_tilde, 2) - log_p_z_L)
             
@@ -1580,7 +1592,7 @@ def call(self, z, is_training=True):
         var_w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(temp_pi) + \
             tf.where(_inv_sig==0, 
-                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(a2**2, axis=2), -1), -np.inf), 
+                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(beta_zc**2, axis=2), -1), -np.inf), 
                     var_w_tilde) 
         var_w_tilde = tf.exp(tf.reduce_logsumexp(var_w_tilde, 2) - log_p_z_L) - w_tilde**2  
 
@@ -1599,14 +1611,28 @@ def call(self, z, is_training=True):
 
         Returns
         ----------
+        temp_pi : tf.Tensor
+            \([B, L, K]\) \(\\pi\).
+        _inv_sig : tf.Tensor
+            \([B, L, K]\) \(\\sigma_{Z_ic_i}^{-1}\).
+        _nu : tf.Tensor
+            \([B, L, K]\) \(\\nu_{Z_ic_i}\).
+        beta_zc : tf.Tensor
+            \([B, L, d, K]\) \(\\beta_{Z_ic_i}\).
+        log_eta0 : tf.Tensor
+            \([B, L, K]\) \(\\log\\eta_{Z_ic_i,0}\).
+        eta1 : tf.Tensor
+            \([B, L, K]\) \(\\eta_{Z_ic_i,1}\).
+        eta2 : tf.Tensor
+            \([B, L, K]\) \(\\eta_{Z_ic_i,2}\).
         log_p_zc_L : tf.Tensor
-            \([B, L, K]\) \(\\log p(Z_i^{(l)},c_i|Y_i,X_i)\).
+            \([B, L, K]\) \(\\log p(Z_i,c_i|Y_i,X_i)\).
         log_p_z_L : tf.Tensor
-            \([B, L]\) \(\\log p(Z_i^{(l)}|Y_i,X_i)\).
+            \([B, L]\) \(\\log p(Z_i|Y_i,X_i)\).
         log_p_z : tf.Tensor
             \([B, 1]\) The estimated \(\\log p(Z_i|Y_i,X_i)\). 
         &#39;&#39;&#39;        
-        temp_pi, a2, _inv_sig, _nu, _t = self._get_normal_params(z)
+        temp_pi, beta_zc, _inv_sig, _nu, _t = self._get_normal_params(z)
         
         log_eta0 = 0.5 * (tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) - \
                     tf.math.log(tf.clip_by_value(_inv_sig, 1e-12, 1e30)) + _t)
@@ -1617,8 +1643,8 @@ def call(self, z, is_training=True):
             self.cdf_layer(eta1) - self.cdf_layer(eta2),
             1e-12, 1e30))
         
-        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
-        return temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z
+        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, beta_zc, log_p_z_c_L)
+        return temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z
 
     def get_posterior_c(self, z):
         &#39;&#39;&#39;Get \(p(c_i|Y_i,X_i)\).
@@ -1662,13 +1688,13 @@ def call(self, z, is_training=True):
         res : dict
             The dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
         &#39;&#39;&#39;                 
-        temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
+        temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
         if not inference:
             return log_p_z
         else:
             log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-            w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2)
+            w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2)
             
             res = {}
             res[&#39;p_c_x&#39;] = tf.exp(log_p_c_x).numpy()
@@ -1746,10 +1772,24 @@ def call(self, z, is_training=True):
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
+<dt><strong><code>temp_pi</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, K]</span><script type="math/tex">[B, L, K]</script></span> <span><span class="MathJax_Preview">\pi</span><script type="math/tex">\pi</script></span>.</dd>
+<dt><strong><code>_inv_sig</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, K]</span><script type="math/tex">[B, L, K]</script></span> <span><span class="MathJax_Preview">\sigma_{Z_ic_i}^{-1}</span><script type="math/tex">\sigma_{Z_ic_i}^{-1}</script></span>.</dd>
+<dt><strong><code>_nu</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, K]</span><script type="math/tex">[B, L, K]</script></span> <span><span class="MathJax_Preview">\nu_{Z_ic_i}</span><script type="math/tex">\nu_{Z_ic_i}</script></span>.</dd>
+<dt><strong><code>beta_zc</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, d, K]</span><script type="math/tex">[B, L, d, K]</script></span> <span><span class="MathJax_Preview">\beta_{Z_ic_i}</span><script type="math/tex">\beta_{Z_ic_i}</script></span>.</dd>
+<dt><strong><code>log_eta0</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, K]</span><script type="math/tex">[B, L, K]</script></span> <span><span class="MathJax_Preview">\log\eta_{Z_ic_i,0}</span><script type="math/tex">\log\eta_{Z_ic_i,0}</script></span>.</dd>
+<dt><strong><code>eta1</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, K]</span><script type="math/tex">[B, L, K]</script></span> <span><span class="MathJax_Preview">\eta_{Z_ic_i,1}</span><script type="math/tex">\eta_{Z_ic_i,1}</script></span>.</dd>
+<dt><strong><code>eta2</code></strong> :&ensp;<code>tf.Tensor</code></dt>
+<dd><span><span class="MathJax_Preview">[B, L, K]</span><script type="math/tex">[B, L, K]</script></span> <span><span class="MathJax_Preview">\eta_{Z_ic_i,2}</span><script type="math/tex">\eta_{Z_ic_i,2}</script></span>.</dd>
 <dt><strong><code>log_p_zc_L</code></strong> :&ensp;<code>tf.Tensor</code></dt>
-<dd><span><span class="MathJax_Preview">[B, L, K]</span><script type="math/tex">[B, L, K]</script></span> <span><span class="MathJax_Preview">\log p(Z_i^{(l)},c_i|Y_i,X_i)</span><script type="math/tex">\log p(Z_i^{(l)},c_i|Y_i,X_i)</script></span>.</dd>
+<dd><span><span class="MathJax_Preview">[B, L, K]</span><script type="math/tex">[B, L, K]</script></span> <span><span class="MathJax_Preview">\log p(Z_i,c_i|Y_i,X_i)</span><script type="math/tex">\log p(Z_i,c_i|Y_i,X_i)</script></span>.</dd>
 <dt><strong><code>log_p_z_L</code></strong> :&ensp;<code>tf.Tensor</code></dt>
-<dd><span><span class="MathJax_Preview">[B, L]</span><script type="math/tex">[B, L]</script></span> <span><span class="MathJax_Preview">\log p(Z_i^{(l)}|Y_i,X_i)</span><script type="math/tex">\log p(Z_i^{(l)}|Y_i,X_i)</script></span>.</dd>
+<dd><span><span class="MathJax_Preview">[B, L]</span><script type="math/tex">[B, L]</script></span> <span><span class="MathJax_Preview">\log p(Z_i|Y_i,X_i)</span><script type="math/tex">\log p(Z_i|Y_i,X_i)</script></span>.</dd>
 <dt><strong><code>log_p_z</code></strong> :&ensp;<code>tf.Tensor</code></dt>
 <dd><span><span class="MathJax_Preview">[B, 1]</span><script type="math/tex">[B, 1]</script></span> The estimated <span><span class="MathJax_Preview">\log p(Z_i|Y_i,X_i)</span><script type="math/tex">\log p(Z_i|Y_i,X_i)</script></span>.</dd>
 </dl></div>
@@ -1767,14 +1807,28 @@ def call(self, z, is_training=True):
 
     Returns
     ----------
+    temp_pi : tf.Tensor
+        \([B, L, K]\) \(\\pi\).
+    _inv_sig : tf.Tensor
+        \([B, L, K]\) \(\\sigma_{Z_ic_i}^{-1}\).
+    _nu : tf.Tensor
+        \([B, L, K]\) \(\\nu_{Z_ic_i}\).
+    beta_zc : tf.Tensor
+        \([B, L, d, K]\) \(\\beta_{Z_ic_i}\).
+    log_eta0 : tf.Tensor
+        \([B, L, K]\) \(\\log\\eta_{Z_ic_i,0}\).
+    eta1 : tf.Tensor
+        \([B, L, K]\) \(\\eta_{Z_ic_i,1}\).
+    eta2 : tf.Tensor
+        \([B, L, K]\) \(\\eta_{Z_ic_i,2}\).
     log_p_zc_L : tf.Tensor
-        \([B, L, K]\) \(\\log p(Z_i^{(l)},c_i|Y_i,X_i)\).
+        \([B, L, K]\) \(\\log p(Z_i,c_i|Y_i,X_i)\).
     log_p_z_L : tf.Tensor
-        \([B, L]\) \(\\log p(Z_i^{(l)}|Y_i,X_i)\).
+        \([B, L]\) \(\\log p(Z_i|Y_i,X_i)\).
     log_p_z : tf.Tensor
         \([B, 1]\) The estimated \(\\log p(Z_i|Y_i,X_i)\). 
     &#39;&#39;&#39;        
-    temp_pi, a2, _inv_sig, _nu, _t = self._get_normal_params(z)
+    temp_pi, beta_zc, _inv_sig, _nu, _t = self._get_normal_params(z)
     
     log_eta0 = 0.5 * (tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) - \
                 tf.math.log(tf.clip_by_value(_inv_sig, 1e-12, 1e30)) + _t)
@@ -1785,8 +1839,8 @@ def call(self, z, is_training=True):
         self.cdf_layer(eta1) - self.cdf_layer(eta2),
         1e-12, 1e30))
     
-    log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
-    return temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z</code></pre>
+    log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, beta_zc, log_p_z_c_L)
+    return temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z</code></pre>
 </details>
 </dd>
 <dt id="VITAE.model.LatentSpace.get_posterior_c"><code class="name flex">
@@ -1879,13 +1933,13 @@ def call(self, z, is_training=True):
     res : dict
         The dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
     &#39;&#39;&#39;                 
-    temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
+    temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
     if not inference:
         return log_p_z
     else:
         log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-        w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2)
+        w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2)
         
         res = {}
         res[&#39;p_c_x&#39;] = tf.exp(log_p_c_x).numpy()
@@ -1911,7 +1965,7 @@ def call(self, z, is_training=True):
 <dt><strong><code>dim_latent</code></strong> :&ensp;<code>int</code></dt>
 <dd>The latent dimension.</dd>
 <dt><strong><code>data_type</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>'UMI', 'non-UMI', or 'Gaussian'.</dd>
+<dd><code>'UMI'</code>, <code>'non-UMI'</code>, or <code>'Gaussian'</code>.</dd>
 <dt><strong><code>has_cov</code></strong> :&ensp;<code>boolean</code></dt>
 <dd>Whether has covariates or not.</dd>
 <dt><strong><code>name</code></strong> :&ensp;<code>str</code>, optional</dt>
@@ -1940,7 +1994,7 @@ def call(self, z, is_training=True):
         dim_latent : int
             The latent dimension.
         data_type : str, optional
-            &#39;UMI&#39;, &#39;non-UMI&#39;, or &#39;Gaussian&#39;.
+            `&#39;UMI&#39;`, `&#39;non-UMI&#39;`, or `&#39;Gaussian&#39;`.
         has_cov : boolean
             Whether has covariates or not.
         name : str, optional
@@ -1983,9 +2037,9 @@ def call(self, z, is_training=True):
         c_score : np.array
             \([B, s]\) The covariates \(X_i\), only used when `has_cov=True`.
         x : np.array, optional
-            \([B, G]\) The original count data \(Y_i\), only used when data_type is not &#39;Gaussian&#39;.
+            \([B, G]\) The original count data \(Y_i\), only used when data_type is not `&#39;Gaussian&#39;`.
         scale_factor : np.array, optional
-            \([B, ]\) The scale factors, only used when data_type is not &#39;Gaussian&#39;.
+            \([B, ]\) The scale factors, only used when data_type is not `&#39;Gaussian&#39;`.
         pre_train : boolean, optional
             Whether in the pre-training phare or not.
         L : int, optional
@@ -2140,8 +2194,6 @@ def call(self, z, is_training=True):
             \([N, k]\) The estimated \(E(\\tilde{w}_i|Y_i,X_i)\).
         var_w_tilde  : np.array 
             \([N, k]\) The estimated \(Var(\\tilde{w}_i|Y_i,X_i)\).
-        D_JS : np.array 
-            \([N, k]\) The estimated JS divergence.
         z_mean : np.array
             \([N, d]\) The estimated latent mean.
         &#39;&#39;&#39;   
@@ -2232,9 +2284,9 @@ def call(self, z, is_training=True):
 <dt><strong><code>c_score</code></strong> :&ensp;<code>np.array</code></dt>
 <dd><span><span class="MathJax_Preview">[B, s]</span><script type="math/tex">[B, s]</script></span> The covariates <span><span class="MathJax_Preview">X_i</span><script type="math/tex">X_i</script></span>, only used when <code>has_cov=True</code>.</dd>
 <dt><strong><code>x</code></strong> :&ensp;<code>np.array</code>, optional</dt>
-<dd><span><span class="MathJax_Preview">[B, G]</span><script type="math/tex">[B, G]</script></span> The original count data <span><span class="MathJax_Preview">Y_i</span><script type="math/tex">Y_i</script></span>, only used when data_type is not 'Gaussian'.</dd>
+<dd><span><span class="MathJax_Preview">[B, G]</span><script type="math/tex">[B, G]</script></span> The original count data <span><span class="MathJax_Preview">Y_i</span><script type="math/tex">Y_i</script></span>, only used when data_type is not <code>'Gaussian'</code>.</dd>
 <dt><strong><code>scale_factor</code></strong> :&ensp;<code>np.array</code>, optional</dt>
-<dd><span><span class="MathJax_Preview">[B, ]</span><script type="math/tex">[B, ]</script></span> The scale factors, only used when data_type is not 'Gaussian'.</dd>
+<dd><span><span class="MathJax_Preview">[B, ]</span><script type="math/tex">[B, ]</script></span> The scale factors, only used when data_type is not <code>'Gaussian'</code>.</dd>
 <dt><strong><code>pre_train</code></strong> :&ensp;<code>boolean</code>, optional</dt>
 <dd>Whether in the pre-training phare or not.</dd>
 <dt><strong><code>L</code></strong> :&ensp;<code>int</code>, optional</dt>
@@ -2262,9 +2314,9 @@ def call(self, z, is_training=True):
     c_score : np.array
         \([B, s]\) The covariates \(X_i\), only used when `has_cov=True`.
     x : np.array, optional
-        \([B, G]\) The original count data \(Y_i\), only used when data_type is not &#39;Gaussian&#39;.
+        \([B, G]\) The original count data \(Y_i\), only used when data_type is not `&#39;Gaussian&#39;`.
     scale_factor : np.array, optional
-        \([B, ]\) The scale factors, only used when data_type is not &#39;Gaussian&#39;.
+        \([B, ]\) The scale factors, only used when data_type is not `&#39;Gaussian&#39;`.
     pre_train : boolean, optional
         Whether in the pre-training phare or not.
     L : int, optional
@@ -2429,8 +2481,6 @@ def call(self, z, is_training=True):
 <dt><code>var_w_tilde
 : np.array</code></dt>
 <dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> The estimated <span><span class="MathJax_Preview">Var(\tilde{w}_i|Y_i,X_i)</span><script type="math/tex">Var(\tilde{w}_i|Y_i,X_i)</script></span>.</dd>
-<dt><strong><code>D_JS</code></strong> :&ensp;<code>np.array </code></dt>
-<dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> The estimated JS divergence.</dd>
 <dt><strong><code>z_mean</code></strong> :&ensp;<code>np.array</code></dt>
 <dd><span><span class="MathJax_Preview">[N, d]</span><script type="math/tex">[N, d]</script></span> The estimated latent mean.</dd>
 </dl></div>
@@ -2460,8 +2510,6 @@ def call(self, z, is_training=True):
         \([N, k]\) The estimated \(E(\\tilde{w}_i|Y_i,X_i)\).
     var_w_tilde  : np.array 
         \([N, k]\) The estimated \(Var(\\tilde{w}_i|Y_i,X_i)\).
-    D_JS : np.array 
-        \([N, k]\) The estimated JS divergence.
     z_mean : np.array
         \([N, d]\) The estimated latent mean.
     &#39;&#39;&#39;   

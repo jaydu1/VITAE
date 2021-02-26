@@ -150,7 +150,7 @@ class Decoder(Layer):
         dim_origin : int
             The output dimension of the decoder.
         data_type : str, optional
-            'UMI', 'non-UMI', or 'Gaussian'.
+            `'UMI'`, `'non-UMI'`, or `'Gaussian'`.
         name : str, optional
             The name of the layer.
         '''
@@ -313,25 +313,25 @@ class LatentSpace(Layer):
             (batch_size,L,1)), 1e-12, 1.0)
                         
         # [batch_size, L, d, n_states]
-        a1 = tf.expand_dims(tf.expand_dims(
+        alpha_zc = tf.expand_dims(tf.expand_dims(
             tf.gather(self.mu, self.B, axis=1) - tf.gather(self.mu, self.A, axis=1), 0), 0)
-        a2 = tf.expand_dims(z,-1) - \
+        beta_zc = tf.expand_dims(z,-1) - \
             tf.expand_dims(tf.expand_dims(
             tf.gather(self.mu, self.B, axis=1), 0), 0)
             
         # [batch_size, L, n_states]
-        _inv_sig = tf.reduce_sum(a1 * a1, axis=2)
-        _nu = - tf.reduce_sum(a1 * a2, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
-        _t = - tf.reduce_sum(a2 * a2, axis=2) + _nu**2*_inv_sig
-        return temp_pi, a2, _inv_sig, _nu, _t
+        _inv_sig = tf.reduce_sum(alpha_zc * alpha_zc, axis=2)
+        _nu = - tf.reduce_sum(alpha_zc * beta_zc, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
+        _t = - tf.reduce_sum(beta_zc * beta_zc, axis=2) + _nu**2*_inv_sig
+        return temp_pi, beta_zc, _inv_sig, _nu, _t
     
     @tf.function
-    def _get_pz(self, temp_pi, _inv_sig, a2, log_p_z_c_L):
+    def _get_pz(self, temp_pi, _inv_sig, beta_zc, log_p_z_c_L):
         # [batch_size, L, n_states]
         log_p_zc_L = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(tf.clip_by_value(temp_pi, 1e-12, 1.0)) + \
             tf.where(_inv_sig==0, 
-                    - 0.5 * tf.reduce_sum(a2**2, axis=2), 
+                    - 0.5 * tf.reduce_sum(beta_zc**2, axis=2), 
                     log_p_z_c_L)
         
         # [batch_size, L, 1]
@@ -353,7 +353,7 @@ class LatentSpace(Layer):
         return log_p_c_x
 
     @tf.function
-    def _get_inference(self, z, log_p_z_L, temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2):
+    def _get_inference(self, z, log_p_z_L, temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2):
         batch_size = tf.shape(z)[0]
         L = tf.shape(z)[1]
         dist = tfp.distributions.Normal(
@@ -386,7 +386,7 @@ class LatentSpace(Layer):
         w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(temp_pi) + \
             tf.where(_inv_sig==0, 
-                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(a2**2, axis=2), -1), -np.inf), 
+                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(beta_zc**2, axis=2), -1), -np.inf), 
                     w_tilde)
         w_tilde = tf.exp(tf.reduce_logsumexp(w_tilde, 2) - log_p_z_L)
             
@@ -401,7 +401,7 @@ class LatentSpace(Layer):
         var_w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(temp_pi) + \
             tf.where(_inv_sig==0, 
-                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(a2**2, axis=2), -1), -np.inf), 
+                    tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(beta_zc**2, axis=2), -1), -np.inf), 
                     var_w_tilde) 
         var_w_tilde = tf.exp(tf.reduce_logsumexp(var_w_tilde, 2) - log_p_z_L) - w_tilde**2  
 
@@ -420,14 +420,28 @@ class LatentSpace(Layer):
 
         Returns
         ----------
+        temp_pi : tf.Tensor
+            \([B, L, K]\) \(\\pi\).
+        _inv_sig : tf.Tensor
+            \([B, L, K]\) \(\\sigma_{Z_ic_i}^{-1}\).
+        _nu : tf.Tensor
+            \([B, L, K]\) \(\\nu_{Z_ic_i}\).
+        beta_zc : tf.Tensor
+            \([B, L, d, K]\) \(\\beta_{Z_ic_i}\).
+        log_eta0 : tf.Tensor
+            \([B, L, K]\) \(\\log\\eta_{Z_ic_i,0}\).
+        eta1 : tf.Tensor
+            \([B, L, K]\) \(\\eta_{Z_ic_i,1}\).
+        eta2 : tf.Tensor
+            \([B, L, K]\) \(\\eta_{Z_ic_i,2}\).
         log_p_zc_L : tf.Tensor
-            \([B, L, K]\) \(\\log p(Z_i^{(l)},c_i|Y_i,X_i)\).
+            \([B, L, K]\) \(\\log p(Z_i,c_i|Y_i,X_i)\).
         log_p_z_L : tf.Tensor
-            \([B, L]\) \(\\log p(Z_i^{(l)}|Y_i,X_i)\).
+            \([B, L]\) \(\\log p(Z_i|Y_i,X_i)\).
         log_p_z : tf.Tensor
             \([B, 1]\) The estimated \(\\log p(Z_i|Y_i,X_i)\). 
         '''        
-        temp_pi, a2, _inv_sig, _nu, _t = self._get_normal_params(z)
+        temp_pi, beta_zc, _inv_sig, _nu, _t = self._get_normal_params(z)
         
         log_eta0 = 0.5 * (tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) - \
                     tf.math.log(tf.clip_by_value(_inv_sig, 1e-12, 1e30)) + _t)
@@ -438,8 +452,8 @@ class LatentSpace(Layer):
             self.cdf_layer(eta1) - self.cdf_layer(eta2),
             1e-12, 1e30))
         
-        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, a2, log_p_z_c_L)
-        return temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z
+        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, beta_zc, log_p_z_c_L)
+        return temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z
 
     def get_posterior_c(self, z):
         '''Get \(p(c_i|Y_i,X_i)\).
@@ -483,13 +497,13 @@ class LatentSpace(Layer):
         res : dict
             The dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
         '''                 
-        temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
+        temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z)
 
         if not inference:
             return log_p_z
         else:
             log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-            w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, a2, log_eta0, eta1, eta2)
+            w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2)
             
             res = {}
             res['p_c_x'] = tf.exp(log_p_c_x).numpy()
@@ -515,7 +529,7 @@ class VariationalAutoEncoder(tf.keras.Model):
         dim_latent : int
             The latent dimension.
         data_type : str, optional
-            'UMI', 'non-UMI', or 'Gaussian'.
+            `'UMI'`, `'non-UMI'`, or `'Gaussian'`.
         has_cov : boolean
             Whether has covariates or not.
         name : str, optional
@@ -558,9 +572,9 @@ class VariationalAutoEncoder(tf.keras.Model):
         c_score : np.array
             \([B, s]\) The covariates \(X_i\), only used when `has_cov=True`.
         x : np.array, optional
-            \([B, G]\) The original count data \(Y_i\), only used when data_type is not 'Gaussian'.
+            \([B, G]\) The original count data \(Y_i\), only used when data_type is not `'Gaussian'`.
         scale_factor : np.array, optional
-            \([B, ]\) The scale factors, only used when data_type is not 'Gaussian'.
+            \([B, ]\) The scale factors, only used when data_type is not `'Gaussian'`.
         pre_train : boolean, optional
             Whether in the pre-training phare or not.
         L : int, optional
@@ -715,8 +729,6 @@ class VariationalAutoEncoder(tf.keras.Model):
             \([N, k]\) The estimated \(E(\\tilde{w}_i|Y_i,X_i)\).
         var_w_tilde  : np.array 
             \([N, k]\) The estimated \(Var(\\tilde{w}_i|Y_i,X_i)\).
-        D_JS : np.array 
-            \([N, k]\) The estimated JS divergence.
         z_mean : np.array
             \([N, d]\) The estimated latent mean.
         '''   
