@@ -236,7 +236,7 @@ class Inferer(object):
             fig, ax = plt.subplots(1,1, figsize=(20, 10))
             for i,x in enumerate(np.unique(labels)):
                 ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                    s=8, alpha=0.6, label=str(x))
+                    s=16, alpha=0.5, label=str(x))
                 if plot_labels:
                     ax.text(np.mean(self.embed_z[labels==x,0]), 
                             np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
@@ -244,7 +244,7 @@ class Inferer(object):
             ax.set_position([box.x0, box.y0 + box.height * 0.1,
                              box.width, box.height * 0.9])
             ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-                      fancybox=True, shadow=True, markerscale=5, ncol=5)
+                      fancybox=True, shadow=True, markerscale=3, ncol=5)
             ax.set_title(&#39;Cluster Membership&#39;)
             plt.setp(ax, xticks=[], yticks=[])
             if path is not None:
@@ -374,6 +374,8 @@ class Inferer(object):
             subG = G.subgraph(connected_comps)
             if len(subG.edges)&gt;0:                
                 milestone_net = self.build_milestone_net(subG,init_node)
+                if self.no_loop is False and milestone_net.shape[0]&lt;len(G.edges):
+                    warnings.warn(&#34;The directed graph shown is a minimum spanning tree of the estimated trajectory backbone to avoid arbitrary assignment of the directions.&#34;)
                 select_edges = milestone_net[:,:2]
                 select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
                 if select_edges_score.max() - select_edges_score.min() == 0:
@@ -399,14 +401,14 @@ class Inferer(object):
                 sc = ax.scatter(*self.embed_z[pseudotime&gt;-1,:].T,
                     norm=norm,
                     c=pseudotime[pseudotime&gt;-1],
-                    s=8, alpha=0.5)
+                    s=16, alpha=0.5)
                 plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
             else:
                 norm = None
                 
             if np.sum(pseudotime==-1)&gt;0:
                 ax.scatter(*self.embed_z[pseudotime==-1,:].T,
-                            c=&#39;gray&#39;, s=8, alpha=0.4)
+                            c=&#39;gray&#39;, s=16, alpha=0.4)
             
             for i in range(len(select_edges)):
                 points = self.embed_z[np.sum(w[:,select_edges[i,:]]&gt;0, axis=-1)==2,:]
@@ -679,7 +681,7 @@ class Inferer(object):
             fig, ax = plt.subplots(1,1, figsize=(20, 10))
             for i,x in enumerate(np.unique(labels)):
                 ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                    s=8, alpha=0.6, label=str(x))
+                    s=16, alpha=0.5, label=str(x))
                 if plot_labels:
                     ax.text(np.mean(self.embed_z[labels==x,0]), 
                             np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
@@ -687,7 +689,7 @@ class Inferer(object):
             ax.set_position([box.x0, box.y0 + box.height * 0.1,
                              box.width, box.height * 0.9])
             ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-                      fancybox=True, shadow=True, markerscale=5, ncol=5)
+                      fancybox=True, shadow=True, markerscale=3, ncol=5)
             ax.set_title(&#39;Cluster Membership&#39;)
             plt.setp(ax, xticks=[], yticks=[])
             if path is not None:
@@ -817,6 +819,8 @@ class Inferer(object):
             subG = G.subgraph(connected_comps)
             if len(subG.edges)&gt;0:                
                 milestone_net = self.build_milestone_net(subG,init_node)
+                if self.no_loop is False and milestone_net.shape[0]&lt;len(G.edges):
+                    warnings.warn(&#34;The directed graph shown is a minimum spanning tree of the estimated trajectory backbone to avoid arbitrary assignment of the directions.&#34;)
                 select_edges = milestone_net[:,:2]
                 select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
                 if select_edges_score.max() - select_edges_score.min() == 0:
@@ -842,14 +846,14 @@ class Inferer(object):
                 sc = ax.scatter(*self.embed_z[pseudotime&gt;-1,:].T,
                     norm=norm,
                     c=pseudotime[pseudotime&gt;-1],
-                    s=8, alpha=0.5)
+                    s=16, alpha=0.5)
                 plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
             else:
                 norm = None
                 
             if np.sum(pseudotime==-1)&gt;0:
                 ax.scatter(*self.embed_z[pseudotime==-1,:].T,
-                            c=&#39;gray&#39;, s=8, alpha=0.4)
+                            c=&#39;gray&#39;, s=16, alpha=0.4)
             
             for i in range(len(select_edges)):
                 points = self.embed_z[np.sum(w[:,select_edges[i,:]]&gt;0, axis=-1)==2,:]
@@ -1193,7 +1197,7 @@ edges : np.array
         fig, ax = plt.subplots(1,1, figsize=(20, 10))
         for i,x in enumerate(np.unique(labels)):
             ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                s=8, alpha=0.6, label=str(x))
+                s=16, alpha=0.5, label=str(x))
             if plot_labels:
                 ax.text(np.mean(self.embed_z[labels==x,0]), 
                         np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
@@ -1201,7 +1205,7 @@ edges : np.array
         ax.set_position([box.x0, box.y0 + box.height * 0.1,
                          box.width, box.height * 0.9])
         ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-                  fancybox=True, shadow=True, markerscale=5, ncol=5)
+                  fancybox=True, shadow=True, markerscale=3, ncol=5)
         ax.set_title(&#39;Cluster Membership&#39;)
         plt.setp(ax, xticks=[], yticks=[])
         if path is not None:
@@ -1407,6 +1411,8 @@ edges : np.array
         subG = G.subgraph(connected_comps)
         if len(subG.edges)&gt;0:                
             milestone_net = self.build_milestone_net(subG,init_node)
+            if self.no_loop is False and milestone_net.shape[0]&lt;len(G.edges):
+                warnings.warn(&#34;The directed graph shown is a minimum spanning tree of the estimated trajectory backbone to avoid arbitrary assignment of the directions.&#34;)
             select_edges = milestone_net[:,:2]
             select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
             if select_edges_score.max() - select_edges_score.min() == 0:
@@ -1432,14 +1438,14 @@ edges : np.array
             sc = ax.scatter(*self.embed_z[pseudotime&gt;-1,:].T,
                 norm=norm,
                 c=pseudotime[pseudotime&gt;-1],
-                s=8, alpha=0.5)
+                s=16, alpha=0.5)
             plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
         else:
             norm = None
             
         if np.sum(pseudotime==-1)&gt;0:
             ax.scatter(*self.embed_z[pseudotime==-1,:].T,
-                        c=&#39;gray&#39;, s=8, alpha=0.4)
+                        c=&#39;gray&#39;, s=16, alpha=0.4)
         
         for i in range(len(select_edges)):
             points = self.embed_z[np.sum(w[:,select_edges[i,:]]&gt;0, axis=-1)==2,:]

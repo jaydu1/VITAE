@@ -31,6 +31,7 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Layer, Dense, BatchNormalization
 import tensorflow_probability as tfp
+from tensorflow.keras.utils import Progbar
 
  
 class cdf_layer(Layer):
@@ -482,7 +483,7 @@ class LatentSpace(Layer):
         p_c_x : np.array
             \([B, K]\) \(p(c_i|Y_i,X_i)\).
         &#39;&#39;&#39;  
-        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
+        _,_,_,_,_,_,_, log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
         log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
         p_c_x = tf.exp(log_p_c_x).numpy()
         return p_c_x
@@ -750,14 +751,16 @@ class VariationalAutoEncoder(tf.keras.Model):
         &#39;&#39;&#39;   
         if self.latent_space is None:
             raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
-            
+        
+        print(&#39;Computing posterior estimations over mini-batches.&#39;)
+        progbar = Progbar(test_dataset.cardinality().numpy())
         pi_norm = tf.nn.softmax(self.latent_space.pi).numpy()
         mu = self.latent_space.mu.numpy()
         z_mean = []
         p_c_x = []
         w_tilde = []
         var_w_tilde = []
-        for x,c_score in test_dataset:
+        for step, (x,c_score) in enumerate(test_dataset):
             x = tf.concat([x, c_score], -1) if self.has_cov else x
             _z_mean, _, z = self.encoder(x, L, False)
             res = self.latent_space(z, inference=True)
@@ -766,6 +769,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             p_c_x.append(res[&#39;p_c_x&#39;])            
             w_tilde.append(res[&#39;w_tilde&#39;])
             var_w_tilde.append(res[&#39;var_w_tilde&#39;])
+            progbar.update(step+1)
 
         z_mean = np.concatenate(z_mean)
         p_c_x = np.concatenate(p_c_x)
@@ -1629,7 +1633,7 @@ def call(self, z, is_training=True):
         p_c_x : np.array
             \([B, K]\) \(p(c_i|Y_i,X_i)\).
         &#39;&#39;&#39;  
-        log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
+        _,_,_,_,_,_,_, log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
         log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
         p_c_x = tf.exp(log_p_c_x).numpy()
         return p_c_x
@@ -1817,7 +1821,7 @@ def call(self, z, is_training=True):
     p_c_x : np.array
         \([B, K]\) \(p(c_i|Y_i,X_i)\).
     &#39;&#39;&#39;  
-    log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
+    _,_,_,_,_,_,_, log_p_zc_L, log_p_z_L, _ = self.get_pz(z)
     log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
     p_c_x = tf.exp(log_p_c_x).numpy()
     return p_c_x</code></pre>
@@ -2143,14 +2147,16 @@ def call(self, z, is_training=True):
         &#39;&#39;&#39;   
         if self.latent_space is None:
             raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
-            
+        
+        print(&#39;Computing posterior estimations over mini-batches.&#39;)
+        progbar = Progbar(test_dataset.cardinality().numpy())
         pi_norm = tf.nn.softmax(self.latent_space.pi).numpy()
         mu = self.latent_space.mu.numpy()
         z_mean = []
         p_c_x = []
         w_tilde = []
         var_w_tilde = []
-        for x,c_score in test_dataset:
+        for step, (x,c_score) in enumerate(test_dataset):
             x = tf.concat([x, c_score], -1) if self.has_cov else x
             _z_mean, _, z = self.encoder(x, L, False)
             res = self.latent_space(z, inference=True)
@@ -2159,6 +2165,7 @@ def call(self, z, is_training=True):
             p_c_x.append(res[&#39;p_c_x&#39;])            
             w_tilde.append(res[&#39;w_tilde&#39;])
             var_w_tilde.append(res[&#39;var_w_tilde&#39;])
+            progbar.update(step+1)
 
         z_mean = np.concatenate(z_mean)
         p_c_x = np.concatenate(p_c_x)
@@ -2460,14 +2467,16 @@ def call(self, z, is_training=True):
     &#39;&#39;&#39;   
     if self.latent_space is None:
         raise ReferenceError(&#39;Have not initialized the latent space.&#39;)
-        
+    
+    print(&#39;Computing posterior estimations over mini-batches.&#39;)
+    progbar = Progbar(test_dataset.cardinality().numpy())
     pi_norm = tf.nn.softmax(self.latent_space.pi).numpy()
     mu = self.latent_space.mu.numpy()
     z_mean = []
     p_c_x = []
     w_tilde = []
     var_w_tilde = []
-    for x,c_score in test_dataset:
+    for step, (x,c_score) in enumerate(test_dataset):
         x = tf.concat([x, c_score], -1) if self.has_cov else x
         _z_mean, _, z = self.encoder(x, L, False)
         res = self.latent_space(z, inference=True)
@@ -2476,6 +2485,7 @@ def call(self, z, is_training=True):
         p_c_x.append(res[&#39;p_c_x&#39;])            
         w_tilde.append(res[&#39;w_tilde&#39;])
         var_w_tilde.append(res[&#39;var_w_tilde&#39;])
+        progbar.update(step+1)
 
     z_mean = np.concatenate(z_mean)
     p_c_x = np.concatenate(p_c_x)

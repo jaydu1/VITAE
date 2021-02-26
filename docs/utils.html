@@ -336,7 +336,7 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
     for i,l in enumerate(np.unique(labels)):
         ax.scatter(*embed_z[labels==l].T,
                     c=[colors[i]], label=str(l),
-                    s=8, alpha=0.4)
+                    s=16, alpha=0.4)
         if plot_labels:
             ax.text(np.mean(embed_z[labels==l,0]), np.mean(embed_z[labels==l,1]), str(l), fontsize=16)
     plt.setp(ax, xticks=[], yticks=[])
@@ -344,14 +344,14 @@ def plot_clusters(embed_z, labels, plot_labels=False, path=None):
     ax.set_position([box.x0, box.y0 + box.height * 0.1,
                         box.width, box.height * 0.9])
     ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-        fancybox=True, shadow=True, markerscale=5, ncol=5)
+        fancybox=True, shadow=True, markerscale=3, ncol=5)
     ax.set_title(&#39;Clustering&#39;)
     if path is not None:
         plt.savefig(path, dpi=300)
     plt.plot()
 
     
-def plot_marker_gene(expression, gene_name, embed_z, path=None):
+def plot_marker_gene(expression, gene_name: str, embed_z, path=None):
     &#39;&#39;&#39;Plot the marker gene.
 
     Parameters
@@ -369,14 +369,38 @@ def plot_marker_gene(expression, gene_name, embed_z, path=None):
     cmap = matplotlib.cm.get_cmap(&#39;Reds&#39;)
     sc = ax.scatter(*embed_z.T, c=&#39;yellow&#39;, s=15, alpha=0.1)
     sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=10, alpha=0.5)
-    sc.set_clim(0,1) 
     plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
+    plt.setp(ax, xticks=[], yticks=[])
     ax.set_title(&#39;Normalized expression of {}&#39;.format(gene_name))
     if path is not None:
         plt.savefig(path, dpi=300)
     plt.show()
     return None
-    
+
+
+def plot_uncertainty(uncertainty, embed_z, path=None):
+    &#39;&#39;&#39;Plot the uncertainty for all selected cells.
+
+    Parameters
+    ----------
+    uncertainty : np.array
+        \([N, ]\) The uncertainty of the all cells.    
+    embed_z : np.array
+        \([N, 2]\) The latent variables after dimension reduction.
+    path : str, optional
+        The path to save the figure.
+    &#39;&#39;&#39;          
+    fig, ax = plt.subplots(1,1, figsize=(20, 10))
+    cmap = matplotlib.cm.get_cmap(&#39;RdBu_r&#39;)
+    sc = ax.scatter(*embed_z.T, cmap=cmap, c=uncertainty, s=10, alpha=1.0)
+    plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
+    plt.setp(ax, xticks=[], yticks=[])
+    ax.set_title(&#34;Cells&#39; Uncertainty&#34;)
+    if path is not None:
+        plt.savefig(path, dpi=300)
+    plt.show()
+    return None
+
 
 def _polyfit_with_fixed_points(n, x, y, xf, yf):
     &#39;&#39;&#39;
@@ -847,7 +871,7 @@ The igraph object of connectivities.</p></div>
     for i,l in enumerate(np.unique(labels)):
         ax.scatter(*embed_z[labels==l].T,
                     c=[colors[i]], label=str(l),
-                    s=8, alpha=0.4)
+                    s=16, alpha=0.4)
         if plot_labels:
             ax.text(np.mean(embed_z[labels==l,0]), np.mean(embed_z[labels==l,1]), str(l), fontsize=16)
     plt.setp(ax, xticks=[], yticks=[])
@@ -855,7 +879,7 @@ The igraph object of connectivities.</p></div>
     ax.set_position([box.x0, box.y0 + box.height * 0.1,
                         box.width, box.height * 0.9])
     ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-        fancybox=True, shadow=True, markerscale=5, ncol=5)
+        fancybox=True, shadow=True, markerscale=3, ncol=5)
     ax.set_title(&#39;Clustering&#39;)
     if path is not None:
         plt.savefig(path, dpi=300)
@@ -863,7 +887,7 @@ The igraph object of connectivities.</p></div>
 </details>
 </dd>
 <dt id="VITAE.utils.plot_marker_gene"><code class="name flex">
-<span>def <span class="ident">plot_marker_gene</span></span>(<span>expression, gene_name, embed_z, path=None)</span>
+<span>def <span class="ident">plot_marker_gene</span></span>(<span>expression, gene_name: str, embed_z, path=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Plot the marker gene.</p>
@@ -882,7 +906,7 @@ The igraph object of connectivities.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def plot_marker_gene(expression, gene_name, embed_z, path=None):
+<pre><code class="python">def plot_marker_gene(expression, gene_name: str, embed_z, path=None):
     &#39;&#39;&#39;Plot the marker gene.
 
     Parameters
@@ -900,9 +924,51 @@ The igraph object of connectivities.</p></div>
     cmap = matplotlib.cm.get_cmap(&#39;Reds&#39;)
     sc = ax.scatter(*embed_z.T, c=&#39;yellow&#39;, s=15, alpha=0.1)
     sc = ax.scatter(*embed_z.T, cmap=cmap, c=expression, s=10, alpha=0.5)
-    sc.set_clim(0,1) 
     plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
+    plt.setp(ax, xticks=[], yticks=[])
     ax.set_title(&#39;Normalized expression of {}&#39;.format(gene_name))
+    if path is not None:
+        plt.savefig(path, dpi=300)
+    plt.show()
+    return None</code></pre>
+</details>
+</dd>
+<dt id="VITAE.utils.plot_uncertainty"><code class="name flex">
+<span>def <span class="ident">plot_uncertainty</span></span>(<span>uncertainty, embed_z, path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plot the uncertainty for all selected cells.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>uncertainty</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> The uncertainty of the all cells.</dd>
+<dt><strong><code>embed_z</code></strong> :&ensp;<code>np.array</code></dt>
+<dd><span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> The latent variables after dimension reduction.</dd>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>The path to save the figure.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_uncertainty(uncertainty, embed_z, path=None):
+    &#39;&#39;&#39;Plot the uncertainty for all selected cells.
+
+    Parameters
+    ----------
+    uncertainty : np.array
+        \([N, ]\) The uncertainty of the all cells.    
+    embed_z : np.array
+        \([N, 2]\) The latent variables after dimension reduction.
+    path : str, optional
+        The path to save the figure.
+    &#39;&#39;&#39;          
+    fig, ax = plt.subplots(1,1, figsize=(20, 10))
+    cmap = matplotlib.cm.get_cmap(&#39;RdBu_r&#39;)
+    sc = ax.scatter(*embed_z.T, cmap=cmap, c=uncertainty, s=10, alpha=1.0)
+    plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
+    plt.setp(ax, xticks=[], yticks=[])
+    ax.set_title(&#34;Cells&#39; Uncertainty&#34;)
     if path is not None:
         plt.savefig(path, dpi=300)
     plt.show()
@@ -1144,6 +1210,7 @@ The dict containing count, grouping, etc. of the dataset.</p></div>
 <li><code><a title="VITAE.utils.leidenalg_igraph" href="#VITAE.utils.leidenalg_igraph">leidenalg_igraph</a></code></li>
 <li><code><a title="VITAE.utils.plot_clusters" href="#VITAE.utils.plot_clusters">plot_clusters</a></code></li>
 <li><code><a title="VITAE.utils.plot_marker_gene" href="#VITAE.utils.plot_marker_gene">plot_marker_gene</a></code></li>
+<li><code><a title="VITAE.utils.plot_uncertainty" href="#VITAE.utils.plot_uncertainty">plot_uncertainty</a></code></li>
 <li><code><a title="VITAE.utils.DE_test" href="#VITAE.utils.DE_test">DE_test</a></code></li>
 <li><code><a title="VITAE.utils.load_data" href="#VITAE.utils.load_data">load_data</a></code></li>
 </ul>
