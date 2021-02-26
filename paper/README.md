@@ -11,9 +11,9 @@ Information of our data is described in Section 5.1 and Section 6 of the manuscr
 Our Python package is available on PyPI and the user can install the CPU version with the following command. 
 
 ```
->> pip install pyvitae==1.1.1
+>> pip install pyvitae==1.1.4
 ```
-For reproducing the results, please use version v1.1.1.
+For reproducing the results, please use version v1.1.4.
 
 To enable GPU for Tensorflow, one should install CUDA dependencies and `tensorflow-gpu` package. We also recommend to use `conda`, `miniconda` or `virtualenv` to manage Python environment and install the package in a new environment.
 
