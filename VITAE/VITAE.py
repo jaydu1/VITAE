@@ -171,7 +171,7 @@ class VITAE():
             np.save(f, np.array([
                 self.dim_origin, self.dimensions, self.dim_latent,
                 self.data_type, False if self.c_score is None else True], dtype=object))
-        if hasattr(self, 'inferer'):
+        if hasattr(self, 'inferer') and hasattr(self.inferer, 'embed_mu'):
             with open(path_to_file+'.inference', 'wb') as f:
                 np.save(f, np.array([
                     self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
