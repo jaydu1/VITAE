@@ -467,7 +467,7 @@ class VITAE():
             early_stopping_warmup,            
             self.labels[self.selected_cell_subset_id],            
             plot_every_num_epoch,
-            dimred='umap', 
+            dimred, 
             **kwargs            
             )
             
