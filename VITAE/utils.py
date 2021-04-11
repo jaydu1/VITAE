@@ -61,6 +61,27 @@ class Early_Stopping():
 # Utils functions
 #------------------------------------------------------------------------------
 
+def _comp_dist(x, y, mu=None, S=None):
+    uni_y = np.unique(y)
+    n_uni_y = len(uni_y)
+    d = x.shape[1]
+    if mu is None:
+        mu = np.zeros((n_uni_y, d))
+        for i,l in enumerate(uni_y):
+            mu[i, :] = np.mean(x[y==l], axis=0)
+    if S is None:
+        S = np.zeros((n_uni_y, d, d))
+        for i,l in enumerate(uni_y):
+            S[i, :, :] = np.cov(x[y==l], rowvar=False)
+    dist = np.zeros((n_uni_y, n_uni_y))
+    for i,li in enumerate(uni_y):
+        for j,lj in enumerate(uni_y):            
+            if i<j:
+                dist[i,j] = (mu[i:i+1,:]-mu[j:j+1,:]) @ np.linalg.inv(S[i, :, :] + S[j, :, :]) @ (mu[i:i+1,:]-mu[j:j+1,:]).T
+    dist = dist + dist.T
+    return dist
+
+
 @jit((float32[:,:],), nopython=True, nogil=True)
 def _check_expression(A):
     n_rows = A.shape[0]

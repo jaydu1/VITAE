@@ -7,7 +7,7 @@ import VITAE.preprocess as preprocess
 import VITAE.train as train
 from VITAE.inference import Inferer
 from VITAE.utils import load_data, get_embedding, get_igraph, leidenalg_igraph, \
-    plot_clusters, plot_marker_gene, plot_uncertainty, DE_test
+    plot_clusters, plot_marker_gene, plot_uncertainty, DE_test, _comp_dist
 from VITAE.metric import topology, get_GRI
 import tensorflow as tf
 
@@ -352,7 +352,7 @@ class VITAE():
         return pi, post_pi
 
 
-    def init_latent_space(self, n_clusters: int, cluster_labels = None, mu = None, log_pi = None):
+    def init_latent_space(self, n_clusters: int, cluster_labels = None, mu = None, log_pi = None, ratio_prune=0.0):
         '''Initialze the latent space.
 
         Parameters
@@ -365,12 +365,30 @@ class VITAE():
             \([d,k]\) The value of initial \(\\mu\).
         log_pi : np.array, optional
             \([1,K]\) The value of initial \(\\log(\\pi)\).
+        ratio_prune : float
+            The ratio of edges to remove before estimating.
         '''             
         z = self.get_latent_z()
-        if (mu is None) & (cluster_labels is not None):
+        if (mu is None) and (cluster_labels is not None):
             mu = np.zeros((z.shape[1], n_clusters))
             for i,l in enumerate(np.unique(cluster_labels)):
                 mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+        if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
+            n_states = int((n_clusters+1)*n_clusters/2)
+            d = _comp_dist(z, cluster_labels, mu.T)
+            G = nx.from_numpy_array(d)
+            G = nx.minimum_spanning_tree(G)
+
+            C = np.triu(np.ones(n_clusters))
+            C[C>0] = np.arange(n_states)
+            C = C.astype(int)
+            id_edges = C[np.nonzero(np.triu(nx.to_numpy_matrix(G)))]
+
+            cluster_center = np.array([int((n_clusters+(1-i)/2)*i) for i in range(n_clusters)])
+            log_pi = np.log(np.ones((1,n_states)) / 2 / (n_states - len(id_edges) - n_clusters))
+            log_pi[0, C[np.triu(d)>np.quantile(d[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
+            log_pi[0, cluster_center] = np.log(1/(len(id_edges) + n_clusters))
+            log_pi[0, id_edges] = np.log(1/(len(id_edges) + n_clusters))
 
         self.n_clusters = n_clusters
         self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
