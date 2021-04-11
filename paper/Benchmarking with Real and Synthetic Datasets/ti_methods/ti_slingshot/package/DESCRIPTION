@@ -1,0 +1,37 @@
+Package: tislingshot
+Title: A Dynverse Wrapper of Slingshot
+Version: 2.0.1
+Authors@R: 
+    c(person(given = "Robrecht",
+             family = "Cannoodt",
+             role = c("aut", "cre"),
+             email = "rcannood@gmail.com",
+             comment = c(ORCID = "0000-0003-3641-729X")),
+      person(given = "Wouter",
+             family = "Saelens",
+             role = "aut",
+             email = "wouter.saelens@ugent.be",
+             comment = c(ORCID = "0000-0002-7114-6248")))
+Description: A dynverse wrapper of Slingshot using dynwrap,
+    made for dynmethods.
+License: MIT + file LICENSE
+Depends:
+    R (>= 3.6)
+Imports:
+    cluster,
+    dplyr,
+    dynwrap,
+    irlba,
+    princurve,
+    purrr,
+    slingshot (>= 1.4.0),
+    tibble
+Suggests: 
+    dyntoy,
+    testthat
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Remotes:
+    dynverse/dyntoy,
+    bioc::release/slingshot
