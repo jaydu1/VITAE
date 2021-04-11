@@ -5,14 +5,16 @@ library(hdf5r)
 library(Seurat)
 
 method_names <- c('paga','slingshot','monocle')
-container_names <- c('ti_paga2','dynverse/ti_slingshot:v2.0.1','ti_monocle3')
+container_names <- c('jaydu/ti_paga_tree_2','dynverse/ti_slingshot:v2.0.1','ti_monocle3')
 
-path <- "../../data/*.h5"
-save_path <- "result/other methods/"
+# path <- "../../data/*.h5"
+# save_path <- "result/other methods/"
+path <- '/Users/dujinhong/Downloads/VITAE/data/*.h5'
+save_path <- '/Users/dujinhong/Downloads/result/'
 
 for(load_file in Sys.glob(path)){  
     filename <- gsub(".h5", "", basename(load_file))
-    if(filename=='mouse_brain'){
+    if(grepl('mouse_brain',filename)){
         next
     }
 
@@ -26,7 +28,7 @@ for(load_file in Sys.glob(path)){
     root_milestone_id <- file.h5[['root_milestone_id']][]    
     if('w' %in% colnames(milestone_net)){
         cell_ids <- which(milestone_net$from==root_milestone_id)
-        start_id <- paste0('c-',as.character(cell_ids[which.min(milestone_net[cell_ids,'w'])]))
+        start_id <- paste0('c-',as.character(cell_ids[which.max(milestone_net[cell_ids,'w'])]))
     }else{
         start_id <- paste0('c-',sample(which(grouping$group_id==root_milestone_id), 1))
     }    
@@ -51,19 +53,19 @@ for(load_file in Sys.glob(path)){
         method_name <- method_names[i]                
 
         method <- create_ti_method_container(container_names[i])        
-        if(i==1){
-            dataset <- dataset %>% add_prior_information(start_id = start_id, groups_id = grouping)
-            model <- infer_trajectory(dataset, method(), give_priors = c("start_id","groups_id"), verbose = TRUE)
-        }else{
-          if(i==2){
+        if(i==2){
             dataset <- dataset %>% add_prior_information(start_id = c(start_id), groups_id = grouping)
-          }else{
-            dataset <- dataset %>% add_prior_information(start_id = start_id, groups_id = grouping)            
-          }
-          model <- infer_trajectory(dataset, method(), verbose = TRUE)
+        }else{
+            dataset <- dataset %>% add_prior_information(start_id = start_id, groups_id = grouping)
         }
-
+        model <- infer_trajectory(dataset, method(), give_priors = c("start_id","groups_id"), verbose = TRUE)
+        
+        
+        ix <- wrapr::match_order(model$progressions$cell_id, grouping$cell_id)
+        model$progressions <- model$progressions[ix,]
+        rownames(model$progressions) <- NULL
         write.csv(x=model$progressions, file=file.path(save_path, filename, sprintf("%s_progressions.csv", method_name)))
+        
         write.csv(x=model$milestone_network, file=file.path(save_path, filename, sprintf("%s_milestone_network.csv", method_name)))
     }
 }

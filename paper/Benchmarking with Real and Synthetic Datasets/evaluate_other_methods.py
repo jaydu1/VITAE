@@ -183,18 +183,16 @@ type_dict = {
     # dyno
     'dentate':'UMI', 
     'immune':'UMI', 
-    'neonatal':'UMI', 
     'planaria_full':'UMI', 
     'planaria_muscle':'UMI',
     'aging':'non-UMI', 
     'cell_cycle':'non-UMI',
     'fibroblast':'non-UMI', 
     'germline':'non-UMI',    
-    'human':'non-UMI', 
+    'human_embryos':'non-UMI', 
     'mesoderm':'non-UMI',
     
-    # dyngen
-    'bifurcating_2':'non-UMI',
+    # dyngen    
     "cycle_1":'non-UMI', 
     "cycle_2":'non-UMI', 
     "cycle_3":'non-UMI',
@@ -204,6 +202,7 @@ type_dict = {
     "trifurcating_1":'non-UMI', 
     "trifurcating_2":'non-UMI', 
     "bifurcating_1":'non-UMI', 
+    'bifurcating_2':'non-UMI',
     "bifurcating_3":'non-UMI', 
     "converging_1":'non-UMI',
     
@@ -214,19 +213,17 @@ type_dict = {
     'tree':'UMI',
 }
 source_dict = {
-    'dentate':'dyno', 
-    'immune':'dyno', 
-    'neonatal':'dyno', 
-    'planaria_muscle':'dyno',
-    'planaria_full':'dyno',
-    'aging':'dyno', 
-    'cell_cycle':'dyno',
-    'fibroblast':'dyno', 
-    'germline':'dyno',    
-    'human':'dyno', 
-    'mesoderm':'dyno',
-    
-    'bifurcating_2':'dyngen',
+    'dentate':'real', 
+    'immune':'real', 
+    'planaria_muscle':'real',
+    'planaria_full':'real',
+    'aging':'real', 
+    'cell_cycle':'real',
+    'fibroblast':'real', 
+    'germline':'real',    
+    'human_embryos':'real', 
+    'mesoderm':'real',
+        
     "cycle_1":'dyngen', 
     "cycle_2":'dyngen', 
     "cycle_3":'dyngen',
@@ -236,6 +233,7 @@ source_dict = {
     "trifurcating_1":'dyngen', 
     "trifurcating_2":'dyngen', 
     "bifurcating_1":'dyngen', 
+    'bifurcating_2':'dyngen',
     "bifurcating_3":'dyngen', 
     "converging_1":'dyngen',
     
@@ -294,7 +292,7 @@ for data_name in type_dict.keys():
         
         G_pred = nx.Graph()
         G_pred.add_nodes_from(np.unique(_df[['from', 'to']].values.flatten()))
-        G_pred.add_edges_from(list(_df.groupby(['from', 'to']).count().index))
+        G_pred.add_edges_from(pred_milestone_net[['from', 'to']].values)
         G_pred.remove_edges_from(nx.selfloop_edges(G_pred))  
         nx.set_node_attributes(G_pred, False, 'is_init')
         G_pred.nodes[pred_milestone_net.iloc[0]['from']]['is_init'] = True
@@ -333,23 +331,29 @@ for data_name in type_dict.keys():
         else:
             res['GRI'] = get_GRI(grouping, w)
         
-        # 3. Correlation between geodesic distances / Pseudotime    
-        if grouping is None:
-            pseudotime_true = milestone_net['from'].values + 1 - milestone_net['w'].values
-            pseudotime_true[np.isnan(pseudotime_true)] = milestone_net[pd.isna(milestone_net['w'])]['from'].values            
+        # 3. Correlation between geodesic distances / Pseudotime   
+        if 'cycle' in data_name or 'immune' in data_name:
+            res['PDT score'] =  = np.nan
         else:
-            pseudotime_true = - np.ones(len(grouping))
-            nx.set_edge_attributes(G_true, values = 1, name = 'weight')
-            connected_comps = nx.node_connected_component(G_true, begin_node_true)
-            subG = G_true.subgraph(connected_comps)
-            milestone_net_true = build_milestone_net(subG, begin_node_true)
-            if len(milestone_net_true)>0:
-                pseudotime_true[grouping==int(milestone_net_true[0,0])] = 0
-                for i in range(len(milestone_net_true)):
-                    pseudotime_true[grouping==int(milestone_net_true[i,1])] = milestone_net_true[i,-1]
-        pseudotime_true = pseudotime_true[pseudotime>-1]
-        pseudotime_pred = pseudotime[pseudotime>-1]
-        res['PDT score'] = (np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]+1)/2
+            if grouping is None:
+                pseudotime_true = milestone_net['from'].values + 1 - milestone_net['w'].values
+                pseudotime_true[np.isnan(pseudotime_true)] = milestone_net[pd.isna(milestone_net['w'])]['from'].values            
+            else:
+                pseudotime_true = - np.ones(len(grouping))
+                nx.set_edge_attributes(G_true, values = 1, name = 'weight')
+                connected_comps = nx.node_connected_component(G_true, begin_node_true)
+                subG = G_true.subgraph(connected_comps)
+                milestone_net_true = build_milestone_net(subG, begin_node_true)
+                if len(milestone_net_true)>0:
+                    pseudotime_true[grouping==int(milestone_net_true[0,0])] = 0
+                    for i in range(len(milestone_net_true)):
+                        pseudotime_true[grouping==int(milestone_net_true[i,1])] = milestone_net_true[i,-1]
+            pseudotime_true = pseudotime_true[pseudotime>-1]
+            pseudotime_pred = pseudotime[pseudotime>-1]
+            if np.std(pseudotime_true)==0 or np.std(pseudotime_pred)==0:
+                res['PDT score'] = 0
+            else:
+                res['PDT score'] = (np.corrcoef(pseudotime_true,pseudotime_pred)[0,1]+1)/2
     
         res['method'] = method
         res['data'] = data_name            

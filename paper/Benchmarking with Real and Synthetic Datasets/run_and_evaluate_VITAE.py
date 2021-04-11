@@ -13,8 +13,7 @@ from VITAE import VITAE, get_igraph, louvain_igraph, plot_clusters, load_data, g
 type_dict = {
     # dyno
     'dentate':'UMI', 
-    'immune':'UMI', 
-    'neonatal':'UMI', 
+    'immune':'UMI',  
     'planaria_muscle':'UMI',
     'planaria_full':'UMI',
     'aging':'non-UMI', 
@@ -45,17 +44,16 @@ type_dict = {
     'tree':'UMI',
 }
 source_dict = {
-    'dentate':'dyno', 
-    'immune':'dyno', 
-    'neonatal':'dyno', 
-    'planaria_muscle':'dyno',
-    'planaria_full':'dyno',
-    'aging':'dyno', 
-    'cell_cycle':'dyno',
-    'fibroblast':'dyno', 
-    'germline':'dyno',    
-    'human':'dyno', 
-    'mesoderm':'dyno',
+    'dentate':'real', 
+    'immune':'real', 
+    'planaria_muscle':'real',
+    'planaria_full':'real',
+    'aging':'real', 
+    'cell_cycle':'real',
+    'fibroblast':'real', 
+    'germline':'real',    
+    'human':'real', 
+    'mesoderm':'real',
     
     'bifurcating_2':'dyngen',
     "cycle_1":'dyngen', 
