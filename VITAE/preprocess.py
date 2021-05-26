@@ -237,6 +237,7 @@ def _recipe_seurat(adata, gene_num):
     Normalization and filtering as of Seurat [Satija15]_.
     This uses a particular preprocessing
     """
+    import scanpy as sc
     cell_mask = sc.pp.filter_cells(adata, min_genes=200, inplace=False)[0]
     adata = adata[cell_mask,:]
     gene_mask = sc.pp.filter_genes(adata, min_cells=3, inplace=False)[0]
