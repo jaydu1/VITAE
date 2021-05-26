@@ -357,7 +357,7 @@ class Inferer(object):
         &#39;&#39;&#39;
         # select edges
         if len(self.edges)==0:
-            select_edges = []
+            milestone_net = select_edges = []
             G = nx.Graph()
             G.add_nodes_from(self.G.nodes)
         else:
@@ -802,7 +802,7 @@ class Inferer(object):
         &#39;&#39;&#39;
         # select edges
         if len(self.edges)==0:
-            select_edges = []
+            milestone_net = select_edges = []
             G = nx.Graph()
             G.add_nodes_from(self.G.nodes)
         else:
@@ -1394,7 +1394,7 @@ edges : np.array
     &#39;&#39;&#39;
     # select edges
     if len(self.edges)==0:
-        select_edges = []
+        milestone_net = select_edges = []
         G = nx.Graph()
         G.add_nodes_from(self.G.nodes)
     else:
