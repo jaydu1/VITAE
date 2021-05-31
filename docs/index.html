@@ -35,7 +35,7 @@ __author__ = &#34;Jin-Hong Du, Ming Gao, and Jingshu Wang&#34;
 __copyright__ = &#34;Copyright 2020, The Trajectory Inference Project&#34;
 
 __license__ = &#34;MIT&#34;
-__version__ = &#34;1.1.6&#34;
+__version__ = &#34;1.1.7&#34;
 __maintainer__ = &#34;Jin-Hong Du&#34;
 __email__ = &#34;dujinhong@uchicago.edu&#34;
 __status__ = &#34;Development&#34;</code></pre>
@@ -169,10 +169,11 @@ __status__ = &#34;Development&#34;</code></pre>
         if data_type not in set([&#39;UMI&#39;, &#39;non-UMI&#39;, &#39;Gaussian&#39;]):
             raise ValueError(&#34;Invalid data type, must be one of &#39;UMI&#39;, &#39;non-UMI&#39;, and &#39;Gaussian&#39;.&#34;)
 
-        if (self.adata is not None) &amp; processed:
+        if (self.adata is not None) and processed:            
             self.data_type = &#39;Gaussian&#39;
         else:
             self.data_type = data_type
+        print(&#39;Using Gaussian likelihood.&#39;)
 
         raw_X = self.raw_X.copy() if self.raw_X is not None else None
         self.X_normalized, self.expression, self.X, self.c_score, \
@@ -187,7 +188,7 @@ __status__ = &#34;Development&#34;</code></pre>
             self.raw_label_names,
             self.raw_cell_names,
             self.raw_gene_names,
-            K, gene_num, data_type, npc)
+            K, gene_num, self.data_type, npc)
         self.dim_origin = self.X.shape[1]
         self.selected_cell_subset = self.cell_names
         self.selected_cell_subset_id = np.arange(len(self.cell_names))
@@ -804,6 +805,9 @@ __status__ = &#34;Development&#34;</code></pre>
         res : pd.DataFrame
             The evaluation result.
         &#39;&#39;&#39;
+        if not hasattr(self, &#39;le&#39;):
+            raise ValueError(&#34;No given labels for training.&#34;)
+
         # Evaluate for the whole dataset will ignore selected_cell_subset.
         if len(self.selected_cell_subset)!=len(self.cell_names):
             warnings.warn(&#34;Evaluate for the whole dataset.&#34;)
@@ -1044,10 +1048,11 @@ If <code>adata</code> is provided, the preprocession will be done via <code>scan
     if data_type not in set([&#39;UMI&#39;, &#39;non-UMI&#39;, &#39;Gaussian&#39;]):
         raise ValueError(&#34;Invalid data type, must be one of &#39;UMI&#39;, &#39;non-UMI&#39;, and &#39;Gaussian&#39;.&#34;)
 
-    if (self.adata is not None) &amp; processed:
+    if (self.adata is not None) and processed:            
         self.data_type = &#39;Gaussian&#39;
     else:
         self.data_type = data_type
+    print(&#39;Using Gaussian likelihood.&#39;)
 
     raw_X = self.raw_X.copy() if self.raw_X is not None else None
     self.X_normalized, self.expression, self.X, self.c_score, \
@@ -1062,7 +1067,7 @@ If <code>adata</code> is provided, the preprocession will be done via <code>scan
         self.raw_label_names,
         self.raw_cell_names,
         self.raw_gene_names,
-        K, gene_num, data_type, npc)
+        K, gene_num, self.data_type, npc)
     self.dim_origin = self.X.shape[1]
     self.selected_cell_subset = self.cell_names
     self.selected_cell_subset_id = np.arange(len(self.cell_names))
@@ -2114,6 +2119,9 @@ Eg.</p>
     res : pd.DataFrame
         The evaluation result.
     &#39;&#39;&#39;
+    if not hasattr(self, &#39;le&#39;):
+        raise ValueError(&#34;No given labels for training.&#34;)
+
     # Evaluate for the whole dataset will ignore selected_cell_subset.
     if len(self.selected_cell_subset)!=len(self.cell_names):
         warnings.warn(&#34;Evaluate for the whole dataset.&#34;)

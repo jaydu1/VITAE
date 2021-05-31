@@ -154,7 +154,7 @@ def preprocess(adata = None, processed: bool = False, dimred: bool = False,
             x_normalized = x = adata.X
             gene_names = adata.var_names.values
             expression = None
-            scale_factor = None
+            scale_factor = np.ones(x.shape[0])
         # if the input scanpy is not processed
         else: 
             dimred = False
