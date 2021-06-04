@@ -83,7 +83,7 @@ def feature_select(x, gene_num = 2000):
     return x[:, index], index
 
 
-def preprocess(adata = None, processed = None, dimred: bool = None, 
+def preprocess(adata = None, processed: bool = False, dimred: bool = False, 
             x = None, c = None, label_names = None, raw_cell_names = None, raw_gene_names = None,  
             K: float = 1e4, gene_num: int = 2000, data_type: str = 'UMI', 
             npc: int = 64, random_state=0):
@@ -154,7 +154,7 @@ def preprocess(adata = None, processed = None, dimred: bool = None,
             x_normalized = x = adata.X
             gene_names = adata.var_names.values
             expression = None
-            scale_factor = None
+            scale_factor = np.ones(x.shape[0])
         # if the input scanpy is not processed
         else: 
             dimred = False
@@ -163,12 +163,14 @@ def preprocess(adata = None, processed = None, dimred: bool = None,
             x_normalized = adata.X.copy()
             scale_factor = adata.obs.counts_per_cell.values / 1e4
             x = x[cell_mask,:][:,gene_mask][:,gene_mask2]
-        try:
-            label_names = adata.obs.cell_types
-        except:
-            if label_names is not None:
-                label_names = label_names[cell_mask]
-        
+            
+        if label_names is None:
+            try:
+                label_names = adata.obs.cell_types
+            except:
+                if label_names is not None and processed is False:
+                    label_names = label_names[cell_mask]
+            
         cell_names = adata.obs_names.values
         selected_gene_names = adata.var_names.values
         gene_scalar = None

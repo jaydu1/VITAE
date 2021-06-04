@@ -104,10 +104,11 @@ class VITAE():
         if data_type not in set(['UMI', 'non-UMI', 'Gaussian']):
             raise ValueError("Invalid data type, must be one of 'UMI', 'non-UMI', and 'Gaussian'.")
 
-        if (self.adata is not None) & processed:
+        if (self.adata is not None) and processed:            
             self.data_type = 'Gaussian'
         else:
             self.data_type = data_type
+        print('Using Gaussian likelihood.')
 
         raw_X = self.raw_X.copy() if self.raw_X is not None else None
         self.X_normalized, self.expression, self.X, self.c_score, \
@@ -122,7 +123,7 @@ class VITAE():
             self.raw_label_names,
             self.raw_cell_names,
             self.raw_gene_names,
-            K, gene_num, data_type, npc)
+            K, gene_num, self.data_type, npc)
         self.dim_origin = self.X.shape[1]
         self.selected_cell_subset = self.cell_names
         self.selected_cell_subset_id = np.arange(len(self.cell_names))
@@ -757,6 +758,9 @@ class VITAE():
         res : pd.DataFrame
             The evaluation result.
         '''
+        if not hasattr(self, 'le'):
+            raise ValueError("No given labels for training.")
+
         # Evaluate for the whole dataset will ignore selected_cell_subset.
         if len(self.selected_cell_subset)!=len(self.cell_names):
             warnings.warn("Evaluate for the whole dataset.")

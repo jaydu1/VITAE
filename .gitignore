@@ -5,3 +5,5 @@ data/mouse_brain_merged.h5
 data/mouse_brain_miller.h5
 data/mouse_brain.h5
 code.txt
+update.py
+update.bash
