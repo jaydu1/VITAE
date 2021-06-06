@@ -6,7 +6,7 @@ import VITAE.model as model
 import VITAE.preprocess as preprocess
 import VITAE.train as train
 from VITAE.inference import Inferer
-from VITAE.utils import load_data, get_embedding, get_igraph, leidenalg_igraph, \
+from VITAE.utils import load_data, get_embedding, get_igraph, leidenalg_igraph, clustering, \
     plot_clusters, plot_marker_gene, plot_uncertainty, DE_test, _comp_dist
 from VITAE.metric import topology, get_GRI
 import tensorflow as tf
