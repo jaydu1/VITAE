@@ -51,7 +51,7 @@ class VITAE():
         covariate : np.array, optional
             \([N, s]\) The covariate data.
         labels : np.array, optional
-            \([N,]\) The list of labelss for cells.
+            \([N,]\) The list of labels for cells.
         cell_names : np.array, optional
             \([N,]\) The list of cell names.
         gene_names : np.array, optional
@@ -235,7 +235,7 @@ class VITAE():
         Parameters
         ----------
         stratify : np.array, None, or False
-            If an array is provided, or `stratify=None` and `self.labels` is available, then they will be used to perform stratified shuffle splitting. Otherwise, general shuffle splitting is used. Set to `False` if `self.labels` is not intented for stratified shuffle splitting.
+            If an array is provided, or `stratify=None` and `self.labels` is available, then they will be used to perform stratified shuffle splitting. Otherwise, general shuffle splitting is used. Set to `False` if `self.labels` is not intended for stratified shuffle splitting.
         test_size : float or int, optional
             The proportion or size of the test set.
         random_state : int, optional
@@ -249,11 +249,11 @@ class VITAE():
         alpha : float, optional
             The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
         num_epoch : int, optional 
-            The maximum number of epoches.
+            The maximum number of epochs.
         num_step_per_epoch : int, optional 
             The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
         early_stopping_patience : int, optional 
-            The maximum number of epoches if there is no improvement.
+            The maximum number of epochs if there is no improvement.
         early_stopping_tolerance : float, optional 
             The minimum change of loss to be considered as an improvement.
         path_to_weights : str, optional 
@@ -354,7 +354,7 @@ class VITAE():
 
 
     def init_latent_space(self, n_clusters: int, cluster_labels = None, mu = None, log_pi = None, ratio_prune=0.0):
-        '''Initialze the latent space.
+        '''Initialize the latent space.
 
         Parameters
         ----------
@@ -366,8 +366,8 @@ class VITAE():
             \([d,k]\) The value of initial \(\\mu\).
         log_pi : np.array, optional
             \([1,K]\) The value of initial \(\\log(\\pi)\).
-        ratio_prune : float
-            The ratio of edges to remove before estimating.
+        ratio_prune : float, optional
+            The ratio of edges to be removed before estimating.
         '''             
         z = self.get_latent_z()
         if (mu is None) and (cluster_labels is not None):
@@ -377,19 +377,13 @@ class VITAE():
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
             n_states = int((n_clusters+1)*n_clusters/2)
             d = _comp_dist(z, cluster_labels, mu.T)
-            G = nx.from_numpy_array(d)
-            G = nx.minimum_spanning_tree(G)
 
             C = np.triu(np.ones(n_clusters))
             C[C>0] = np.arange(n_states)
             C = C.astype(int)
-            id_edges = C[np.nonzero(np.triu(nx.to_numpy_matrix(G)))]
 
-            cluster_center = np.array([int((n_clusters+(1-i)/2)*i) for i in range(n_clusters)])
-            log_pi = np.log(np.ones((1,n_states)) / 2 / (n_states - len(id_edges) - n_clusters))
+            log_pi = np.zeros((1,n_states))
             log_pi[0, C[np.triu(d)>np.quantile(d[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
-            log_pi[0, cluster_center] = np.log(1/(len(id_edges) + n_clusters))
-            log_pi[0, id_edges] = np.log(1/(len(id_edges) + n_clusters))
 
         self.n_clusters = n_clusters
         self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
@@ -408,7 +402,7 @@ class VITAE():
         Parameters
         ----------
         stratify : np.array, None, or False
-            If an array is provided, or `stratify=None` and `self.labels` is available, then they will be used to perform stratified shuffle splitting. Otherwise, general shuffle splitting is used. Set to `False` if `self.labels` is not intented for stratified shuffle splitting.
+            If an array is provided, or `stratify=None` and `self.labels` is available, then they will be used to perform stratified shuffle splitting. Otherwise, general shuffle splitting is used. Set to `False` if `self.labels` is not intended for stratified shuffle splitting.
         test_size : float or int, optional
             The proportion or size of the test set.
         random_state : int, optional
@@ -428,15 +422,15 @@ class VITAE():
         num_step_per_epoch : int, optional 
             The number of step per epoch, it will be inferred from number of cells and batch size if it is None.
         early_stopping_patience : int, optional 
-            The maximum number of epoches if there is no improvement.
+            The maximum number of epochs if there is no improvement.
         early_stopping_tolerance : float, optional 
             The minimum change of loss to be considered as an improvement.
         early_stopping_warmup : int, optional 
-            The number of warmup epoches.            
+            The number of warmup epochs.            
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
         plot_every_num_epoch : int, optional 
-            Plot the intermediate result every few epoches, or not plotting if it is None.            
+            Plot the intermediate result every few epochs, or not plotting if it is None.            
         dimred : str, optional 
             The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
         **kwargs :  
