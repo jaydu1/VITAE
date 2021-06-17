@@ -79,7 +79,8 @@ class VITAE():
 
         
     def preprocess_data(self, processed: bool = False, dimred: bool = False,
-                        K: float = 1e4, gene_num: int = 2000, data_type: str = 'UMI', npc: int = 64):
+                        K: float = 1e4, transform_fn: str = 'log', 
+                        gene_num: int = 2000, data_type: str = 'UMI', npc: int = 64):
         ''' Data preprocessing - log-normalization, feature selection, and scaling.                    
 
         If the inputs are preprocessed by users, then `Gaussian` model will be used and PCA will be performed to reduce the input dimension.
@@ -94,6 +95,8 @@ class VITAE():
             Whether the processed adata is after dimension reduction.
         K : float, optional              
             The constant summing gene expression in each cell up to.
+        transform_fn : str
+            The transform function used to normalize the gene expression after scaling. Either 'log' or 'sqrt'.
         gene_num : int, optional
             The number of feature to select.
         data_type : str, optional
@@ -123,7 +126,7 @@ class VITAE():
             self.raw_label_names,
             self.raw_cell_names,
             self.raw_gene_names,
-            K, gene_num, self.data_type, npc)
+            K, transform_fn, gene_num, self.data_type, npc)
         self.dim_origin = self.X.shape[1]
         self.selected_cell_subset = self.cell_names
         self.selected_cell_subset_id = np.arange(len(self.cell_names))
