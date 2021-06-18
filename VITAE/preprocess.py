@@ -191,7 +191,7 @@ def preprocess(adata = None, processed: bool = False, dimred: bool = False,
         x = x[expressed==1,:]
         if c is not None:
             c = c[expressed==1,:]
-        if label_names is None:
+        if label_names is not None:
             label_names = label_names[expressed==1]        
         
         # remove genes without variability
