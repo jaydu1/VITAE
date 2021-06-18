@@ -109,9 +109,11 @@ class VITAE():
 
         if (self.adata is not None) and processed:            
             self.data_type = 'Gaussian'
+            likelihood = 'Gaussian'
         else:
             self.data_type = data_type
-        print('Using Gaussian likelihood.')
+            likelihood = 'Negative Binomial' if data_type=='UMI' else 'Zero Inflated Negative Binomial'
+        print('Using %s likelihood.'%likelihood)
 
         raw_X = self.raw_X.copy() if self.raw_X is not None else None
         self.X_normalized, self.expression, self.X, self.c_score, \
