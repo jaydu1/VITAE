@@ -33,7 +33,7 @@ def normalize_gene_expression(x, K : float = 1e4, transform_fn : str = 'log'):
     if transform_fn=='log':
         x_normalized = np.log(x/scale_factor + 1)
     else:
-        x_normalized = np.where(x>0, np.sqrt(x/scale_factor + 1), 0)
+        x_normalized = np.where(x>0, np.sqrt(x/scale_factor), 0)
 
     print('min normalized value: ' + str(np.min(x_normalized)))
     print('max normalized value: ' + str(np.max(x_normalized)))
