@@ -4,7 +4,7 @@ from typing import Optional
 import VITAE.model as model 
 import VITAE.train as train 
 from VITAE.inference import Inferer
-from VITAE.utils import get_igraph, leidenalg_igraph, \
+from VITAE.utils import load_data, clustering, get_igraph, leidenalg_igraph, \
    DE_test, _comp_dist
 from VITAE.metric import topology, get_GRI
 import tensorflow as tf
