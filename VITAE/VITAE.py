@@ -1,24 +1,21 @@
 import warnings
-import os
 from typing import Optional
 
-import VITAE.model as model
-import VITAE.preprocess as preprocess
-import VITAE.train as train
+import VITAE.model as model 
+import VITAE.train as train 
 from VITAE.inference import Inferer
-from VITAE.utils import load_data, get_embedding, get_igraph, leidenalg_igraph, clustering, \
-    plot_clusters, plot_marker_gene, plot_uncertainty, DE_test, _comp_dist
+from VITAE.utils import get_igraph, leidenalg_igraph, \
+   DE_test, _comp_dist
 from VITAE.metric import topology, get_GRI
 import tensorflow as tf
 
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.model_selection import train_test_split
-import umap
 import numpy as np
-import scipy as sp
 import pandas as pd
 import networkx as nx
 from scipy import stats
+import scanpy as sc
 
 
 class VITAE():
@@ -27,211 +24,95 @@ class VITAE():
     """
     def __init__(self):
         pass
-
-    def get_data(self, X = None, adata = None, labels = None,
-                 covariate = None, cell_names = None, gene_names = None):
-        '''Get data for model. 
-        
-        (1) The user can provide a 2-dim numpy array as the count matrix `X`, either preprocessed or raw. 
-        Some extra information `labels`, `cell_names` and `gene_names` (as 1-dim numpy arrays) are optional.
-
-        (2) If the package `scanpy` is installed, then the function can also accept an `annData` input as `adata`. 
-        Some extra information `labels`, `cell_names` and `gene_names` are extracted from 
-        `adata.obs.cell_types`, `adata.obs_names.values` and `adata.var_names.values`, and
-        a 1-dim numpy array `labels` can also be provided if `adata.obs.cell_types` does not exist.
-
-        Covariates can be provided as a 2-dim numpy array.
-
-        Parameters
-        ----------
-        X : np.array, optional
-            \([N, G]\) The counts or expressions data.
-        adata : AnnData, optional
-            The scanpy object.      
-        covariate : np.array, optional
-            \([N, s]\) The covariate data.
-        labels : np.array, optional
-            \([N,]\) The list of labels for cells.
-        cell_names : np.array, optional
-            \([N,]\) The list of cell names.
-        gene_names : np.array, optional
-            \([N,]\) The list of gene names.
+    
+    def initialize(self, adata: sc.AnnData, 
+               covariates = None,
+               model_type: str = 'Gaussian',
+               npc: int = 64,
+               adata_layer_counts = None,
+               copy_adata: bool = False,
+               hidden_layers = [16],
+               latent_space_dim: int = 8):
         '''
-        if adata is None and X is None:
-            raise ValueError("Either X or adata should be given!")
-        if adata is not None and X is not None:
-            warnings.warn("Both X and adata are given, will use adata!")
+        Get input data for model. Data need to be first processed using scancy and stored as an AnnData object
+         The 'UMI' or 'non-UMI' model need the original count matrix, so the count matrix need to be saved in
+         adata.layers in order to use these models.
 
-        self.adata = adata        
-        self.raw_X = None if X is None else X.astype(np.float32)
-        self.c_score = None if covariate is None else np.array(covariate, np.float32)
-        if sp.sparse.issparse(self.raw_X):
-            self.raw_X = self.raw_X.toarray()
-        self.raw_label_names = None if labels is None else np.array(labels, dtype = str)
-        if X is None:
-            self.raw_cell_names = None
-            self.raw_gene_names = None
-        else:            
-            self.raw_cell_names = np.array(['c_%d'%i for i in range(self.raw_X.shape[0])]) if \
-                cell_names is None else np.array(cell_names, dtype = str)
-            self.raw_gene_names = np.array(['g_%d'%i for i in range(self.raw_X.shape[1])]) if \
-                gene_names is None else np.array(gene_names, dtype = str)
-
-        
-    def preprocess_data(self, processed: bool = False, dimred: bool = False,
-                        K: float = 1e4, transform_fn: str = 'log', 
-                        gene_num: int = 2000, data_type: str = 'UMI', npc: int = 64):
-        ''' Data preprocessing - log-normalization, feature selection, and scaling.                    
-
-        If the inputs are preprocessed by users, then `Gaussian` model will be used and PCA will be performed to reduce the input dimension.
-        Otherwise, preprocessing will be performed on `X` following Seurat's routine. 
-        If `adata` is provided, the preprocession will be done via `scanpy`.
 
         Parameters
         ----------
-        processed : boolean, optional
-            Whether adata has been processed. If `processed=True`, then `Gaussian` model will be used.
-        dimred : boolean, optional
-            Whether the processed adata is after dimension reduction.
-        K : float, optional              
-            The constant summing gene expression in each cell up to.
-        transform_fn : str
-            The transform function used to normalize the gene expression after scaling. Either 'log' or 'sqrt'.
-        gene_num : int, optional
-            The number of feature to select.
-        data_type : str, optional
-            'UMI', 'non-UMI' and 'Gaussian', default is 'UMI'. If the input is a processed scanpy object, data type is set to Gaussian.
+        adata : sc.AnnData
+            The scanpy AnnData object. 
+        covariates : list, optional
+            A list of names of covariate vectors that are stored in adata.obs
+        model_type : str, optional
+            'UMI', 'non-UMI' and 'Gaussian', default is 'Gaussian'. 
         npc : int, optional
-            The number of PCs to retain.
-        '''
-        if data_type not in set(['UMI', 'non-UMI', 'Gaussian']):
-            raise ValueError("Invalid data type, must be one of 'UMI', 'non-UMI', and 'Gaussian'.")
-
-        if (self.adata is not None) and processed:            
-            self.data_type = 'Gaussian'
-            likelihood = 'Gaussian'
-        else:
-            self.data_type = data_type
-            likelihood = 'Negative Binomial' if data_type=='UMI' else 'Zero Inflated Negative Binomial'
-        print('Using %s likelihood.'%likelihood)
-
-        raw_X = self.raw_X.copy() if self.raw_X is not None else None
-        self.X_normalized, self.expression, self.X, self.c_score, \
-        self.cell_names, self.gene_names, self.selected_gene_names, \
-        self.scale_factor, self.labels, self.label_names, \
-        self.le, self.gene_scalar = preprocess.preprocess(
-            self.adata,
-            processed,
-            dimred,
-            raw_X,
-            self.c_score,
-            self.raw_label_names,
-            self.raw_cell_names,
-            self.raw_gene_names,
-            K, transform_fn, gene_num, self.data_type, npc)
-        self.dim_origin = self.X.shape[1]
-        self.selected_cell_subset = self.cell_names
-        self.selected_cell_subset_id = np.arange(len(self.cell_names))
-        self.adata = None
-
-
-    def build_model(self,
-        dimensions = [16],
-        dim_latent: int = 8,   
-        ):
-        ''' Initialize the Variational Auto Encoder model.
-        
-        Parameters
-        ----------
-        dimensions : list, optional
+            The number of PCs to use when model_type is 'Gaussian'. The default is 64.
+        adata_layer_counts: str, optional
+            the key name of adata.layers that stores the count data if model_type is
+            'UMI' or 'non-UMI'
+        copy_adata: bool, optional
+        hidden_layers : list, optional
             The list of dimensions of layers of autoencoder between latent space and original space.
-        dim_latent : int, optional
+        latent_space_dim : int, optional
             The dimension of latent space.
+            
+
+        Returns
+        -------
+        None.
+
         '''
-        self.dimensions = dimensions
-        self.dim_latent = dim_latent
+        
+        if model_type != 'Gaussian':
+            if adata_layer_counts is None:
+                raise ValueError("need to provide the name in adata.layers that stores the raw count data")
+        
+        
+        if copy_adata:
+            self.adata = adata.copy()
+        else:
+            self.adata = adata
+        if covariates is not None:
+            self.c_score = adata.obs[covariates].to_numpy()
+        else:
+            self.c_score = None
+        
+        self.model_type = model_type
+        self._adata = sc.AnnData(X = self.adata.X, var = self.adata.var)
+        self._adata.obs = self.adata.obs
+        self._adata.uns = self.adata.uns
+ 
+    
+        if model_type == 'Gaussian':
+            sc.tl.pca(adata, n_comps = npc)
+            self.X_input = self.X_output = adata.obsm['X_pca']
+            self.scale_factor = np.ones(self.X_output.shape[0])
+        else:
+            self.X_input = adata.X[:, adata.var.highly_variable]
+            self.X_output = adata.layers[adata_layer_counts][ :, adata.var.highly_variable]
+            self.scale_factor = np.sum(self.X_output, axis=1, keepdims=True)/1e4
+            
+        self.dimensions = hidden_layers
+        self.dim_latent = latent_space_dim
     
         self.vae = model.VariationalAutoEncoder(
-            self.dim_origin, self.dimensions,
-            self.dim_latent, self.data_type,
+            self.X_output.shape[1], self.dimensions,
+            self.dim_latent, self.model_type,
             False if self.c_score is None else True
             )
         
         if hasattr(self, 'inferer'):
             delattr(self, 'inferer')
-            
-
-    def save_model(self, path_to_file: str = 'model.checkpoint'):
-        '''Saving model weights.
         
-        Parameters
-        ----------
-        path_to_file : str, optional
-            The path to weight files of pre-trained or trained model           
-        '''
-        self.vae.save_weights(path_to_file)
-        if hasattr(self, 'cluster_labels') and self.cluster_labels is not None:
-            with open(path_to_file+'.label', 'wb') as f:
-                np.save(f, self.cluster_labels)
-        with open(path_to_file+'.config', 'wb') as f:
-            np.save(f, np.array([
-                self.dim_origin, self.dimensions, self.dim_latent,
-                self.data_type, False if self.c_score is None else True], dtype=object))
-        if hasattr(self, 'inferer') and hasattr(self.inferer, 'embed_mu'):
-            with open(path_to_file+'.inference', 'wb') as f:
-                np.save(f, np.array([
-                    self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                    self.z, self.embed_z, self.inferer.embed_mu], dtype=object))
-    
+        
+## TODO: should we convert everything to dense matrix?
+## TODO: Add load_model and save_model back if needed
+        
 
-    def load_model(self, path_to_file: str = 'model.checkpoint', load_labels: bool = False):
-        '''Load model weights.
-
-        Parameters
-        ----------
-        path_to_file : str, optional 
-            The path to weight files of pre trained or trained model
-        load_labels : boolean, optional
-            Whether to load clustering labels or not.
-            If load_labels is True, then the LatentSpace layer will be initialized basd on the model. 
-            If load_labels is False, then the LatentSpace layer will not be initialized.
-        ''' 
-        if not os.path.exists(path_to_file+'.config'):
-            raise AssertionError('Config file not exist!')               
-        if load_labels and not os.path.exists(path_to_file+'.label'):
-            raise AssertionError('Label file not exist!')
-
-        with open(path_to_file+'.config', 'rb') as f:
-            [self.dim_origin, self.dimensions,
-            self.dim_latent, self.data_type, has_c] = np.load(f, allow_pickle=True)
-        self.vae = model.VariationalAutoEncoder(
-            self.dim_origin, self.dimensions, 
-            self.dim_latent, self.data_type, has_c
-            )
-
-        if load_labels:            
-            with open(path_to_file+'.label', 'rb') as f:
-                cluster_labels = np.load(f, allow_pickle=True)
-            n_clusters = len(np.unique(cluster_labels))
-            self.init_latent_space(n_clusters, cluster_labels)
-            if os.path.exists(path_to_file+'.inference'):
-                with open(path_to_file+'.inference', 'rb') as f:
-                    arr = np.load(f, allow_pickle=True)
-                    if len(arr)==9:
-                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                            self.D_JS, self.z, self.embed_z, embed_mu] = arr
-                    else:
-                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
-                            self.z, self.embed_z, embed_mu] = arr
-                self.inferer.mu = self.mu
-                self.inferer.embed_z = self.embed_z
-                self.inferer.embed_mu = embed_mu
-
-        self.vae.load_weights(path_to_file)
-
-
-    def pre_train(self, stratify = False, test_size = 0.1, random_state: int = 0,
-            learning_rate: float = 1e-3, batch_size: int = 32, L: int = 1, alpha: float = 0.10,
+    def pre_train(self, test_size = 0.1, random_state: int = 0,
+            learning_rate: float = 1e-3, batch_size: int = 256, L: int = 1, alpha: float = 0.10,
             num_epoch: int = 300, num_step_per_epoch: Optional[int] = None,
             early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0,
             path_to_weights: Optional[str] = None):
@@ -239,8 +120,6 @@ class VITAE():
 
         Parameters
         ----------
-        stratify : np.array, None, or False
-            If an array is provided, or `stratify=None` and `self.labels` is available, then they will be used to perform stratified shuffle splitting. Otherwise, general shuffle splitting is used. Set to `False` if `self.labels` is not intended for stratified shuffle splitting.
         test_size : float or int, optional
             The proportion or size of the test set.
         random_state : int, optional
@@ -248,7 +127,7 @@ class VITAE():
         learning_rate : float, optional
             The initial learning rate for the Adam optimizer.
         batch_size : int, optional 
-            The batch size for pre-training.
+            The batch size for pre-training.  Default is 256. Set to 32 if number of cells is small (less than 1000)
         L : int, optional 
             The number of MC samples.
         alpha : float, optional
@@ -264,26 +143,22 @@ class VITAE():
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
         '''                    
-        if stratify is None:
-            stratify = self.labels
-        elif stratify is False:
-            stratify = None   
+
         id_train, id_test = train_test_split(
-                                np.arange(self.X.shape[0]), 
+                                np.arange(self.X_input.shape[0]), 
                                 test_size=test_size, 
-                                stratify=stratify, 
                                 random_state=random_state)
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
-        self.train_dataset = train.warp_dataset(self.X_normalized[id_train].astype(tf.keras.backend.floatx()), 
+        self.train_dataset = train.warp_dataset(self.X_input[id_train].astype(tf.keras.backend.floatx()), 
                                                 None if self.c_score is None else self.c_score[id_train].astype(tf.keras.backend.floatx()),
                                                 batch_size, 
-                                                self.X[id_train].astype(tf.keras.backend.floatx()), 
+                                                self.X_output[id_train].astype(tf.keras.backend.floatx()), 
                                                 self.scale_factor[id_train].astype(tf.keras.backend.floatx()))
-        self.test_dataset = train.warp_dataset(self.X_normalized[id_test], 
+        self.test_dataset = train.warp_dataset(self.X_input[id_test], 
                                                 None if self.c_score is None else self.c_score[id_test].astype(tf.keras.backend.floatx()),
                                                 batch_size, 
-                                                self.X[id_test].astype(tf.keras.backend.floatx()), 
+                                                self.X_output[id_test].astype(tf.keras.backend.floatx()), 
                                                 self.scale_factor[id_test].astype(tf.keras.backend.floatx()))
         self.vae = train.pre_train(
             self.train_dataset,
@@ -296,13 +171,17 @@ class VITAE():
             early_stopping_patience,
             early_stopping_tolerance,
             0)
+        
+        self.z = self.get_latent_z()        
+        self._adata_z = sc.AnnData(self.z)
+        sc.pp.neighbors(self._adata_z)
 
         if path_to_weights is not None:
             self.save_model(path_to_weights)
-          
-
+            
+            
     def get_latent_z(self):
-        '''Set a subset of interested cells.
+        ''' get the current latent space z
 
         Returns
         ----------
@@ -310,75 +189,107 @@ class VITAE():
             \([N,d]\) The latent means.
         ''' 
         c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
-        return self.vae.get_z(self.X_normalized[self.selected_cell_subset_id,:], c)
-
-
-    def set_cell_subset(self, selected_cell_names):
-        '''Set a subset of interested cells.
-
-        This will have influence on the downstream processes (pretraining, training, inference, DE test, ...).
-
-        Parameters
-        ----------
-        selected_cell_names : np.array, optional
-            The names of selected cells.
-        ''' 
-        self.selected_cell_subset = np.unique(selected_cell_names)
-        self.selected_cell_subset_id = np.sort(np.where(np.in1d(self.cell_names, selected_cell_names))[0])
-        print("Setting cell subset with length %d."%len(self.selected_cell_subset))
-
+        return self.vae.get_z(self.X_input, c)
+            
     
-    def refine_pi(self, batch_size: int = 64):  
-        '''Refine pi by the its posterior. This function will be effected if 'selected_cell_subset_id' is set.
+    def visualize_latent(self, method: str = "UMAP", 
+                         color = None, **kwargs):
+        '''
+        visualize the current latent space z using the scanpy visualization tools
 
         Parameters
         ----------
-        batch_size - int, optional 
-            The batch size when computing \(p(c_i|Y_i,X_i)\).
-        
+        method : str, optional
+            Visualization method to use. The default is "draw_graph" (the FA plot). Possible choices include "PCA", "UMAP", 
+            "diffmap", "TSNE" and "draw_graph"
+        color : TYPE, optional
+            Keys for annotations of observations/cells or variables/genes, e.g., 'ann1' or ['ann1', 'ann2'].
+            The default is None. Same as scanpy.
+        **kwargs :  
+            Extra key-value arguments that can be passed to scanpy plotting functions (scanpy.pl.XX).   
+
         Returns
-        ----------
-        pi : np.array
-            \([1,K]\) The original pi.
-        post_pi : np.array 
-            \([1,K]\) The posterior estimate of pi.
-        '''      
-        if len(self.selected_cell_subset_id)!=len(self.cell_names):
-            warnings.warn("Only using a subset of cells to refine pi.")
+        -------
+        None.
 
-        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
-        self.test_dataset = train.warp_dataset(
-            self.X_normalized[self.selected_cell_subset_id,:], 
-            c,
-            batch_size)
-        pi, p_c_x = self.vae.get_pc_x(self.test_dataset)
+        '''
+          
+        if method not in ['PCA', 'UMAP', 'TSNE', 'diffmap', 'draw_graph']:
+            raise ValueError("visualization method should be one of 'PCA', 'UMAP', 'TSNE', 'diffmap' and 'draw_graph'")
+        
+        temp = list(self._adata_z.obsm.keys())
+        if method == 'PCA' and not 'X_pca' in temp:
+            print("Calculate PCs ...")
+            sc.tl.pca(self._adata_z)
+        elif method == 'UMAP' and not 'X_umap' in temp:  
+            print("Calculate UMAP ...")
+            sc.tl.umap(self._adata_z)
+        elif method == 'TSNE' and not 'X_tsne' in temp:
+            print("Calculate TSNE ...")
+            sc.tl.tsne(self._adata_z)
+        elif method == 'diffmap' and not 'X_diffmap' in temp:
+            print("Calculate diffusion map ...")
+            sc.tl.diffmap(self._adata_z)
+        elif method == 'draw_graph' and not 'X_draw_graph_fa' in temp:
+            print("Calculate FA ...")
+            sc.tl.draw_graph(self._adata_z)
+            
+  
+        self._adata.obsp = self._adata_z.obsp
+        self._adata.uns = self._adata_z.uns
+        self._adata.obsm = self._adata_z.obsm
+    
+        if method == 'PCA':
+            sc.pl.pca(self._adata, color = color, **kwargs)
+        elif method == 'UMAP':            
+            sc.pl.umap(self._adata, color = color, **kwargs)
+        elif method == 'TSNE':
+            sc.pl.tsne(self._adata, color = color, **kwargs)
+        elif method == 'diffmap':
+            sc.pl.diffmap(self._adata, color = color, **kwargs)
+        elif method == 'draw_graph':
+            sc.pl.draw_graph(self._adata, color = color, **kwargs)
+            
+        
 
-        post_pi = np.mean(p_c_x, axis=0, keepdims=True)        
-        self.vae.latent_space.pi.assign(np.log(post_pi+1e-16))
-        return pi, post_pi
 
 
-    def init_latent_space(self, n_clusters: int, cluster_labels = None, mu = None, log_pi = None, ratio_prune=0.0):
+    def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
+                          ratio_prune=0.0):
         '''Initialize the latent space.
 
         Parameters
         ----------
-        n_clusters : int
-            The number of cluster.
-        cluster_labels : np.array, optional
-            \([N,]\) The  cluster labels.
+        cluster_label : str, optional
+            the name of vector of labels that can be found in self.adata.obs. 
+            Default is None, which will perform leiden clustering on the pretrained z to get clusters
         mu : np.array, optional
             \([d,k]\) The value of initial \(\\mu\).
         log_pi : np.array, optional
             \([1,K]\) The value of initial \(\\log(\\pi)\).
+        res: 
+            The resolution of leiden clustering, which is a parameter value controlling the coarseness of the clustering. 
+            Higher values lead to more clusters. Deafult is 1.
         ratio_prune : float, optional
             The ratio of edges to be removed before estimating.
-        '''             
+        '''   
+    
+        
+        if cluster_label is None:
+            print("Perform leiden clustering on the latent space z ...")
+            g = get_igraph(self.z)
+            labels = leidenalg_igraph(g, res = res)
+            self.adata.obs['vitae_init_clustering'] = labels
+            self.adata.obs['vitae_init_clustering'] = self.adata.obs['vitae_init_clustering'].astype('category')
+            print("Clustering labels saved as 'vitae_init_clustering' in self.adata.obs.")
+            cluster_label = 'vitae_init_clustering'
+        
+        n_clusters = np.unique(self.adata.obs[cluster_label]).shape[0]
+        cluster_labels = self.adata.obs[cluster_label].to_numpy()
         z = self.get_latent_z()
-        if (mu is None) and (cluster_labels is not None):
-            mu = np.zeros((z.shape[1], n_clusters))
-            for i,l in enumerate(np.unique(cluster_labels)):
-                mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+        mu = np.zeros((z.shape[1], n_clusters))
+        for i,l in enumerate(np.unique(cluster_labels)):
+            mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
             n_states = int((n_clusters+1)*n_clusters/2)
             d = _comp_dist(z, cluster_labels, mu.T)
@@ -391,17 +302,17 @@ class VITAE():
             log_pi[0, C[np.triu(d)>np.quantile(d[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
 
         self.n_clusters = n_clusters
-        self.cluster_labels = None if cluster_labels is None else np.array(cluster_labels)
+        self.init_labels = cluster_labels
         self.vae.init_latent_space(n_clusters, mu, log_pi)
         self.inferer = Inferer(self.n_clusters)            
 
 
     def train(self, stratify = False, test_size = 0.1, random_state: int = 0,
-            learning_rate: float = 1e-3, batch_size: int = 32, 
-            L: int = 1, alpha: float = 0.10, beta: float = 1, 
+            learning_rate: float = 1e-3, batch_size: int = 256, 
+            L: int = 1, alpha: float = 0.10, beta: float = 2, 
             num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
             early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 10,
-            path_to_weights: Optional[str] = None, plot_every_num_epoch: Optional[int] = None, dimred: str = 'umap', **kwargs):
+            path_to_weights: Optional[str] = None, **kwargs):
         '''Train the model.
 
         Parameters
@@ -415,7 +326,7 @@ class VITAE():
         learning_rate : float, optional  
             The initial learning rate for the Adam optimizer.
         batch_size : int, optional  
-            The batch size for training.
+            The batch size for training. Default is 256. Set to 32 if number of cells is small (less than 1000)
         L : int, optional  
             The number of MC samples.
         alpha : float, optional  
@@ -434,45 +345,35 @@ class VITAE():
             The number of warmup epochs.            
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
-        plot_every_num_epoch : int, optional 
-            Plot the intermediate result every few epochs, or not plotting if it is None.            
-        dimred : str, optional 
-            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
         **kwargs :  
             Extra key-value arguments for dimension reduction algorithms.        
         '''        
         if stratify is None:
-            stratify = self.labels[self.selected_cell_subset_id]
+            stratify = self.init_labels
         elif stratify is False:
             stratify = None    
         id_train, id_test = train_test_split(
-                                np.arange(len(self.selected_cell_subset_id)), 
+                                np.arange(self.X_input.shape[0]), 
                                 test_size=test_size, 
                                 stratify=stratify, 
                                 random_state=random_state)
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
-        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx())
-        self.train_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_train].astype(tf.keras.backend.floatx()),
+        c = None if self.c_score is None else self.c_score.astype(tf.keras.backend.floatx())
+        self.train_dataset = train.warp_dataset(self.X_input[id_train].astype(tf.keras.backend.floatx()),
                                                 None if c is None else c[id_train],
                                                 batch_size, 
-                                                self.X[self.selected_cell_subset_id,:][id_train].astype(tf.keras.backend.floatx()), 
-                                                self.scale_factor[self.selected_cell_subset_id][id_train].astype(tf.keras.backend.floatx()))
-        self.test_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:][id_test].astype(tf.keras.backend.floatx()),
+                                                self.X_output[id_train].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[id_train].astype(tf.keras.backend.floatx()))
+        self.test_dataset = train.warp_dataset(self.X_input[id_test].astype(tf.keras.backend.floatx()),
                                                 None if c is None else c[id_test],
                                                 batch_size, 
-                                                self.X[self.selected_cell_subset_id,:][id_test].astype(tf.keras.backend.floatx()), 
-                                                self.scale_factor[self.selected_cell_subset_id][id_test].astype(tf.keras.backend.floatx()))    
-        if plot_every_num_epoch is None:
-            self.whole_dataset = None    
-        else:
-            self.whole_dataset = train.warp_dataset(self.X_normalized[self.selected_cell_subset_id,:].astype(tf.keras.backend.floatx()), 
-                                                    c,
-                                                    batch_size)                                    
+                                                self.X_output[id_test].astype(tf.keras.backend.floatx()), 
+                                                self.scale_factor[id_test].astype(tf.keras.backend.floatx()))    
+                                   
         self.vae = train.train(
             self.train_dataset,
             self.test_dataset,
-            self.whole_dataset,
             self.vae,
             learning_rate,
             L,
@@ -483,18 +384,18 @@ class VITAE():
             early_stopping_patience,
             early_stopping_tolerance,
             early_stopping_warmup,            
-            self.labels[self.selected_cell_subset_id],            
-            plot_every_num_epoch,
-            dimred, 
             **kwargs            
             )
+        
+        self.z = self.get_latent_z()        
+        self._adata_z = sc.AnnData(self.z, obs = self.adata.obs)
+        sc.pp.neighbors(self._adata_z)
             
         if path_to_weights is not None:
             self.save_model(path_to_weights)
           
 
-    def init_inference(self, batch_size: int = 32, L: int = 5, 
-            dimred: str = 'umap', refit_dimred: bool = True, **kwargs):
+    def init_inference(self, batch_size: int = 32, L: int = 5, **kwargs):
         '''Initialize trajectory inference by computing the posterior estimations.        
 
         Parameters
@@ -503,24 +404,19 @@ class VITAE():
             The batch size when doing inference.
         L : int, optional
             The number of MC samples when doing inference.
-        dimred : str, optional
-            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
-        refit_dimred : boolean, optional 
-            Whether to refit the dimension reduction algorithm or not.
         **kwargs :  
             Extra key-value arguments for dimension reduction algorithms.              
         '''
         c = None if self.c_score is None else self.c_score.astype(tf.keras.backend.floatx())
-        self.test_dataset = train.warp_dataset(self.X_normalized.astype(tf.keras.backend.floatx()), 
+        self.test_dataset = train.warp_dataset(self.X_input.astype(tf.keras.backend.floatx()), 
                                                c,
                                                batch_size)
         self.pi, self.mu, self.pc_x,\
-            self.w_tilde,self.var_w_tilde,self.z = self.vae.inference(self.test_dataset, L=L)
-        if refit_dimred or not hasattr(self.inferer, 'embed_z'):
-            print('Computing embeddings.')
-            self.embed_z = self.inferer.init_embedding(self.z, self.mu, dimred, **kwargs)
-        else:
-            self.embed_z = self.inferer.embed_z
+            self.cell_position_posterior,self.cell_position_variance,_ = self.vae.inference(self.test_dataset, L=L)
+            
+        self.adata.obs['vitae_new_clustering'] = np.argmax(self.cell_position_posterior, 1)
+        self.adata.obs['vitae_new_clustering'] = self.adata.obs['vitae_new_clustering'].astype('category')
+        print("New clustering labels saved as 'vitae_new_clustering' in self.adata.obs.")
         return None
         
 
@@ -542,25 +438,26 @@ class VITAE():
         root : int
             The root vertex in the inferred trajectory based on given day information.
         '''
-        if days is not None and len(days)!=len(self.selected_cell_subset_id):
+        if days is not None and len(days)!=self.X_input.shape[0]:
             raise ValueError("The length of day information ({}) is not "
                 "consistent with the number of selected cells ({})!".format(
-                    len(days), len(self.selected_cell_subset_id)))
+                    len(days), self.X_input.shape[0]))
         if not hasattr(self.inferer, 'embed_z'):
             raise ValueError("Need to call 'init_inference' first!")
 
-        estimated_cell_types = np.argmax(self.w_tilde, axis=-1)
+        estimated_cell_types = np.argmax(self.cell_position_posterior, axis=-1)
         if method=='sum':
-            root = np.argmax([np.sum(days[estimated_cell_types==i]==np.min(days)) for i in range(self.w_tilde.shape[-1])])
+            root = np.argmax([np.sum(days[estimated_cell_types==i]==np.min(days)) for i in range(self.cell_position_posterior.shape[-1])])
         elif method=='mean':
-            root = np.argmin([np.mean(days[estimated_cell_types==i]) for i in range(self.w_tilde.shape[-1])])
+            root = np.argmin([np.mean(days[estimated_cell_types==i]) for i in range(self.cell_position_posterior.shape[-1])])
         else:
             raise ValueError("Method can be either 'sum' or 'mean'!")
         return root
 
         
     def comp_inference_score(self, method: str = 'modified_map', thres = 0.5, 
-            no_loop: bool = False, is_plot: bool = True, plot_labels: bool = True, path: Optional[str] = None):
+            no_loop: bool = False, cutoff: Optional[float] = None,
+            plot_backbone: bool = True):
         ''' Compute edge scores.
 
         Parameters
@@ -570,28 +467,34 @@ class VITAE():
         thres : float, optional 
             The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.
         no_loop : boolean, optional 
-            Whether loops are allowed to exist in the graph.
-        is_plot : boolean, optional  
-            Whether to plot or not.
-        plot_labels : boolean, optional  
-            Whether to plot label names or not, only used when `is_plot=True`.
-        path : string, optional
-            The path to save figure, or don't save if it is None.
+            Whether loops are allowed to exist in the graph. If no_loop is true, will prune the graph to contain only the 
+            maximum spanning true
+        cutoff : string, optional
+            The score threshold for filtering edges with scores less than cutoff.
+        plot_backbone: boolean
+            whether plot the current trajectory backbone (undirected graph)
         
         Returns
         ----------
         G : nx.Graph 
             The weighted graph with weight on each edge indicating its score of existence.
         '''
-        G, _ = self.inferer.init_inference(self.w_tilde[self.selected_cell_subset_id,:], 
-                                                self.pc_x[self.selected_cell_subset_id,:], 
+        print("Estimate the backbone of the trajectory ...")
+        G, _ = self.inferer.init_inference(self.cell_position_posterior, 
+                                                self.pc_x, 
                                                 thres, method, no_loop)
-        if is_plot:
-            self.inferer.plot_clusters(self.cluster_labels, plot_labels=plot_labels, path=path)
+        if cutoff is not None:
+            graph = nx.to_numpy_matrix(G)
+            graph[graph<=cutoff] = 0
+            G = nx.from_numpy_array(graph)
+        if plot_backbone:
+            edgewidth = [ d['weight'] for (u,v,d) in G.edges(data=True)]
+            nx.draw_spring(G, width = edgewidth/np.mean(edgewidth), with_labels = True)
         return G
         
         
-    def infer_trajectory(self, init_node: int, cutoff: Optional[float] = None, is_plot: bool = True, path: Optional[str] = None):
+    def infer_trajectory(self, init_node: int, cutoff: Optional[float] = None,
+                         plot_backbone: bool = True):
         '''Infer the trajectory.
 
         Parameters
@@ -604,33 +507,37 @@ class VITAE():
             Whether to plot or not.
         path : string, optional  
             The path to save figure, or don't save if it is None.
+        plot_backbone: boolean
+            whether plot the current trajectory backbone (directed graph)
 
         Returns
         ----------
-        modified_G : nx.Graph 
-            The modified graph that indicates the inferred trajectory.
-        modified_w_tilde : np.array
-            \([N,k]\) The modified \(\\tilde{w}\).
-        pseudotime : np.array
-            \([N,]\) The pseudotime based on projected trajectory.
         '''
-        self.modified_G, modified_w_tilde, pseudotime = self.inferer.infer_trajectory(init_node, 
-                                                         self.label_names[self.selected_cell_subset_id], 
-                                                         cutoff, 
-                                                         path=path, 
-                                                         is_plot=is_plot)
-        if len(self.selected_cell_subset_id)<len(self.cell_names):
-            self.modified_w_tilde = np.full(self.w_tilde.shape, np.nan)
-            self.modified_w_tilde[self.selected_cell_subset_id,:] = modified_w_tilde
-            self.pseudotime = np.full(len(self.cell_names), np.nan)
-            self.pseudotime[self.selected_cell_subset_id] = pseudotime 
-        else:
-            self.modified_w_tilde = modified_w_tilde
-            self.pseudotime = pseudotime 
-        return self.modified_G, modified_w_tilde, pseudotime
+        self.backbone, self.cell_position_projected, self.pseudotime = self.inferer.infer_trajectory(init_node, cutoff)
+        self.uncertainty = np.sum((self.cell_position_projected - self.cell_position_posterior)**2, axis=-1) + np.sum(self.cell_position_variance, axis=-1)
+        self.adata.obs['pseudotime'] = self.pseudotime
+        self.adata.obs['projection_uncertainty'] = self.uncertainty
+        print("Cell psedutime and projection uncertainties stored as 'pseudotime' and 'projection_uncertainty' in self.adata.obs")
+        
+        self.adata.obs['vitae_new_clustering'] = np.argmax(self.cell_position_projected, 1)
+        self.adata.obs['vitae_new_clustering'] = self.adata.obs['vitae_new_clustering'].astype('category')
+        print("'vitae_new_clustering' updated based on the projected cell positions.")
+        
+        connected_comps = nx.node_connected_component(self.backbone, init_node)
+        DG = nx.DiGraph(nx.to_directed(self.backbone))
+        subG = DG.subgraph(connected_comps)
+        DG.remove_edges_from(subG.edges - nx.dfs_edges(DG, init_node))
+        self.backbone = DG
+        print("Directed trajectory backbone saved as self.backbone.")
+        
+        if plot_backbone:
+            edgewidth = [ d['weight'] for (u,v,d) in DG.edges(data=True)]
+            nx.draw_spring(DG, width = edgewidth/np.mean(edgewidth), with_labels = True)
+        
 
 
-    def differentially_expressed_test(self, alpha: float = 0.05):
+
+    def differential_expression_test(self, alpha: float = 0.05, cell_subset = None):
         '''Differentially gene expression test. All (selected and unselected) genes will be tested 
         Only cells in `selected_cell_subset` will be used, which is useful when one need to
         test differentially expressed genes on a branch of the inferred trajectory.
@@ -648,80 +555,26 @@ class VITAE():
         '''
         if not hasattr(self, 'pseudotime'):
             raise ReferenceError("Pseudotime does not exist! Please run 'infer_trajectory' first.")
+        if cell_subset is None:
+            cell_subset = np.arange(self.X_input.shape[0])
+            print("All cells are selected.")
 
         # Prepare X and Y for regression expression ~ rank(PDT) + covariates
-        Y = self.expression[self.selected_cell_subset_id,:]
-        std_Y = np.std(Y, ddof=1, axis=0, keepdims=True)
-        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
-        X = stats.rankdata(self.pseudotime[self.selected_cell_subset_id])
+        Y = self.adata.X[cell_subset,:]
+#        std_Y = np.std(Y, ddof=1, axis=0, keepdims=True)
+#        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
+        X = stats.rankdata(self.pseudotime[cell_subset])
         X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
-        X = np.c_[np.ones_like(X), X, self.c_score[self.selected_cell_subset_id,:]]
+        if self.c_score is None:
+            X = np.c_[np.ones_like(X), X]
+        else:
+            X = np.c_[np.ones_like(X), X, self.c_score[cell_subset,:]]
 
-        res_df = DE_test(Y, X, self.gene_names, alpha)
+        res_df = DE_test(Y, X, self.adata.var_names, alpha)
         return res_df
 
 
-    def plot_uncertainty(self, refit_dimred: bool = False, dimred: str = 'umap', path: Optional[str] =None, **kwargs):
-        '''Plot uncertainty of all selected cells.
-
-        Parameters
-        ----------        
-        refit_dimred : boolean, optional 
-            Whether to refit dimension reduction or use the existing embedding after inference.
-        dimred : str, optional
-            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
-        path : str, optional
-            The path to save the figure, or not saving if it is None.
-        **kwargs :  
-            Extra key-value arguments for dimension reduction algorithms.
-        '''
-        if not hasattr(self, 'modified_w_tilde'):
-            raise ReferenceError("The object 'modified_w_tilde' does not exist! Please infer a trajectory before calling this function.")
-        
-        uncertainty = np.sum((self.modified_w_tilde - self.w_tilde)**2, axis=-1) + np.sum(self.var_w_tilde, axis=-1)
-
-        if not hasattr(self, 'embed_z') or refit_dimred:
-            z = self.get_latent_z()       
-            embed_z = get_embedding(z, dimred, **kwargs)
-        else:
-            embed_z = self.embed_z
-        return plot_uncertainty(uncertainty[self.selected_cell_subset_id], 
-                                embed_z[self.selected_cell_subset_id,:],
-                                path)
-
-
-    def plot_marker_gene(self, gene_name: str, refit_dimred: bool = False, dimred: str = 'umap', path: Optional[str] =None, **kwargs):
-        '''Plot expression of the given marker gene.
-
-        Parameters
-        ----------
-        gene_name : str 
-            The name of the marker gene.
-        refit_dimred : boolean, optional 
-            Whether to refit dimension reduction or use the existing embedding after inference.
-        dimred : str, optional
-            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'.
-        path : str, optional
-            The path to save the figure, or not saving if it is None.
-        **kwargs :  
-            Extra key-value arguments for dimension reduction algorithms.
-        '''
-        if gene_name not in self.gene_names:
-            raise ValueError("Gene '{}' does not exist!".format(gene_name))
-        if self.expression is None:
-            raise ReferenceError("The expression matrix does not exist!")
-        expression = self.expression[self.selected_cell_subset_id,:][:,self.gene_names==gene_name].flatten()
-        
-        if not hasattr(self, 'embed_z') or refit_dimred:
-            z = self.get_latent_z()       
-            embed_z = get_embedding(z, dimred, **kwargs)
-        else:
-            embed_z = self.embed_z
-        return plot_marker_gene(expression, 
-                                gene_name, 
-                                embed_z[self.selected_cell_subset_id,:],
-                                path)
-
+ 
 
     def evaluate(self, milestone_net, begin_node_true, grouping = None,
                 thres: float = 0.5, no_loop: bool = True, cutoff: Optional[float] = None,
