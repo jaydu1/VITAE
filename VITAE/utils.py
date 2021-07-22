@@ -18,7 +18,7 @@ import scipy
 from scipy import stats
 import pandas as pd
 import h5py
-
+import scanpy as sc
 
 #------------------------------------------------------------------------------
 # Early stopping
@@ -63,6 +63,7 @@ class Early_Stopping():
 # Utils functions
 #------------------------------------------------------------------------------
 
+
 def _comp_dist(x, y, mu=None, S=None):
     uni_y = np.unique(y)
     n_uni_y = len(uni_y)
@@ -96,6 +97,7 @@ def _check_expression(A):
             out[i] = 0
     return out
 
+
 @jit((float32[:,:],), nopython=True, nogil=True)
 def _check_variability(A):
     n_cols = A.shape[1]
@@ -118,7 +120,7 @@ def get_embedding(z, dimred='umap', **kwargs):
     z : np.array
         \([N, d]\) The latent variables.
     dimred : str, optional
-        'pca', 'tsne', or umap'.      
+        'pca', 'tsne', or umap'.   
     **kwargs :  
         Extra key-value arguments for dimension reduction algorithms.  
 
@@ -130,7 +132,7 @@ def get_embedding(z, dimred='umap', **kwargs):
     if dimred=='umap':
         if 'random_state' in kwargs:
             kwargs['random_state'] = np.random.RandomState(kwargs['random_state'])
-        # umap has some bugs that it may change the original matrix when doing transform
+        # umap has some bugs that it may change the original matrix when doing transform 
         mapper = umap.UMAP(**kwargs).fit(z.copy())
         embed = mapper.embedding_
     elif dimred=='pca':
@@ -534,7 +536,10 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
             beta = np.dot(pinv_wexog, wendog)
             resid = wendog - X @ beta
             cov = _cov_hc3(h, pinv_wexog, resid)
-            t = beta[1]/np.sqrt(np.diag(cov)[1])
+            if np.diag(cov)[1] == 0:
+                t = float("nan")
+            else:
+                t = beta[1]/np.sqrt(np.diag(cov)[1])
             return np.r_[beta[1], t]
 
     res = np.apply_along_axis(lambda y: _DE_test(wendog=y, pinv_wexog=pinv_wexog, h=h),
@@ -544,12 +549,13 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
         sigma = stats.median_abs_deviation(res[:,1], nan_policy='omit')
     else:
         sigma = stats.median_absolute_deviation(res[:,1], nan_policy='omit')
-    pdt_new_pval = stats.norm.sf(np.abs(res[:,1]/sigma))*2    
+    pdt_new_pval = np.array([stats.norm.sf(x)*2 for x in np.abs(res[:,1]/sigma)])    
     new_adj_pval = _p_adjust_bh(pdt_new_pval)
-    res_df = pd.DataFrame(np.c_[res[:,0], new_adj_pval], 
+    res_df = pd.DataFrame(np.c_[res[:,0], pdt_new_pval, new_adj_pval], 
                     index=gene_names,
-                    columns=['beta_PDT','p_adjusted'])
-    res_df = res_df[(new_adj_pval< alpha) & np.any(~np.isnan(Y), axis=0)]
+                    columns=['beta_PDT', 'pvalue', 'pvalue_adjusted'])
+    res_df = res_df[(res_df.pvalue_adjusted < alpha) & np.any(~np.isnan(Y), axis=0)]
+    res_df = res_df.iloc[np.argsort(res_df.pvalue_adjusted).tolist(), :]
     return res_df
 
 #------------------------------------------------------------------------------
@@ -593,6 +599,9 @@ type_dict = {
     'multifurcating':'UMI',
     'tree':'UMI',
 }
+
+
+
 
 def load_data(path, file_name):  
     '''Load h5df data.
