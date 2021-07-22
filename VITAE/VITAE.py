@@ -290,6 +290,7 @@ class VITAE():
         mu = np.zeros((z.shape[1], n_clusters))
         for i,l in enumerate(np.unique(cluster_labels)):
             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+            mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=0)),:]
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
             n_states = int((n_clusters+1)*n_clusters/2)
             d = _comp_dist(z, cluster_labels, mu.T)
