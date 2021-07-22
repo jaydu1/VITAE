@@ -1,4 +1,3 @@
-import os
 import warnings
 from typing import Optional
 
@@ -40,7 +39,7 @@ class Inferer(object):
         ----------
         pc_x : np.array
             \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).        
-        method : string, optional
+        method : string, optional 
             'mean', 'modified_mean', 'map', or 'modified_map'.
         thres : float, optional 
             The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N<thres\), only applied to mean method.
@@ -303,7 +302,7 @@ class Inferer(object):
         return pseudotime
 
 
-    def infer_trajectory(self, init_node: int, labels = None, cutoff: Optional[float] = None, is_plot: bool = True, path: Optional[str] = None):
+    def infer_trajectory(self, init_node: int, cutoff: Optional[float] = None):
         '''Infer the trajectory.        
 
         Parameters
@@ -312,10 +311,7 @@ class Inferer(object):
             The initial node for the inferred trajectory.
         cutoff : string, optional
             The threshold for filtering edges with scores less than cutoff.
-        is_plot : boolean, optional
-            Whether to plot or not.
-        path : string, optional  
-            The path to save figure, or don't save if it is None.
+            
 
         Returns
         ----------
@@ -326,6 +322,7 @@ class Inferer(object):
         pseudotime : np.array
             \([N,]\) The pseudotime based on projected trajectory.      
         '''
+        
         # select edges
         if len(self.edges)==0:
             milestone_net = select_edges = []
@@ -362,73 +359,6 @@ class Inferer(object):
         # compute pseudotime
         pseudotime = self.comp_pseudotime(milestone_net, init_node, w)
         
-        if is_plot:
-            fig, ax = plt.subplots(1,1, figsize=(20, 10))
-                
-            cmap = matplotlib.cm.get_cmap('viridis')
-            colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
-            if np.sum(pseudotime>-1)>0:
-                norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))
-                sc = ax.scatter(*self.embed_z[pseudotime>-1,:].T,
-                    norm=norm,
-                    c=pseudotime[pseudotime>-1],
-                    s=16, alpha=0.5)
-                plt.colorbar(sc, ax=[ax], location='right')
-            else:
-                norm = None
-                
-            if np.sum(pseudotime==-1)>0:
-                ax.scatter(*self.embed_z[pseudotime==-1,:].T,
-                            c='gray', s=16, alpha=0.4)
-            
-            for i in range(len(select_edges)):
-                points = self.embed_z[np.sum(w[:,select_edges[i,:]]>0, axis=-1)==2,:]
-                points = points[points[:,0].argsort()]                
-                try:
-                    x_smooth, y_smooth = _get_smooth_curve(
-                        points, 
-                        self.embed_mu[select_edges[i,:], :]
-                        )
-                except:
-                    x_smooth, y_smooth = self.embed_mu[select_edges[i,:], 0], self.embed_mu[select_edges[i,:], 1]
-                ax.plot(x_smooth, y_smooth, 
-                    '-', 
-                    linewidth= 1 + select_edges_score[0,i],
-                    color="black", 
-                    alpha=0.8, 
-                    path_effects=[pe.Stroke(linewidth=1+select_edges_score[0,i]+1.5, 
-                                            foreground='white'), pe.Normal()],
-                    zorder=1
-                    )
 
-                delta_x = self.embed_mu[select_edges[i,1], 0]-x_smooth[-2]
-                delta_y = self.embed_mu[select_edges[i,1], 1]-y_smooth[-2]
-                length = np.sqrt(delta_x**2 + delta_y**2) * 50              
-                ax.arrow(
-                        self.embed_mu[select_edges[i,1], 0]-delta_x/length, 
-                        self.embed_mu[select_edges[i,1], 1]-delta_y/length, 
-                        delta_x/length,
-                        delta_y/length,
-                        color='black', alpha=1.0,
-                        shape='full', lw=0, length_includes_head=True, head_width=0.02, zorder=2)
-            
-            for i in range(len(self.CLUSTER_CENTER)):
-                ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
-                            edgecolors='white', # linewidths=10,
-                            norm=norm,
-                            s=250, marker='*', label=str(i))
-                ax.text(self.embed_mu[i,0], self.embed_mu[i,1], '%02d'%i, fontsize=16)
-                
-            plt.setp(ax, xticks=[], yticks=[])
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                                box.width, box.height * 0.9])
-            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                fancybox=True, shadow=True, ncol=5)
-            
-            ax.set_title('Trajectory')
-            if path is not None:
-                plt.savefig(path, dpi=300)
-            plt.show()
         return G, w, pseudotime
             
