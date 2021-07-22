@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Optional
 
-from VITAE.utils import Early_Stopping, get_embedding
+from VITAE.utils import Early_Stopping
 
 import numpy as np
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.utils import Progbar
 
@@ -129,12 +128,11 @@ def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, al
     return vae
 
 
-def train(train_dataset, test_dataset, whole_dataset, vae,
+def train(train_dataset, test_dataset, vae,
         learning_rate: float, 
         L: int, alpha: float, beta: float,
         num_epoch: int, num_step_per_epoch: int, 
-        early_stopping_patience: int, early_stopping_tolerance: float, early_stopping_warmup: int,         
-        labels, plot_every_num_epoch: Optional[int] = None, dimred: str = 'umap', **kwargs):
+        early_stopping_patience: int, early_stopping_tolerance: float, early_stopping_warmup: int, **kwargs):
     '''Training.
 
     Parameters
@@ -143,8 +141,6 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
         The Tensorflow Dataset object.
     test_dataset : tf.Dataset
         The Tensorflow Dataset object.
-    whole_dataset : tf.Dataset
-        The Tensorflow Dataset object for visualizations.
     vae : VariationalAutoEncoder
         The model.
     learning_rate : float
@@ -165,12 +161,6 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
         The minimum change of loss to be considered as an improvement.
     early_stopping_warmup : int
         The number of warmup epoches.
-    labels: np.array
-        The labels for visualizations of the intermediate results.
-    plot_every_num_epoch : int, optional 
-        Plot the intermediate result every few epoches, or not plotting if it is None.            
-    dimred : str, optional 
-        The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
     **kwargs : 
         Extra key-value arguments for dimension reduction algorithms.    
 
@@ -249,29 +239,6 @@ def train(train_dataset, test_dataset, whole_dataset, vae,
         [l.reset_states() for l in loss_train]
         [l.reset_states() for l in loss_test]
 
-
-        if plot_every_num_epoch is not None and (epoch%plot_every_num_epoch==0 or epoch==num_epoch-1):
-            _, mu, _, w_tilde, _, z_mean = vae.inference(whole_dataset, 1)
-            c = np.argmax(w_tilde, axis=-1)
-            
-            concate_z = np.concatenate((z_mean, mu.T), axis=0)
-            u = get_embedding(concate_z, dimred, **kwargs)
-            uz = u[:len(z_mean),:]
-            um = u[len(z_mean):,:]            
-            
-            if labels is None:
-                fig, ax1 = plt.subplots(1, figsize=(7, 6))
-            else:
-                fig, (ax1,ax2) = plt.subplots(1,2, figsize=(16, 6))
-            
-                ax2.scatter(uz[:,0], uz[:,1], c = labels, s = 2)
-                ax2.set_title('Ground Truth')
-            
-            ax1.scatter(uz[:,0], uz[:,1], c = c, s = 2, alpha = 0.5)
-            ax1.set_title('Prediction')
-            cluster_center = [(len(um)+(1-i)/2)*i for i in range(len(um))]
-            ax1.scatter(um[:,0], um[:,1], c=cluster_center, s=100, marker='s')
-            plt.show()
 
     print('Training Done!')
 
