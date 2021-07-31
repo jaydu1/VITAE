@@ -23,7 +23,13 @@ class VITAE():
     Variational Inference for Trajectory by AutoEncoder.
     """
     def __init__(self):
-        pass
+        self.dict_method_scname = {
+            'PCA' : 'X_pca',
+            'UMAP' : 'X_umap',
+            'TSNE' : 'X_tsne',
+            'diffmap' : 'X_diffmap',
+            'draw_graph' : 'X_draw_graph_fa'
+        }
     
     def initialize(self, adata: sc.AnnData, 
                covariates = None,
@@ -172,13 +178,17 @@ class VITAE():
             early_stopping_tolerance,
             0)
         
-        self.z = self.get_latent_z()        
-        self._adata_z = sc.AnnData(self.z)
-        sc.pp.neighbors(self._adata_z)
+        self.update_z()
 
         if path_to_weights is not None:
             self.save_model(path_to_weights)
             
+
+    def update_z(self):
+        self.z = self.get_latent_z()        
+        self._adata_z = sc.AnnData(self.z)
+        sc.pp.neighbors(self._adata_z)
+
             
     def get_latent_z(self):
         ''' get the current latent space z
@@ -240,17 +250,17 @@ class VITAE():
         self._adata.obsm = self._adata_z.obsm
     
         if method == 'PCA':
-            sc.pl.pca(self._adata, color = color, **kwargs)
+            axes = sc.pl.pca(self._adata, color = color, **kwargs)
         elif method == 'UMAP':            
-            sc.pl.umap(self._adata, color = color, **kwargs)
+            axes = sc.pl.umap(self._adata, color = color, **kwargs)
         elif method == 'TSNE':
-            sc.pl.tsne(self._adata, color = color, **kwargs)
+            axes = sc.pl.tsne(self._adata, color = color, **kwargs)
         elif method == 'diffmap':
-            sc.pl.diffmap(self._adata, color = color, **kwargs)
+            axes = sc.pl.diffmap(self._adata, color = color, **kwargs)
         elif method == 'draw_graph':
-            sc.pl.draw_graph(self._adata, color = color, **kwargs)
+            axes = sc.pl.draw_graph(self._adata, color = color, **kwargs)
             
-        
+        return axes
 
 
 
@@ -287,11 +297,13 @@ class VITAE():
         n_clusters = np.unique(self.adata.obs[cluster_label]).shape[0]
         cluster_labels = self.adata.obs[cluster_label].to_numpy()        
         uni_cluster_labels = list(self.adata.obs[cluster_label].cat.categories)
-        z = self.get_latent_z()
+        if not hasattr(self, 'z'):
+            self.update_z()        
+        z = self.z
         mu = np.zeros((z.shape[1], n_clusters))
         for i,l in enumerate(uni_cluster_labels):
             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
-            mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=0)),:]
+            mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=1)),:]
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
             n_states = int((n_clusters+1)*n_clusters/2)
             d = _comp_dist(z, cluster_labels, mu.T)
@@ -313,7 +325,7 @@ class VITAE():
             learning_rate: float = 1e-3, batch_size: int = 256, 
             L: int = 1, alpha: float = 0.10, beta: float = 2, 
             num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
-            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 10,
+            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 0,
             path_to_weights: Optional[str] = None, **kwargs):
         '''Train the model.
 
@@ -389,9 +401,7 @@ class VITAE():
             **kwargs            
             )
         
-        self.z = self.get_latent_z()        
-        self._adata_z = sc.AnnData(self.z, obs = self.adata.obs)
-        sc.pp.neighbors(self._adata_z)
+        self.update_z()
             
         if path_to_weights is not None:
             self.save_model(path_to_weights)
@@ -496,7 +506,7 @@ class VITAE():
         
         
     def infer_trajectory(self, init_node: int, cutoff: Optional[float] = None,
-                         plot_backbone: bool = True):
+                         plot_backbone: bool = True, method: str = 'UMAP', **kwargs):
         '''Infer the trajectory.
 
         Parameters
@@ -535,6 +545,18 @@ class VITAE():
         if plot_backbone:
             edgewidth = [ d['weight'] for (u,v,d) in DG.edges(data=True)]
             nx.draw_spring(DG, width = edgewidth/np.mean(edgewidth), with_labels = True)
+        
+
+        ax = self.visualize_latent(method = method, color='pseudotime', show=False, **kwargs)
+        cluster_labels = self.adata.obs['vitae_new_clustering'].to_numpy()
+        uni_cluster_labels = list(self.adata.obs['vitae_new_clustering'].cat.categories)
+        embed_z = self._adata.obsm[self.dict_method_scname[method]]
+        embed_mu = np.zeros((len(uni_cluster_labels), 2))
+        for i,l in enumerate(uni_cluster_labels):
+            embed_mu[i,:] = np.mean(embed_z[cluster_labels==l], axis=0)
+            embed_mu[i,:] = embed_z[cluster_labels==l][np.argmin(np.mean((embed_z[cluster_labels==l] - embed_mu[i,:])**2, axis=1)),:]
+        ax = self.inferer.plot_trajectory(ax, embed_z, embed_mu)
+        return ax
         
 
 
