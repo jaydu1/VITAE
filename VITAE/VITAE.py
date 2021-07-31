@@ -285,10 +285,11 @@ class VITAE():
             cluster_label = 'vitae_init_clustering'
         
         n_clusters = np.unique(self.adata.obs[cluster_label]).shape[0]
-        cluster_labels = self.adata.obs[cluster_label].to_numpy()
+        cluster_labels = self.adata.obs[cluster_label].to_numpy()        
+        uni_cluster_labels = list(self.adata.obs[cluster_label].cat.categories)
         z = self.get_latent_z()
         mu = np.zeros((z.shape[1], n_clusters))
-        for i,l in enumerate(np.unique(cluster_labels)):
+        for i,l in enumerate(uni_cluster_labels):
             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
             mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=0)),:]
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
@@ -635,7 +636,7 @@ class VITAE():
             self.z[self.labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
         
-        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
+        G, edges = self.inferer.init_inference(self.cell_position_posterior, self.pc_x, thres, method, no_loop)
         G, w, pseudotime = self.inferer.infer_trajectory(begin_node_pred, self.label_names, cutoff=cutoff, path=path, is_plot=False)
         
         # 1. Topology
