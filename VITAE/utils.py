@@ -439,20 +439,25 @@ def _polyfit_with_fixed_points(n, x, y, xf, yf):
     return params[:n + 1]
 
 
-def _get_smooth_curve(xy, xy_fixed):
+def _get_smooth_curve(xy, xy_fixed, y_range):
     xy = np.r_[xy, xy_fixed]
     _, idx = np.unique(xy[:,0], return_index=True)
     xy = xy[idx,:]
-    
-    params = _polyfit_with_fixed_points(
-        3, 
-        xy[:,0], xy[:,1], 
-        xy_fixed[:,0], xy_fixed[:,1]
-        )
-    poly = np.polynomial.Polynomial(params)
-    xx = np.linspace(xy_fixed[0,0], xy_fixed[-1,0], 100)
-
-    return xx, poly(xx)
+    order = 3
+    while order>0:
+        params = _polyfit_with_fixed_points(
+            order, 
+            xy[:,0], xy[:,1], 
+            xy_fixed[:,0], xy_fixed[:,1]
+            )
+        poly = np.polynomial.Polynomial(params)
+        xx = np.linspace(xy_fixed[0,0], xy_fixed[-1,0], 100)
+        yy = poly(xx)
+        if np.max(yy)>y_range[1] or np.min(yy)<y_range[0] :
+            order -= 1
+        else:
+            break
+    return xx, yy
 
 
 def _pinv_extended(x, rcond=1e-15):
