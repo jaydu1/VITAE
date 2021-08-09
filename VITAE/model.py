@@ -282,7 +282,7 @@ class LatentSpace(Layer):
         self.cdf_layer = cdf_layer()       
         
     def initialize(self, mu, log_pi):
-        '''Initialze the latent space.
+        '''Initialize the latent space.
 
         Parameters
         ----------
