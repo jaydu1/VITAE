@@ -301,7 +301,7 @@ class Inferer(object):
 
         return G, self.w, self.pseudotime
 
-    def plot_trajectory(self, ax, embed_z, embed_mu):
+    def plot_trajectory(self, ax, embed_z, embed_mu, cluster_labels):
         pseudotime = self.pseudotime
         select_edges = self.select_edges
         select_edges_score = self.select_edges_score
@@ -313,13 +313,15 @@ class Inferer(object):
             norm = None
         
         value_range = np.maximum(np.diff(ax.get_xlim())[0], np.diff(ax.get_ylim())[0])
+        y_range = np.min(embed_z[:,1]), np.max(embed_z[:,1], axis=0)
         for i in range(len(select_edges)):
             points = embed_z[np.sum(self.w[:,select_edges[i,:]]>0, axis=-1)==2,:]
             points = points[points[:,0].argsort()]                
             try:
                 x_smooth, y_smooth = _get_smooth_curve(
                     points, 
-                    embed_mu[select_edges[i,:], :]
+                    embed_mu[select_edges[i,:], :],
+                    y_range
                     )
             except:
                 x_smooth, y_smooth = embed_mu[select_edges[i,:], 0], embed_mu[select_edges[i,:], 1]
@@ -350,7 +352,7 @@ class Inferer(object):
             ax.scatter(*embed_mu[i:i+1,:].T, c=[colors[i]],
                         edgecolors='white', # linewidths=10,
                         norm=norm,
-                        s=250, marker='*', label=str(i))
+                        s=250, marker='*', label=cluster_labels[i])
             ax.text(embed_mu[i,0], embed_mu[i,1], '%02d'%i, fontsize=16)
             
         plt.setp(ax, xticks=[], yticks=[])
