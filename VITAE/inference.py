@@ -156,71 +156,7 @@ class Inferer(object):
         self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
 
         return self.G, self.edges
-    
-    def init_embedding(self, z, mu, dimred: str ='umap', **kwargs):
-        '''Initialze embeddings for visualizations.
-
-        Parameters
-        ----------
-        z : np.array
-            \([N,d]\) The latent means.
-        mu : np.array
-            \([d,k]\) The value of initial \(\\mu\).
-        dimred : str, optional 
-            The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None. 
-        **kwargs : 
-            Extra key-value arguments for dimension reduction algorithms.   
-
-        Retruns
-        ----------
-        embed_z : np.array
-            \([N, 2]\) latent variables after dimension reduction.
-        '''
-        self.mu = mu.copy()
-        concate_z = np.concatenate((z, mu.T), axis=0)
-        embed = get_embedding(concate_z, dimred, **kwargs)
-        embed = (embed - np.min(embed, axis=0, keepdims=True)) / (np.max(embed, axis=0, keepdims=True) - np.min(embed, axis=0, keepdims=True))
-        
-        self.embed_z = embed[:-self.NUM_CLUSTER,:]
-        self.embed_mu = embed[-self.NUM_CLUSTER:,:]
-        return self.embed_z.copy()    
-        
-    def plot_clusters(self, labels, plot_labels: bool=False, path: Optional[str] = None):
-        '''Plot the embeddings with labels.
-
-        Parameters
-        ----------
-        labels : np.array     
-            \([N, ]\) The clustered labels.
-        plot_labels : boolean, optional
-            Whether to plot text of labels or not.
-        path : str, optional
-            The path to save the figure.
-        '''  
-        if labels is None:
-            print('No clustering labels available!')
-        else:
-            n_labels = len(np.unique(labels))
-            colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
-            
-            fig, ax = plt.subplots(1,1, figsize=(20, 10))
-            for i,x in enumerate(np.unique(labels)):
-                ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                    s=16, alpha=0.5, label=str(x))
-                if plot_labels:
-                    ax.text(np.mean(self.embed_z[labels==x,0]), 
-                            np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                             box.width, box.height * 0.9])
-            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-                      fancybox=True, shadow=True, markerscale=3, ncol=5)
-            ax.set_title('Cluster Membership')
-            plt.setp(ax, xticks=[], yticks=[])
-            if path is not None:
-                plt.savefig(path, dpi=300)
-            plt.show()
-        return None
+     
         
     def build_milestone_net(self, subgraph, init_node: int):
         '''Build the milestone network.
@@ -288,7 +224,8 @@ class Inferer(object):
         pseudotime : np.array
             \([N, k]\) The estimated pseudtotime.
         '''
-        pseudotime = - np.ones(w.shape[0])
+        pseudotime = np.empty(w.shape[0])
+        pseudotime.fill(np.nan)
         pseudotime[w[:,init_node]==1] = 0
         
         if len(milestone_net)>0:
@@ -325,7 +262,7 @@ class Inferer(object):
         
         # select edges
         if len(self.edges)==0:
-            milestone_net = select_edges = []
+            milestone_net = select_edges = select_edges_score = []
             G = nx.Graph()
             G.add_nodes_from(self.G.nodes)
         else:
@@ -351,14 +288,80 @@ class Inferer(object):
                 else:
                     select_edges_score = (select_edges_score - select_edges_score.min())/(select_edges_score.max() - select_edges_score.min())*3                    
             else:
-                milestone_net = select_edges = []                    
+                milestone_net = select_edges = select_edges_score = []                    
         
+        self.select_edges = select_edges
+        self.select_edges_score = select_edges_score
+
         # modify w_tilde
-        w = self.modify_wtilde(self.w_tilde, select_edges)
+        self.w = self.modify_wtilde(self.w_tilde, self.select_edges)
         
         # compute pseudotime
-        pseudotime = self.comp_pseudotime(milestone_net, init_node, w)
-        
+        self.pseudotime = self.comp_pseudotime(milestone_net, init_node, self.w)  
 
-        return G, w, pseudotime
+        return G, self.w, self.pseudotime
+
+    def plot_trajectory(self, ax, embed_z, embed_mu, cluster_labels):
+        pseudotime = self.pseudotime
+        select_edges = self.select_edges
+        select_edges_score = self.select_edges_score
             
+        colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
+        if np.sum(pseudotime>-1)>0:
+            norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime>-1]), vmax=np.max(pseudotime))
+        else:
+            norm = None
+        
+        value_range = np.maximum(np.diff(ax.get_xlim())[0], np.diff(ax.get_ylim())[0])
+        y_range = np.min(embed_z[:,1]), np.max(embed_z[:,1], axis=0)
+        for i in range(len(select_edges)):
+            points = embed_z[np.sum(self.w[:,select_edges[i,:]]>0, axis=-1)==2,:]
+            points = points[points[:,0].argsort()]                
+            try:
+                x_smooth, y_smooth = _get_smooth_curve(
+                    points, 
+                    embed_mu[select_edges[i,:], :],
+                    y_range
+                    )
+            except:
+                x_smooth, y_smooth = embed_mu[select_edges[i,:], 0], embed_mu[select_edges[i,:], 1]
+            ax.plot(x_smooth, y_smooth, 
+                '-', 
+                linewidth= 1 + select_edges_score[0,i],
+                color="black", 
+                alpha=0.8, 
+                path_effects=[pe.Stroke(linewidth=1+select_edges_score[0,i]+1.5, 
+                                        foreground='white'), pe.Normal()],
+                zorder=1
+                )
+
+            delta_x = embed_mu[select_edges[i,1], 0]-x_smooth[-2]
+            delta_y = embed_mu[select_edges[i,1], 1]-y_smooth[-2]
+            length = np.sqrt(delta_x**2 + delta_y**2) / 50 * value_range
+            ax.arrow(
+                    embed_mu[select_edges[i,1], 0]-delta_x/length, 
+                    embed_mu[select_edges[i,1], 1]-delta_y/length, 
+                    delta_x/length,
+                    delta_y/length,
+                    color='black', alpha=1.0,
+                    shape='full', lw=0, length_includes_head=True, 
+                    head_width=np.maximum(0.01*(1 + select_edges_score[0,i]), 0.03) * value_range, 
+                    zorder=2)
+        
+        for i in range(len(self.CLUSTER_CENTER)):
+            ax.scatter(*embed_mu[i:i+1,:].T, c=[colors[i]],
+                        edgecolors='white', # linewidths=10,
+                        norm=norm,
+                        s=250, marker='*', label=cluster_labels[i])
+            ax.text(embed_mu[i,0], embed_mu[i,1], '%02d'%i, fontsize=16)
+            
+        plt.setp(ax, xticks=[], yticks=[])
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                            box.width, box.height * 0.9])
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+            fancybox=True, shadow=True, ncol=5)
+        
+        ax.set_title('Trajectory')
+        
+        return ax

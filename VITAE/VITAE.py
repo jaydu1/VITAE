@@ -1,3 +1,4 @@
+import enum
 import warnings
 from typing import Optional
 
@@ -11,6 +12,7 @@ import tensorflow as tf
 
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.model_selection import train_test_split
+from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -23,7 +25,13 @@ class VITAE():
     Variational Inference for Trajectory by AutoEncoder.
     """
     def __init__(self):
-        pass
+        self.dict_method_scname = {
+            'PCA' : 'X_pca',
+            'UMAP' : 'X_umap',
+            'TSNE' : 'X_tsne',
+            'diffmap' : 'X_diffmap',
+            'draw_graph' : 'X_draw_graph_fa'
+        }
     
     def initialize(self, adata: sc.AnnData, 
                covariates = None,
@@ -172,13 +180,17 @@ class VITAE():
             early_stopping_tolerance,
             0)
         
-        self.z = self.get_latent_z()        
-        self._adata_z = sc.AnnData(self.z)
-        sc.pp.neighbors(self._adata_z)
+        self.update_z()
 
         if path_to_weights is not None:
             self.save_model(path_to_weights)
             
+
+    def update_z(self):
+        self.z = self.get_latent_z()        
+        self._adata_z = sc.AnnData(self.z)
+        sc.pp.neighbors(self._adata_z)
+
             
     def get_latent_z(self):
         ''' get the current latent space z
@@ -240,17 +252,17 @@ class VITAE():
         self._adata.obsm = self._adata_z.obsm
     
         if method == 'PCA':
-            sc.pl.pca(self._adata, color = color, **kwargs)
+            axes = sc.pl.pca(self._adata, color = color, **kwargs)
         elif method == 'UMAP':            
-            sc.pl.umap(self._adata, color = color, **kwargs)
+            axes = sc.pl.umap(self._adata, color = color, **kwargs)
         elif method == 'TSNE':
-            sc.pl.tsne(self._adata, color = color, **kwargs)
+            axes = sc.pl.tsne(self._adata, color = color, **kwargs)
         elif method == 'diffmap':
-            sc.pl.diffmap(self._adata, color = color, **kwargs)
+            axes = sc.pl.diffmap(self._adata, color = color, **kwargs)
         elif method == 'draw_graph':
-            sc.pl.draw_graph(self._adata, color = color, **kwargs)
+            axes = sc.pl.draw_graph(self._adata, color = color, **kwargs)
             
-        
+        return axes
 
 
 
@@ -285,12 +297,15 @@ class VITAE():
             cluster_label = 'vitae_init_clustering'
         
         n_clusters = np.unique(self.adata.obs[cluster_label]).shape[0]
-        cluster_labels = self.adata.obs[cluster_label]
-        z = self.get_latent_z()
+        cluster_labels = self.adata.obs[cluster_label].to_numpy()        
+        uni_cluster_labels = list(self.adata.obs[cluster_label].cat.categories)
+        if not hasattr(self, 'z'):
+            self.update_z()        
+        z = self.z
         mu = np.zeros((z.shape[1], n_clusters))
-        for i,l in enumerate(cluster_labels.cat.categories):
+        for i,l in enumerate(uni_cluster_labels):
             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
- #           mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=1)),:]
+   #         mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=1)),:]
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
             n_states = int((n_clusters+1)*n_clusters/2)
             d = _comp_dist(z, cluster_labels, mu.T)
@@ -304,15 +319,64 @@ class VITAE():
 
         self.n_clusters = n_clusters
         self.init_labels = cluster_labels
+        # Not sure if storing the this will be useful
+        # self.init_labels_name = cluster_label
+        self.labels_map = pd.DataFrame.from_dict(
+            {i:label for i,label in enumerate(uni_cluster_labels)}, 
+            orient='index', columns=['label_names'], dtype=str
+            )
         self.vae.init_latent_space(n_clusters, mu, log_pi)
-        self.inferer = Inferer(self.n_clusters)            
+        self.inferer = Inferer(self.n_clusters)
+
+
+    def update_latent_space(self, dist: float=0.5):
+        pi = tf.nn.softmax(self.vae.latent_space.pi).numpy()
+        mu = self.vae.latent_space.mu.numpy()    
+        clustering = AgglomerativeClustering(
+            n_clusters=None,
+            distance_threshold=dist,
+            linkage='complete'
+            ).fit(mu.T/np.sqrt(mu.shape[0]))
+        n_clusters = clustering.n_clusters_   
+
+        if n_clusters<self.n_clusters:      
+            print("Aggregate clusters ...")
+            mu_new = np.empty((self.dim_latent, n_clusters))
+            C = np.zeros((self.n_clusters, self.n_clusters))
+            C[np.triu_indices(self.n_clusters, 0)] = pi
+            C = np.triu(C, 1) + C.T
+            C_new = np.zeros((n_clusters, n_clusters))
+            
+            labels_map_new = {}
+            for i in range(n_clusters):                       
+                # update label map: int->str
+                labels_map_new[i] = self.labels_map.loc[clustering.labels_==i, 'label_names'].str.cat(sep=',')
+                if np.sum(clustering.labels_==i)>1:
+                    print('Merge %s'%labels_map_new[i])
+                # mean of the aggregated cluster means
+                mu_new[:, i] = np.mean(mu[:,clustering.labels_==i], axis=-1)
+                # sum of the aggregated pi's
+                C_new[i, i] = np.sum(np.triu(C[clustering.labels_==i,:][:,clustering.labels_==i]))
+                for j in range(i+1, n_clusters):
+                    C_new[i, j] = np.sum(C[clustering.labels_== i, :][:, clustering.labels_==j])
+            C_new = np.triu(C_new,1) + C_new.T
+
+            pi_new = C_new[np.triu_indices(n_clusters)]
+            log_pi_new = np.log(pi_new, out=np.ones_like(pi_new)*(-np.inf), where=(pi_new!=0)).reshape((1,-1))
+            self.n_clusters = n_clusters
+            self.labels_map = pd.DataFrame.from_dict(
+                labels_map_new, orient='index', columns=['label_names'], dtype=str
+            )
+            self.vae.init_latent_space(self.n_clusters, mu_new, log_pi_new)
+            self.inferer = Inferer(self.n_clusters)  
+
 
 
     def train(self, stratify = False, test_size = 0.1, random_state: int = 0,
             learning_rate: float = 1e-3, batch_size: int = 256, 
             L: int = 1, alpha: float = 0.10, beta: float = 2, 
             num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
-            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 10,
+            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 0,
             path_to_weights: Optional[str] = None, **kwargs):
         '''Train the model.
 
@@ -388,9 +452,7 @@ class VITAE():
             **kwargs            
             )
         
-        self.z = self.get_latent_z()        
-        self._adata_z = sc.AnnData(self.z, obs = self.adata.obs)
-        sc.pp.neighbors(self._adata_z)
+        self.update_z()
             
         if path_to_weights is not None:
             self.save_model(path_to_weights)
@@ -495,7 +557,7 @@ class VITAE():
         
         
     def infer_trajectory(self, init_node: int, cutoff: Optional[float] = None,
-                         plot_backbone: bool = True):
+                         plot_backbone: bool = True, method: str = 'UMAP', **kwargs):
         '''Infer the trajectory.
 
         Parameters
@@ -519,8 +581,8 @@ class VITAE():
         self.adata.obs['pseudotime'] = self.pseudotime
         self.adata.obs['projection_uncertainty'] = self.uncertainty
         print("Cell psedutime and projection uncertainties stored as 'pseudotime' and 'projection_uncertainty' in self.adata.obs")
-        
-        self.adata.obs['vitae_new_clustering'] = np.argmax(self.cell_position_projected, 1)
+                
+        self.adata.obs['vitae_new_clustering'] = self.labels_map.iloc[np.argmax(self.cell_position_projected, 1)]['label_names'].to_numpy()
         self.adata.obs['vitae_new_clustering'] = self.adata.obs['vitae_new_clustering'].astype('category')
         print("'vitae_new_clustering' updated based on the projected cell positions.")
         
@@ -535,6 +597,17 @@ class VITAE():
             edgewidth = [ d['weight'] for (u,v,d) in DG.edges(data=True)]
             nx.draw_spring(DG, width = edgewidth/np.mean(edgewidth), with_labels = True)
         
+
+        ax = self.visualize_latent(method = method, color='pseudotime', show=False, **kwargs)
+        cluster_labels = self.adata.obs['vitae_new_clustering'].to_numpy()
+        uni_cluster_labels = list(self.adata.obs['vitae_new_clustering'].cat.categories)
+        embed_z = self._adata.obsm[self.dict_method_scname[method]]
+        embed_mu = np.zeros((len(uni_cluster_labels), 2))
+        for i,l in enumerate(uni_cluster_labels):
+            embed_mu[i,:] = np.mean(embed_z[cluster_labels==l], axis=0)
+            embed_mu[i,:] = embed_z[cluster_labels==l][np.argmin(np.mean((embed_z[cluster_labels==l] - embed_mu[i,:])**2, axis=1)),:]
+        ax = self.inferer.plot_trajectory(ax, embed_z, embed_mu, uni_cluster_labels)
+        return ax
 
 
 
@@ -635,7 +708,7 @@ class VITAE():
             self.z[self.labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
         
-        G, edges = self.inferer.init_inference(self.w_tilde, self.pc_x, thres, method, no_loop)
+        G, edges = self.inferer.init_inference(self.cell_position_posterior, self.pc_x, thres, method, no_loop)
         G, w, pseudotime = self.inferer.infer_trajectory(begin_node_pred, self.label_names, cutoff=cutoff, path=path, is_plot=False)
         
         # 1. Topology

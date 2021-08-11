@@ -282,7 +282,7 @@ class LatentSpace(Layer):
         self.cdf_layer = cdf_layer()       
         
     def initialize(self, mu, log_pi):
-        '''Initialze the latent space.
+        '''Initialize the latent space.
 
         Parameters
         ----------
@@ -389,10 +389,12 @@ class LatentSpace(Layer):
                     tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(beta_zc**2, axis=2), -1), -np.inf), 
                     w_tilde)
         w_tilde = tf.exp(tf.reduce_logsumexp(w_tilde, 2) - log_p_z_L)
-        tf.debugging.assert_greater_equal(
-            tf.reduce_sum(w_tilde, -1), tf.ones([batch_size, L], dtype=tf.keras.backend.floatx())*0.99, 
-            message='Wrong w_tilde', summarize=None, name=None
-        )
+
+        # tf.debugging.assert_greater_equal(
+        #     tf.reduce_sum(w_tilde, -1), tf.ones([batch_size, L], dtype=tf.keras.backend.floatx())*0.99, 
+        #     message='Wrong w_tilde', summarize=None, name=None
+        # )
+        
         # var_w_tilde [batch_size, L, n_clusters]
         var_w_tilde = log_eta0 + tf.math.log(
             tf.clip_by_value(
