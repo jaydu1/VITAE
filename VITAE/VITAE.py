@@ -285,12 +285,12 @@ class VITAE():
             cluster_label = 'vitae_init_clustering'
         
         n_clusters = np.unique(self.adata.obs[cluster_label]).shape[0]
-        cluster_labels = self.adata.obs[cluster_label].to_numpy()
+        cluster_labels = self.adata.obs[cluster_label]
         z = self.get_latent_z()
         mu = np.zeros((z.shape[1], n_clusters))
-        for i,l in enumerate(np.unique(cluster_labels)):
+        for i,l in enumerate(cluster_labels.cat.categories):
             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
-            mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=0)),:]
+ #           mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=1)),:]
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
             n_states = int((n_clusters+1)*n_clusters/2)
             d = _comp_dist(z, cluster_labels, mu.T)
@@ -421,7 +421,7 @@ class VITAE():
         return None
         
 
-    def select_root(self, days, method: str = 'sum'):
+    def select_root(self, days, method: str = 'proportion'):
         '''Select the root vertex based on days information.      
 
         Parameters
@@ -431,7 +431,7 @@ class VITAE():
             The dtype should be 'int' or 'float'.
         method : str, optional
             'sum' or 'mean'. 
-            For 'sum', the root is the one with maximal number of cells from the earliest day.
+            For 'proportion', the root is the one with maximal proportion of cells from the earliest day.
             For 'mean', the root is the one with earliest mean time among cells associated with it.
 
         Returns
@@ -443,16 +443,16 @@ class VITAE():
             raise ValueError("The length of day information ({}) is not "
                 "consistent with the number of selected cells ({})!".format(
                     len(days), self.X_input.shape[0]))
-        if not hasattr(self.inferer, 'embed_z'):
+        if not hasattr(self, 'cell_position_posterior'):
             raise ValueError("Need to call 'init_inference' first!")
 
         estimated_cell_types = np.argmax(self.cell_position_posterior, axis=-1)
-        if method=='sum':
-            root = np.argmax([np.sum(days[estimated_cell_types==i]==np.min(days)) for i in range(self.cell_position_posterior.shape[-1])])
+        if method=='proportion':
+            root = np.argmax([np.mean(days[estimated_cell_types==i]==np.min(days)) for i in range(self.cell_position_posterior.shape[-1])])
         elif method=='mean':
             root = np.argmin([np.mean(days[estimated_cell_types==i]) for i in range(self.cell_position_posterior.shape[-1])])
         else:
-            raise ValueError("Method can be either 'sum' or 'mean'!")
+            raise ValueError("Method can be either 'proportion' or 'mean'!")
         return root
 
         
