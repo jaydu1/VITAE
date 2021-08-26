@@ -1,6 +1,6 @@
 __all__ = ['VITAE']
 
-from VITAE.VITAE import VITAE, clustering, load_data
+from VITAE.VITAE import VITAE#, clustering, load_data
 
 __author__ = "Jin-Hong Du, Ming Gao, and Jingshu Wang"
 __copyright__ = "Copyright 2020, The Trajectory Inference Project"

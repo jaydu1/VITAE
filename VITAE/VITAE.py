@@ -120,9 +120,9 @@ class VITAE():
         
 
     def pre_train(self, test_size = 0.1, random_state: int = 0,
-            learning_rate: float = 1e-3, batch_size: int = 256, L: int = 1, alpha: float = 0.10,
+            learning_rate: float = 1e-2, batch_size: int = 256, L: int = 1, alpha: float = 0.10,
             num_epoch: int = 300, num_step_per_epoch: Optional[int] = None,
-            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0,
+            early_stopping_patience: int = 20, early_stopping_tolerance: float = 1.0,
             path_to_weights: Optional[str] = None):
         '''Pretrain the model with specified learning rate.
 
@@ -248,7 +248,7 @@ class VITAE():
             
   
         self._adata.obsp = self._adata_z.obsp
-        self._adata.uns = self._adata_z.uns
+#        self._adata.uns = self._adata_z.uns
         self._adata.obsm = self._adata_z.obsm
     
         if method == 'PCA':
