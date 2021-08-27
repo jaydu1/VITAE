@@ -200,7 +200,7 @@ class VITAE():
         z : np.array
             \([N,d]\) The latent means.
         ''' 
-        c = None if self.c_score is None else self.c_score[self.selected_cell_subset_id,:]
+        c = None if self.c_score is None else self.c_score
         return self.vae.get_z(self.X_input, c)
             
     
