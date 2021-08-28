@@ -1,11 +1,10 @@
-import enum
 import warnings
 from typing import Optional
 
 import VITAE.model as model 
 import VITAE.train as train 
 from VITAE.inference import Inferer
-from VITAE.utils import load_data, clustering, get_igraph, leidenalg_igraph, \
+from VITAE.utils import get_igraph, leidenalg_igraph, \
    DE_test, _comp_dist
 from VITAE.metric import topology, get_GRI
 import tensorflow as tf
@@ -267,7 +266,7 @@ class VITAE():
 
 
     def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
-                          ratio_prune=0.0):
+                          ratio_prune= None, dist_thres = 0.5):
         '''Initialize the latent space.
 
         Parameters
@@ -290,15 +289,16 @@ class VITAE():
         if cluster_label is None:
             print("Perform leiden clustering on the latent space z ...")
             g = get_igraph(self.z)
-            labels = leidenalg_igraph(g, res = res)
-            self.adata.obs['vitae_init_clustering'] = labels
-            self.adata.obs['vitae_init_clustering'] = self.adata.obs['vitae_init_clustering'].astype('category')
-            print("Clustering labels saved as 'vitae_init_clustering' in self.adata.obs.")
-            cluster_label = 'vitae_init_clustering'
-        
-        n_clusters = np.unique(self.adata.obs[cluster_label]).shape[0]
-        cluster_labels = self.adata.obs[cluster_label].to_numpy()        
-        uni_cluster_labels = list(self.adata.obs[cluster_label].cat.categories)
+            cluster_labels = leidenalg_igraph(g, res = res)
+        else:
+            cluster_labels = self.adata.obs[cluster_label].to_numpy()       
+            
+        uni_cluster_labels = np.unique(cluster_labels)
+        n_clusters = np.unique(uni_cluster_labels).shape[0]
+#        labels_map = pd.DataFrame.from_dict(
+#            {i:label for i,label in enumerate(uni_cluster_labels)}, 
+#            orient='index', columns=['label_names'], dtype=str
+#            )
         if not hasattr(self, 'z'):
             self.update_z()        
         z = self.z
@@ -306,6 +306,31 @@ class VITAE():
         for i,l in enumerate(uni_cluster_labels):
             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
    #         mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=1)),:]
+       
+   ### update mu if some mu are too close
+        clustering = AgglomerativeClustering(
+            n_clusters=None,
+            distance_threshold=dist_thres,
+            linkage='complete'
+            ).fit(mu.T/np.sqrt(mu.shape[0]))
+        n_clusters_new = clustering.n_clusters_
+        if n_clusters_new < n_clusters:
+            print("Merge clusters for cluster centers that are too close ...")
+            n_clusters = n_clusters_new
+            for i in range(n_clusters):    
+                temp = uni_cluster_labels[clustering.labels_ == i]
+                idx = np.isin(cluster_labels, temp)
+                cluster_labels[idx] = ','.join(temp)
+            uni_cluster_labels = np.unique(cluster_labels)
+            mu = np.zeros((z.shape[1], n_clusters))
+            for i,l in enumerate(uni_cluster_labels):
+                mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+            
+        self.adata.obs['vitae_init_clustering'] = cluster_labels
+        self.adata.obs['vitae_init_clustering'] = self.adata.obs['vitae_init_clustering'].astype('category')
+        print("Initial clustering labels saved as 'vitae_init_clustering' in self.adata.obs.")
+
+   
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
             n_states = int((n_clusters+1)*n_clusters/2)
             d = _comp_dist(z, cluster_labels, mu.T)
@@ -315,16 +340,22 @@ class VITAE():
             C = C.astype(int)
 
             log_pi = np.zeros((1,n_states))
-            log_pi[0, C[np.triu(d)>np.quantile(d[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
+            if ratio_prune is not None:
+                log_pi[0, C[np.triu(d)>np.quantile(d[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
+            else:
+                log_pi[0, C[np.triu(d)> np.quantile(d[np.triu_indices(n_clusters, 1)], 3/n_clusters) * 3]] = - np.inf
 
         self.n_clusters = n_clusters
         self.init_labels = cluster_labels
         # Not sure if storing the this will be useful
         # self.init_labels_name = cluster_label
-        self.labels_map = pd.DataFrame.from_dict(
+        
+        labels_map = pd.DataFrame.from_dict(
             {i:label for i,label in enumerate(uni_cluster_labels)}, 
             orient='index', columns=['label_names'], dtype=str
             )
+        
+        self.labels_map = labels_map
         self.vae.init_latent_space(n_clusters, mu, log_pi)
         self.inferer = Inferer(self.n_clusters)
 
