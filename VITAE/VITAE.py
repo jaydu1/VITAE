@@ -15,6 +15,7 @@ from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 import pandas as pd
 import networkx as nx
+import matplotlib.pyplot as plt
 from scipy import stats
 import scanpy as sc
 
@@ -121,7 +122,7 @@ class VITAE():
     def pre_train(self, test_size = 0.1, random_state: int = 0,
             learning_rate: float = 1e-2, batch_size: int = 256, L: int = 1, alpha: float = 0.10,
             num_epoch: int = 300, num_step_per_epoch: Optional[int] = None,
-            early_stopping_patience: int = 20, early_stopping_tolerance: float = 1.0,
+            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1.0,
             path_to_weights: Optional[str] = None):
         '''Pretrain the model with specified learning rate.
 
@@ -404,10 +405,10 @@ class VITAE():
 
 
     def train(self, stratify = False, test_size = 0.1, random_state: int = 0,
-            learning_rate: float = 1e-3, batch_size: int = 256, 
+            learning_rate: float = 1e-2, batch_size: int = 256, 
             L: int = 1, alpha: float = 0.10, beta: float = 2, 
             num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
-            early_stopping_patience: int = 5, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 0,
+            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 0,
             path_to_weights: Optional[str] = None, **kwargs):
         '''Train the model.
 
@@ -583,6 +584,7 @@ class VITAE():
             G = nx.from_numpy_array(graph)
         if plot_backbone:
             edgewidth = [ d['weight'] for (u,v,d) in G.edges(data=True)]
+            plt.figure()
             nx.draw_spring(G, width = edgewidth/np.mean(edgewidth), with_labels = True)
         return G
         
