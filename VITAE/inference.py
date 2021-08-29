@@ -73,6 +73,12 @@ class Inferer(object):
             for i in range(self.NUM_CLUSTER-1):
                 for j in range(i+1,self.NUM_CLUSTER):
                     graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((self.w_tilde[:,i]>0.5)|(self.w_tilde[:,j]>0.5))+1e-16)
+        elif method=='raw_map':
+            c = np.argmax(pc_x, axis=-1)
+            for i in range(self.NUM_CLUSTER-1):
+                for j in range(i+1,self.NUM_CLUSTER):
+                    if np.sum(c==self.C[i,j])>0:
+                        graph[i,j] = np.sum(c==self.C[i,j])/np.sum(np.isin(c, np.diagonal(self.C)) == False)
         else:
             raise ValueError("Invalid method, must be one of 'mean', 'modified_mean', 'map', and 'modified_map'.")
                     
