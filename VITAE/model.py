@@ -69,8 +69,9 @@ class Sampling(Layer):
         z : tf.Tensor
             \([B, L, d]\) The sampled \(z\).
         '''   
-        seed = tfp.util.SeedStream(self.seed, salt="random_normal")
-        epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=seed(), dtype=tf.keras.backend.floatx())
+   #     seed = tfp.util.SeedStream(self.seed, salt="random_normal")
+   #     epsilon = tf.random.normal(shape = tf.shape(z_mean), seed=seed(), dtype=tf.keras.backend.floatx())
+        epsilon = tf.random.normal(shape = tf.shape(z_mean), dtype=tf.keras.backend.floatx())
         z = z_mean + tf.exp(0.5 * z_log_var) * epsilon
         z = tf.clip_by_value(z, -1e6, 1e6)
         return z
@@ -597,7 +598,10 @@ class VariationalAutoEncoder(tf.keras.Model):
         if not pre_train and self.latent_space is None:
             raise ReferenceError('Have not initialized the latent space.')
                     
-        x_normalized = tf.concat([x_normalized, c_score], -1) if self.has_cov else x_normalized
+        if self.has_cov:
+            x_normalized = tf.concat([x_normalized, c_score], -1)
+        else:
+            x_normalized
         _, z_log_var, z = self.encoder(x_normalized, L)
                 
         z_in = tf.concat([z, tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1) if self.has_cov else z
