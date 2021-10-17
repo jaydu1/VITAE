@@ -611,7 +611,7 @@ class VITAE():
         if type(init_node)==str:
             if init_node not in self.labels_map.values:
                 raise ValueError("Initial node {} is not in the label names!".format(init_node))
-            init_node = self.labels_map[self.labels_map['label_names']=='1'].index[0]
+            init_node = self.labels_map[self.labels_map['label_names']==init_node].index[0]
 
         self.backbone, self.cell_position_projected, self.pseudotime = self.inferer.infer_trajectory(init_node, cutoff)
         self.uncertainty = np.sum((self.cell_position_projected - self.cell_position_posterior)**2, axis=-1) \
