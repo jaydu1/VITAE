@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional
+from typing import Optional, Union
 
 import VITAE.model as model 
 import VITAE.train as train 
@@ -291,15 +291,14 @@ class VITAE():
             print("Perform leiden clustering on the latent space z ...")
             g = get_igraph(self.z)
             cluster_labels = leidenalg_igraph(g, res = res)
+            uni_cluster_labels = np.unique(cluster_labels).astype(str)
+            cluster_labels = cluster_labels.astype(str)
         else:
-            cluster_labels = self.adata.obs[cluster_label].to_numpy()       
-            
-        uni_cluster_labels = np.unique(cluster_labels)
-        n_clusters = np.unique(uni_cluster_labels).shape[0]
-#        labels_map = pd.DataFrame.from_dict(
-#            {i:label for i,label in enumerate(uni_cluster_labels)}, 
-#            orient='index', columns=['label_names'], dtype=str
-#            )
+            cluster_labels = self.adata.obs[cluster_label].to_numpy()                   
+            uni_cluster_labels = np.array(self.adata.obs[cluster_label].cat.categories)
+
+        n_clusters = len(uni_cluster_labels)
+
         if not hasattr(self, 'z'):
             self.update_z()        
         z = self.z
@@ -589,7 +588,7 @@ class VITAE():
         return G
         
         
-    def infer_trajectory(self, init_node: int, cutoff: Optional[float] = None,
+    def infer_trajectory(self, init_node: Union[int,str], cutoff: Optional[float] = None,
                          plot_backbone: bool = True, method: str = 'UMAP', **kwargs):
         '''Infer the trajectory.
 
@@ -609,14 +608,21 @@ class VITAE():
         Returns
         ----------
         '''
+        if type(init_node)==str:
+            if init_node not in self.labels_map.values:
+                raise ValueError("Initial node {} is not in the label names!".format(init_node))
+            init_node = self.labels_map[self.labels_map['label_names']=='1'].index[0]
+
         self.backbone, self.cell_position_projected, self.pseudotime = self.inferer.infer_trajectory(init_node, cutoff)
-        self.uncertainty = np.sum((self.cell_position_projected - self.cell_position_posterior)**2, axis=-1) + np.sum(self.cell_position_variance, axis=-1)
+        self.uncertainty = np.sum((self.cell_position_projected - self.cell_position_posterior)**2, axis=-1) \
+            + np.sum(self.cell_position_variance, axis=-1)
         self.adata.obs['pseudotime'] = self.pseudotime
         self.adata.obs['projection_uncertainty'] = self.uncertainty
         print("Cell psedutime and projection uncertainties stored as 'pseudotime' and 'projection_uncertainty' in self.adata.obs")
                 
         self.adata.obs['vitae_new_clustering'] = self.labels_map.iloc[np.argmax(self.cell_position_projected, 1)]['label_names'].to_numpy()
-        self.adata.obs['vitae_new_clustering'] = self.adata.obs['vitae_new_clustering'].astype('category')
+        self.adata.obs['vitae_new_clustering'] = pd.Categorical(self.adata.obs['vitae_new_clustering'], 
+            categories = self.labels_map['label_names'].values, ordered = True)
         print("'vitae_new_clustering' updated based on the projected cell positions.")
         
         connected_comps = nx.node_connected_component(self.backbone, init_node)
