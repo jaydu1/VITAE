@@ -122,8 +122,8 @@ class VITAE():
     def pre_train(self, test_size = 0.1, random_state: int = 0,
             learning_rate: float = 1e-2, batch_size: int = 256, L: int = 1, alpha: float = 0.10,
             num_epoch: int = 300, num_step_per_epoch: Optional[int] = None,
-            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1.0,
-            path_to_weights: Optional[str] = None):
+            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1.0, 
+            early_stopping_relative: bool = False, path_to_weights: Optional[str] = None):
         '''Pretrain the model with specified learning rate.
 
         Parameters
@@ -148,6 +148,8 @@ class VITAE():
             The maximum number of epochs if there is no improvement.
         early_stopping_tolerance : float, optional 
             The minimum change of loss to be considered as an improvement.
+        early_stopping_relative : bool, optional
+            Whether monitor the relative change of loss or not.
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
         '''                    
@@ -178,7 +180,7 @@ class VITAE():
             num_step_per_epoch,
             early_stopping_patience,
             early_stopping_tolerance,
-            0)
+            early_stopping_relative)
         
         self.update_z()
 
@@ -407,7 +409,8 @@ class VITAE():
             learning_rate: float = 1e-2, batch_size: int = 256, 
             L: int = 1, alpha: float = 0.10, beta: float = 2, 
             num_epoch: int = 300, num_step_per_epoch: Optional[int] =  None,
-            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1.0, early_stopping_warmup: int = 0,
+            early_stopping_patience: int = 10, early_stopping_tolerance: float = 1.0, 
+            early_stopping_relative: bool = False, early_stopping_warmup: int = 0,
             path_to_weights: Optional[str] = None, **kwargs):
         '''Train the model.
 
@@ -437,6 +440,8 @@ class VITAE():
             The maximum number of epochs if there is no improvement.
         early_stopping_tolerance : float, optional 
             The minimum change of loss to be considered as an improvement.
+        early_stopping_relative : bool, optional
+            Whether monitor the relative change of loss or not.            
         early_stopping_warmup : int, optional 
             The number of warmup epochs.            
         path_to_weights : str, optional 
@@ -479,7 +484,8 @@ class VITAE():
             num_step_per_epoch,
             early_stopping_patience,
             early_stopping_tolerance,
-            early_stopping_warmup,            
+            early_stopping_relative,
+            early_stopping_warmup,           
             **kwargs            
             )
         

@@ -2,6 +2,7 @@
 from typing import Optional
 
 from VITAE.utils import Early_Stopping
+from numba.core.types.scalars import Boolean
 
 import numpy as np
 import tensorflow as tf
@@ -55,7 +56,7 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
 
 def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, alpha: float,
               num_epoch_pre: int, num_step_per_epoch: int, 
-              early_stopping_patience: int, early_stopping_tolerance: int, early_stopping_warmup: int):
+              es_patience: int, es_tolerance: int, es_relative: bool):
     '''Pretraining.
 
     Parameters
@@ -76,11 +77,13 @@ def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, al
         The maximum number of epoches.
     num_step_per_epoch : int
         The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
-    early_stopping_patience : int
+    es_patience : int
         The maximum number of epoches if there is no improvement.
-    early_stopping_tolerance : float
+    es_tolerance : float
         The minimum change of loss to be considered as an improvement.
-    early_stopping_warmup : int, optional
+    es_relative : bool, optional
+        Whether monitor the relative change of loss or not.        
+    es_warmup : int, optional
         The number of warmup epoches.
 
     Returns
@@ -91,7 +94,7 @@ def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, al
     optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
     loss_train = tf.keras.metrics.Mean()
     loss_test = tf.keras.metrics.Mean()
-    early_stopping = Early_Stopping(patience=early_stopping_patience, tolerance=early_stopping_tolerance, warmup=early_stopping_warmup)
+    early_stopping = Early_Stopping(patience=es_patience, tolerance=es_tolerance, relative=es_relative)
 
     for epoch in range(num_epoch_pre):
         progbar = Progbar(num_step_per_epoch)
@@ -132,7 +135,7 @@ def train(train_dataset, test_dataset, vae,
         learning_rate: float, 
         L: int, alpha: float, beta: float,
         num_epoch: int, num_step_per_epoch: int, 
-        early_stopping_patience: int, early_stopping_tolerance: float, early_stopping_warmup: int, **kwargs):
+        es_patience: int, es_tolerance: float, es_relative: bool, es_warmup: int, **kwargs):
     '''Training.
 
     Parameters
@@ -155,11 +158,13 @@ def train(train_dataset, test_dataset, vae,
         The maximum number of epoches.
     num_step_per_epoch : int
         The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
-    early_stopping_patience : int
+    es_patience : int
         The maximum number of epoches if there is no improvement.
-    early_stopping_tolerance : float, optional 
+    es_tolerance : float, optional 
         The minimum change of loss to be considered as an improvement.
-    early_stopping_warmup : int
+    es_relative : bool, optional
+        Whether monitor the relative change of loss or not.          
+    es_warmup : int
         The number of warmup epoches.
     **kwargs : 
         Extra key-value arguments for dimension reduction algorithms.    
@@ -173,9 +178,9 @@ def train(train_dataset, test_dataset, vae,
     optimizer = tf.keras.optimizers.Adam(learning_rate)
     loss_test = [tf.keras.metrics.Mean() for _ in range(4)]
     loss_train = [tf.keras.metrics.Mean() for _ in range(4)]
-    early_stopping = Early_Stopping(patience = early_stopping_patience, tolerance = early_stopping_tolerance, warmup=early_stopping_warmup)
+    early_stopping = Early_Stopping(patience = es_patience, tolerance = es_tolerance, relative=es_relative, warmup=es_warmup)
 
-    print('Warmup:%d'%early_stopping_warmup)
+    print('Warmup:%d'%es_warmup)
     weight = np.array([1,beta,beta], dtype=tf.keras.backend.floatx())
     weight = tf.convert_to_tensor(weight)
     
@@ -185,7 +190,7 @@ def train(train_dataset, test_dataset, vae,
         
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
-            if epoch<early_stopping_warmup:
+            if epoch<es_warmup:
                 with tf.GradientTape() as tape:
                     losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha)
                     # Compute reconstruction loss

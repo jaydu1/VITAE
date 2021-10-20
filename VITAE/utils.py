@@ -28,11 +28,13 @@ class Early_Stopping():
     '''
     The early-stopping monitor.
     '''
-    def __init__(self, warmup=0, patience=10, tolerance=1e-3, is_minimize=True):
+    def __init__(self, warmup=0, patience=10, tolerance=1e-3, 
+            relative=False, is_minimize=True):
         self.warmup = warmup
         self.patience = patience
         self.tolerance = tolerance
         self.is_minimize = is_minimize
+        self.relative = relative
 
         self.step = -1
         self.best_step = -1
@@ -48,9 +50,9 @@ class Early_Stopping():
         
         if self.step < self.warmup:
             return False
-        elif self.factor*metric<self.factor*self.best_metric-self.tolerance:
-            self.best_metric = metric
-            self.best_step = self.step
+        elif (self.best_metric==np.inf) or \
+                (self.relative and (self.best_metric-metric)/self.best_metric > self.tolerance) or \
+                ((not self.relative) and self.factor*metric<self.factor*self.best_metric-self.tolerance):
             return False
         elif self.step - self.best_step>self.patience:
             print('Best Epoch: %d. Best Metric: %f.'%(self.best_step, self.best_metric))
