@@ -53,6 +53,8 @@ class Early_Stopping():
         elif (self.best_metric==np.inf) or \
                 (self.relative and (self.best_metric-metric)/self.best_metric > self.tolerance) or \
                 ((not self.relative) and self.factor*metric<self.factor*self.best_metric-self.tolerance):
+            self.best_metric = metric
+            self.best_step = self.step
             return False
         elif self.step - self.best_step>self.patience:
             print('Best Epoch: %d. Best Metric: %f.'%(self.best_step, self.best_metric))
