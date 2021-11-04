@@ -640,7 +640,9 @@ def load_data(path, file_name):
             data['cell_ids'] = np.array(f['cell_ids']).astype(str)
         else:
             data['cell_ids'] = None
-            
+        if 'days' in f:
+            data['days'] = np.array(f['days']).astype(str)
+
         if 'milestone_network' in f:
             if file_name in ['linear','bifurcation','multifurcating','tree',                              
                             "cycle_1", "cycle_2", "cycle_3",

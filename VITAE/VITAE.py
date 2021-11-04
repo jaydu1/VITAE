@@ -525,7 +525,7 @@ class VITAE():
 
         Parameters
         ----------
-        day : np.array, optional
+        day : np.array 
             The day information for selected cells used to determine the root vertex.
             The dtype should be 'int' or 'float'.
         method : str, optional
@@ -591,6 +591,7 @@ class VITAE():
             edgewidth = [ d['weight'] for (u,v,d) in G.edges(data=True)]
             plt.figure()
             nx.draw_spring(G, width = edgewidth/np.mean(edgewidth), with_labels = True)
+            plt.show()
         return G
         
         
