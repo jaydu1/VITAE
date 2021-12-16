@@ -55,8 +55,9 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
 
 
 def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, alpha: float,
-              num_epoch_pre: int, num_step_per_epoch: int, 
-              es_patience: int, es_tolerance: int, es_relative: bool):
+              num_epoch: int, num_step_per_epoch: int, 
+              es_patience: int, es_tolerance: int, es_relative: bool,
+              verbose: bool = True):
     '''Pretraining.
 
     Parameters
@@ -73,7 +74,7 @@ def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, al
         The number of MC samples.
     alpha : float, optional
         The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
-    num_epoch_pre : int
+    num_epoch : int
         The maximum number of epoches.
     num_step_per_epoch : int
         The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
@@ -96,10 +97,16 @@ def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, al
     loss_test = tf.keras.metrics.Mean()
     early_stopping = Early_Stopping(patience=es_patience, tolerance=es_tolerance, relative=es_relative)
 
-    for epoch in range(num_epoch_pre):
-        progbar = Progbar(num_step_per_epoch)
-        
-        print('Pretrain - Start of epoch %d' % (epoch,))
+    if not verbose:
+        progbar = Progbar(num_epoch)
+    for epoch in range(num_epoch):
+
+        if verbose:
+            progbar = Progbar(num_step_per_epoch)
+            print('Pretrain - Start of epoch %d' % (epoch,))
+        else:
+            if (epoch+1)%2==0 or epoch+1==num_epoch:
+                    progbar.update(epoch+1)
 
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
@@ -112,14 +119,17 @@ def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, al
             optimizer.apply_gradients(zip(grads, vae.trainable_weights))                                
             loss_train(loss)
             
-            if (step+1)%10==0 or step+1==num_step_per_epoch:
-                progbar.update(step+1, [('Reconstructed Loss', float(loss))])
+            if verbose:
+                if (step+1)%10==0 or step+1==num_step_per_epoch:
+                    progbar.update(step+1, [('Reconstructed Loss', float(loss))])
                 
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(test_dataset):
             losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, alpha=alpha)
             loss = tf.reduce_sum(losses[0])
             loss_test(loss)
-        print(' Training loss over epoch: %.4f. Testing loss over epoch: %.4f' % (float(loss_train.result()),
+
+        if verbose:
+            print(' Training loss over epoch: %.4f. Testing loss over epoch: %.4f' % (float(loss_train.result()),
                                                                             float(loss_test.result())))
         if early_stopping(float(loss_test.result())):
             print('Early stopping.')
@@ -135,7 +145,8 @@ def train(train_dataset, test_dataset, vae,
         learning_rate: float, 
         L: int, alpha: float, beta: float,
         num_epoch: int, num_step_per_epoch: int, 
-        es_patience: int, es_tolerance: float, es_relative: bool, es_warmup: int, **kwargs):
+        es_patience: int, es_tolerance: float, es_relative: bool, es_warmup: int, 
+        verbose: bool = False, **kwargs):
     '''Training.
 
     Parameters
@@ -184,9 +195,17 @@ def train(train_dataset, test_dataset, vae,
     weight = np.array([1,beta,beta], dtype=tf.keras.backend.floatx())
     weight = tf.convert_to_tensor(weight)
     
+    if not verbose:
+        progbar = Progbar(num_epoch)
     for epoch in range(num_epoch):
-        print('Start of epoch %d' % (epoch,))
-        progbar = Progbar(num_step_per_epoch)
+
+        if verbose:
+            progbar = Progbar(num_step_per_epoch)
+            print('Start of epoch %d' % (epoch,))
+        else:
+            if (epoch+1)%2==0 or epoch+1==num_epoch:
+                    progbar.update(epoch+1)
+
         
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(train_dataset):
@@ -212,13 +231,14 @@ def train(train_dataset, test_dataset, vae,
             loss_train[2](losses[2])
             loss_train[3](loss)
 
-            if (step+1)%10==0 or step+1==num_step_per_epoch:
-                progbar.update(step+1, [
-                        ('loss_neg_E_nb'    ,   float(losses[0])),
-                        ('loss_neg_E_pz'    ,   float(losses[1])),
-                        ('loss_E_qzx   '    ,   float(losses[2])),
-                        ('loss_total'       ,   float(loss))
-                        ])
+            if verbose:
+                if (step+1)%10==0 or step+1==num_step_per_epoch:
+                    progbar.update(step+1, [
+                            ('loss_neg_E_nb'    ,   float(losses[0])),
+                            ('loss_neg_E_pz'    ,   float(losses[1])),
+                            ('loss_E_qzx   '    ,   float(losses[2])),
+                            ('loss_total'       ,   float(loss))
+                            ])
                         
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor) in enumerate(test_dataset):
             losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha)
@@ -232,15 +252,17 @@ def train(train_dataset, test_dataset, vae,
             print('Early stopping.')
             break
         
-        print(' Training loss over epoch: %.4f (%.4f, %.4f, %.4f) Testing loss over epoch: %.4f (%.4f, %.4f, %.4f)' % (
-            float(loss_train[3].result()),
-            float(loss_train[0].result()),
-            float(loss_train[1].result()),
-            float(loss_train[2].result()),
-            float(loss_test[3].result()),
-            float(loss_test[0].result()),
-            float(loss_test[1].result()),
-            float(loss_test[2].result())))
+        if verbose:
+            print(' Training loss over epoch: %.4f (%.4f, %.4f, %.4f) Testing loss over epoch: %.4f (%.4f, %.4f, %.4f)' % (
+                float(loss_train[3].result()),
+                float(loss_train[0].result()),
+                float(loss_train[1].result()),
+                float(loss_train[2].result()),
+                float(loss_test[3].result()),
+                float(loss_test[0].result()),
+                float(loss_test[1].result()),
+                float(loss_test[2].result())))
+
         [l.reset_states() for l in loss_train]
         [l.reset_states() for l in loss_test]
 
