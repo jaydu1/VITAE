@@ -90,14 +90,18 @@ class VITAE():
         else:
             self.adata = adata
         if covariates is not None:
-            self.covariates = adata.obs[covariates].to_numpy().astype(tf.keras.backend.floatx())
+            self.covariates = adata.obs[covariates].to_numpy()
+            if self.covariates.ndim == 1:
+                self.covariates = self.covariates.reshape(-1,1)
+            self.covariates = self.covariates.astype(tf.keras.backend.floatx())
         else:
             self.covariates = None
 
         if pi_covariates is not None:
-            self.pi_cov = adata.obs[pi_covariates].to_numpy().astype(tf.keras.backend.floatx())
+            self.pi_cov = adata.obs[pi_covariates].to_numpy()
             if self.pi_cov.ndim == 1:
-                self.pi_cov = self.pi_cov.reshape(-1, 1).astype(tf.keras.backend.floatx())
+                self.pi_cov = self.pi_cov.reshape(-1, 1)
+            self.pi_cov = self.pi_cov.astype(tf.keras.backend.floatx())
         else:
             self.pi_cov = None
             
@@ -108,23 +112,37 @@ class VITAE():
 
 
         if model_type == 'Gaussian':
+#             sc.pp.neighbors(adata, use_rep='X')
+#             sc.tl.umap(adata, n_components=npc)
+#             self.X_input = self.X_output = adata.obsm['X_umap'].astype(tf.keras.backend.floatx())
+#             sc.pp.scale(adata)
             sc.tl.pca(adata, n_comps = npc)
             self.X_input = self.X_output = adata.obsm['X_pca'].astype(tf.keras.backend.floatx())
-            self.scale_factor = np.ones(self.X_output.shape[0])
+            self.scale_factor = np.ones(self.X_output.shape[0], dtype=tf.keras.backend.floatx())
+        
+            
+#             from sklearn.preprocessing import StandardScaler
+#             gene_scalar = StandardScaler()
+#             self.X_input = self.X_output = gene_scalar.fit_transform(self.X_input)
         else:
             print(f"{adata.var.highly_variable.sum()} highly variable genes selected as input") 
             self.X_input = adata.X[:, adata.var.highly_variable].astype(tf.keras.backend.floatx())
-            self.X_output = adata.layers[adata_layer_counts][ :, adata.var.highly_variable].astype(tf.keras.backend.floatx())
+            self.X_output = adata.layers[adata_layer_counts][
+                :, adata.var.highly_variable].astype(tf.keras.backend.floatx())
             self.scale_factor = np.sum(self.X_output, axis=1, keepdims=True)/1e4
             self.scale_factor = self.scale_factor.astype(tf.keras.backend.floatx())
-
+        
+            
         self.dim_latent = latent_space_dim
 
         if isinstance(conditions,str):
             self.conditions = np.array(adata.obs[conditions].values)
+            from sklearn import preprocessing
+            self.le_cond = preprocessing.LabelEncoder()
+            self.conditions = self.le_cond.fit_transform(
+                self.conditions).astype(tf.keras.backend.floatx())
         else:
-            self.conditions = conditions
-
+            self.conditions = conditions        
 
         self.vae = model.VariationalAutoEncoder(
             self.X_output.shape[1], hidden_layers,
@@ -174,8 +192,6 @@ class VITAE():
             Whether monitor the relative change of loss as stopping criteria or not.
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
-        conditions : str or list, optional
-            The conditions of different cells
         '''
 
         if gamma == 0 or self.conditions is None:
@@ -578,7 +594,7 @@ class VITAE():
         pi_cov = tf.expand_dims(tf.constant([pi_cov], dtype=tf.float32), 0)
         pi_val = tf.nn.softmax(p(pi_cov)).numpy()[0]
         # Create heatmap matrix
-        n = self.vae.n_states
+        n = self.n_states
         matrix = np.zeros((n, n))
         matrix[np.triu_indices(n)] = pi_val
         mask = np.tril(np.ones_like(matrix), k=-1)
@@ -666,7 +682,7 @@ class VITAE():
         return None
 
 
-    def select_root(self, days, method: str = 'proportion'):
+    def select_root(self, days):
         '''Order the vertices/states based on cells' collection time information to select the root state.      
 
         Parameters
@@ -674,14 +690,10 @@ class VITAE():
         day : np.array 
             The day information for selected cells used to determine the root vertex.
             The dtype should be 'int' or 'float'.
-        method : str, optional
-            'sum' or 'mean'. 
-            For 'proportion', the root is the one with maximal proportion of cells from the earliest day.
-            For 'mean', the root is the one with earliest mean time among cells associated with it.
 
         Returns
         ----------
-        root : int 
+        root : pd.DataFrame
             The root vertex in the inferred trajectory based on given day information.
         '''
         ## TODO: change return description
