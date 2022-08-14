@@ -19,6 +19,12 @@ from scipy import stats
 import pandas as pd
 import h5py
 import scanpy as sc
+import numpy as np
+import tensorflow as tf
+import tensorflow.keras as keras
+#from keras import backend as K
+from tensorflow.keras import backend as K
+import sys
 
 #------------------------------------------------------------------------------
 # Early stopping
@@ -573,6 +579,7 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
 
 type_dict = {
     # dyno
+    'dentate_withdays':'UMI',
     'dentate':'UMI', 
     'immune':'UMI', 
     'neonatal':'UMI', 
@@ -672,10 +679,110 @@ def load_data(path, file_name):
             data['grouping'] = np.array(data['grouping'], dtype=object)
             data['root_milestone_id'] = np.array(f['root_milestone_id']).astype(str)[0]
             data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
-
+        if file_name == 'dentate_withdays':
+            data['covariates'] = np.array([item.decode('utf-8').replace('*', '') for item in f['days']], dtype=object)
+            data['covariates'] = data['covariates'].astype(float).reshape(-1, 1)
     data['type'] = type_dict[file_name]
     if data['type']=='non-UMI':
         scale_factor = np.sum(data['count'],axis=1, keepdims=True)/1e6
         data['count'] = data['count']/scale_factor
     
     return data  
+
+
+# Below are some functions used in calculating MMD loss
+
+def compute_kernel(x, y, kernel='rbf', **kwargs):
+    """
+        Computes RBF kernel between x and y.
+        # Parameters
+            x: Tensor
+                Tensor with shape [batch_size, z_dim]
+            y: Tensor
+                Tensor with shape [batch_size, z_dim]
+        # Returns
+            returns the computed RBF kernel between x and y
+    """
+    scales = kwargs.get("scales", [])
+    if kernel == "rbf":
+        x_size = K.shape(x)[0]
+        y_size = K.shape(y)[0]
+        dim = K.shape(x)[1]
+        tiled_x = K.tile(K.reshape(x, K.stack([x_size, 1, dim])), K.stack([1, y_size, 1]))
+        tiled_y = K.tile(K.reshape(y, K.stack([1, y_size, dim])), K.stack([x_size, 1, 1]))
+        return K.exp(-K.mean(K.square(tiled_x - tiled_y), axis=2) / K.cast(dim, tf.float32))
+    elif kernel == 'raphy':
+        scales = K.variable(value=np.asarray(scales))
+        squared_dist = K.expand_dims(squared_distance(x, y), 0)
+        scales = K.expand_dims(K.expand_dims(scales, -1), -1)
+        weights = K.eval(K.shape(scales)[0])
+        weights = K.variable(value=np.asarray(weights))
+        weights = K.expand_dims(K.expand_dims(weights, -1), -1)
+        return K.sum(weights * K.exp(-squared_dist / (K.pow(scales, 2))), 0)
+    elif kernel == "multi-scale-rbf":
+        sigmas = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 5, 10, 15, 20, 25, 30, 35, 100, 1e3, 1e4, 1e5, 1e6]
+
+        beta = 1. / (2. * (K.expand_dims(sigmas, 1)))
+        distances = squared_distance(x, y)
+        s = K.dot(beta, K.reshape(distances, (1, -1)))
+
+        return K.reshape(tf.reduce_sum(input_tensor=tf.exp(-s), axis=0), K.shape(distances)) / len(sigmas)
+
+
+def squared_distance(x, y):  # returns the pairwise euclidean distance
+    r = K.expand_dims(x, axis=1)
+    return K.sum(K.square(r - y), axis=-1)
+
+
+def compute_mmd(x, y, kernel, **kwargs):  # [batch_size, z_dim] [batch_size, z_dim]
+    """
+        Computes Maximum Mean Discrepancy(MMD) between x and y.
+        # Parameters
+            x: Tensor
+                Tensor with shape [batch_size, z_dim]
+            y: Tensor
+                Tensor with shape [batch_size, z_dim]
+        # Returns
+            returns the computed MMD between x and y
+    """
+    x_kernel = compute_kernel(x, x, kernel=kernel, **kwargs)
+    y_kernel = compute_kernel(y, y, kernel=kernel, **kwargs)
+    xy_kernel = compute_kernel(x, y, kernel=kernel, **kwargs)
+    return K.mean(x_kernel) + K.mean(y_kernel) - 2 * K.mean(xy_kernel)
+
+
+def sample_z(args):
+    """
+        Samples from standard Normal distribution with shape [size, z_dim] and
+        applies re-parametrization trick. It is actually sampling from latent
+        space distributions with N(mu, var) computed in `_encoder` function.
+        # Parameters
+            No parameters are needed.
+        # Returns
+            The computed Tensor of samples with shape [size, z_dim].
+    """
+    mu, log_var = args
+    batch_size = K.shape(mu)[0]
+    z_dim = K.int_shape(mu)[1]
+    eps = K.random_normal(shape=[batch_size, z_dim])
+    return mu + K.exp(log_var / 2) * eps
+
+
+def _nan2zero(x):
+    return tf.where(tf.math.is_nan(x), tf.zeros_like(x), x)
+
+
+def _nan2inf(x):
+    return tf.where(tf.math.is_nan(x), tf.zeros_like(x) + np.inf, x)
+
+def _nelem(x):
+    nelem = tf.reduce_sum(input_tensor=tf.cast(~tf.math.is_nan(x), tf.float32))
+    return tf.cast(tf.compat.v1.where(tf.equal(nelem, 0.), 1., nelem), x.dtype)
+
+
+def _reduce_mean(x):
+    nelem = _nelem(x)
+    x = _nan2zero(x)
+    return tf.divide(tf.reduce_sum(input_tensor=x), nelem)
+
+

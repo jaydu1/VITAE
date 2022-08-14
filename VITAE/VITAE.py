@@ -25,13 +25,14 @@ class VITAE():
     Variational Inference for Trajectory by AutoEncoder.
     """
     def __init__(self, adata: sc.AnnData,
-               covariates = None,
+               covariates = None, pi_covariates = None,
                model_type: str = 'Gaussian',
                npc: int = 64,
                adata_layer_counts = None,
                copy_adata: bool = False,
                hidden_layers = [32],
-               latent_space_dim: int = 16):
+               latent_space_dim: int = 16,
+               conditions = None):
         '''
         Get input data for model. Data need to be first processed using scancy and stored as an AnnData object
          The 'UMI' or 'non-UMI' model need the original count matrix, so the count matrix need to be saved in
@@ -44,6 +45,8 @@ class VITAE():
             The scanpy AnnData object. adata should already contain adata.var.highly_variable
         covariates : list, optional
             A list of names of covariate vectors that are stored in adata.obs
+        pi_covariates: list, optional
+            A list of names of covariate vectors used as input for pilayer
         model_type : str, optional
             'UMI', 'non-UMI' and 'Gaussian', default is 'Gaussian'.
         npc : int, optional
@@ -56,6 +59,10 @@ class VITAE():
             The list of dimensions of layers of autoencoder between latent space and original space. Default is to have only one hidden layer with 32 nodes
         latent_space_dim : int, optional
             The dimension of latent space.
+        gamme : float, optional
+            The weight of the MMD loss
+        conditions : str or list, optional
+            The conditions of different cells
 
 
         Returns
@@ -83,10 +90,17 @@ class VITAE():
         else:
             self.adata = adata
         if covariates is not None:
-            self.c_score = adata.obs[covariates].to_numpy()
+            self.covariates = adata.obs[covariates].to_numpy().astype(tf.keras.backend.floatx())
         else:
-            self.c_score = None
+            self.covariates = None
 
+        if pi_covariates is not None:
+            self.pi_cov = adata.obs[pi_covariates].to_numpy().astype(tf.keras.backend.floatx())
+            if self.pi_cov.ndim == 1:
+                self.pi_cov = self.pi_cov.reshape(-1, 1).astype(tf.keras.backend.floatx())
+        else:
+            self.pi_cov = None
+            
         self.model_type = model_type
         self._adata = sc.AnnData(X = self.adata.X, var = self.adata.var)
         self._adata.obs = self.adata.obs
@@ -95,25 +109,32 @@ class VITAE():
 
         if model_type == 'Gaussian':
             sc.tl.pca(adata, n_comps = npc)
-            self.X_input = self.X_output = adata.obsm['X_pca']
+            self.X_input = self.X_output = adata.obsm['X_pca'].astype(tf.keras.backend.floatx())
             self.scale_factor = np.ones(self.X_output.shape[0])
         else:
             print(f"{adata.var.highly_variable.sum()} highly variable genes selected as input") 
-            self.X_input = adata.X[:, adata.var.highly_variable]
-            self.X_output = adata.layers[adata_layer_counts][ :, adata.var.highly_variable]
+            self.X_input = adata.X[:, adata.var.highly_variable].astype(tf.keras.backend.floatx())
+            self.X_output = adata.layers[adata_layer_counts][ :, adata.var.highly_variable].astype(tf.keras.backend.floatx())
             self.scale_factor = np.sum(self.X_output, axis=1, keepdims=True)/1e4
+            self.scale_factor = self.scale_factor.astype(tf.keras.backend.floatx())
 
-        self.dimensions = hidden_layers
         self.dim_latent = latent_space_dim
 
+        if isinstance(conditions,str):
+            self.conditions = np.array(adata.obs[conditions].values)
+        else:
+            self.conditions = conditions
+
+
         self.vae = model.VariationalAutoEncoder(
-            self.X_output.shape[1], self.dimensions,
+            self.X_output.shape[1], hidden_layers,
             self.dim_latent, self.model_type,
-            False if self.c_score is None else True
+            False if self.covariates is None else True,
             )
 
-        if hasattr(self, 'inferer'):
-            delattr(self, 'inferer')
+    #    if hasattr(self, 'inferer'):
+    #        delattr(self, 'inferer')
+
 ## TODO: what does the two last lines mean?        
         
 ## TODO: should we convert everything to dense matrix?
@@ -121,11 +142,10 @@ class VITAE():
         
 
     def pre_train(self, test_size = 0.1, random_state: int = 0,
-            learning_rate: float = 1e-2, batch_size: int = 256, L: int = 1, alpha: float = 0.10,
+            learning_rate: float = 1e-2, batch_size: int = 256, L: int = 1, alpha: float = 0.10, gamma: float = 1,
             num_epoch: int = 200, num_step_per_epoch: Optional[int] = None,
             early_stopping_patience: int = 10, early_stopping_tolerance: float = 0.01, 
-            early_stopping_relative: bool = True, verbose: bool = False): 
- #           path_to_weights: Optional[str] = None):
+            early_stopping_relative: bool = True, verbose: bool = False):
         '''Pretrain the model with specified learning rate.
 
         Parameters
@@ -154,7 +174,15 @@ class VITAE():
             Whether monitor the relative change of loss as stopping criteria or not.
         path_to_weights : str, optional 
             The path of weight file to be saved; not saving weight if None.
-        '''                    
+        conditions : str or list, optional
+            The conditions of different cells
+        '''
+
+        if gamma == 0 or self.conditions is None:
+            conditions = np.array([np.nan] * self.adata.shape[0])
+        else:
+            conditions = self.conditions
+
 
         id_train, id_test = train_test_split(
                                 np.arange(self.X_input.shape[0]), 
@@ -162,22 +190,25 @@ class VITAE():
                                 random_state=random_state)
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
-        self.train_dataset = train.warp_dataset(self.X_input[id_train].astype(tf.keras.backend.floatx()), 
-                                                None if self.c_score is None else self.c_score[id_train].astype(tf.keras.backend.floatx()),
-                                                batch_size, 
-                                                self.X_output[id_train].astype(tf.keras.backend.floatx()), 
-                                                self.scale_factor[id_train].astype(tf.keras.backend.floatx()))
-        self.test_dataset = train.warp_dataset(self.X_input[id_test], 
-                                                None if self.c_score is None else self.c_score[id_test].astype(tf.keras.backend.floatx()),
-                                                batch_size, 
-                                                self.X_output[id_test].astype(tf.keras.backend.floatx()), 
-                                                self.scale_factor[id_test].astype(tf.keras.backend.floatx()))
+        train_dataset = train.warp_dataset(self.X_input[id_train],
+                None if self.covariates is None else self.covariates[id_train],
+                batch_size, 
+                self.X_output[id_train], 
+                self.scale_factor[id_train],
+                conditions = conditions[id_train])
+        test_dataset = train.warp_dataset(self.X_input[id_test], 
+                None if self.covariates is None else self.covariates[id_test],
+                batch_size, 
+                self.X_output[id_test], 
+                self.scale_factor[id_test],
+                conditions = conditions[id_test])
+
         self.vae = train.pre_train(
-            self.train_dataset,
-            self.test_dataset,
+            train_dataset,
+            test_dataset,
             self.vae,
             learning_rate,                        
-            L, alpha,
+            L, alpha, gamma,
             num_epoch,
             num_step_per_epoch,
             early_stopping_patience,
@@ -192,21 +223,14 @@ class VITAE():
             
 
     def update_z(self):
-        self.z = self.get_latent_z()        
+        ''' get the posterier mean of current latent space z (encoder output)
+        '''
+
+        self.z = self.vae.get_z(self.X_input, self.covariates) 
+        
         self._adata_z = sc.AnnData(self.z)
         sc.pp.neighbors(self._adata_z)
 
-            
-    def get_latent_z(self):
-        ''' get the posterier mean of current latent space z (encoder output)
-
-        Returns
-        ----------
-        z : np.array
-            \([N,d]\) The latent means.
-        ''' 
-        c = None if self.c_score is None else self.c_score
-        return self.vae.get_z(self.X_input, c)
             
     
     def visualize_latent(self, method: str = "UMAP", 
@@ -271,7 +295,7 @@ class VITAE():
 
 
     def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
-                          ratio_prune= None, dist_thres = 0.5):
+                          ratio_prune= None, dist_thres = 0.5, pilayer = False):
         '''Initialize the latent space.
 
         Parameters
@@ -354,6 +378,7 @@ class VITAE():
 
         self.n_states = n_clusters
         self.labels = cluster_labels
+
         # Not sure if storing the this will be useful
         # self.init_labels_name = cluster_label
         
@@ -367,7 +392,10 @@ class VITAE():
         self.inferer = Inferer(self.n_states)
         self.mu = self.vae.latent_space.mu.numpy()
         self.pi = np.triu(np.ones(self.n_states))
-        self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.pi).numpy()[0]
+        self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.log_pi).numpy()[0]
+
+        if pilayer:
+            self.vae.create_pilayer()
 
     def update_latent_space(self, dist_thres: float=0.5):
         pi = self.pi[np.triu_indices(self.n_states)]
@@ -436,13 +464,13 @@ class VITAE():
             self.inferer = Inferer(self.n_states)
             self.mu = self.vae.latent_space.mu.numpy()
             self.pi = np.triu(np.ones(self.n_states))
-            self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.pi).numpy()[0]
+            self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.log_pi).numpy()[0]
 
 
 
     def train(self, stratify = False, test_size = 0.1, random_state: int = 0,
             learning_rate: float = 1e-2, batch_size: int = 256, 
-            L: int = 1, alpha: float = 0.10, beta: float = 2, 
+            L: int = 1, alpha: float = 0.10, beta: float = 2, gamma: float = 1,
             num_epoch: int = 200, num_step_per_epoch: Optional[int] =  None,
             early_stopping_patience: int = 10, early_stopping_tolerance: float = 0.01, 
             early_stopping_relative: bool = True, early_stopping_warmup: int = 0,
@@ -484,7 +512,12 @@ class VITAE():
             The path of weight file to be saved; not saving weight if None.
         **kwargs :  
             Extra key-value arguments for dimension reduction algorithms.        
-        '''        
+        '''
+        if gamma == 0 or self.conditions is None:
+            conditions = np.array([np.nan] * self.adata.shape[0])
+        else:
+            conditions = self.conditions
+
         if stratify is None:
             stratify = self.labels
         elif stratify is False:
@@ -496,26 +529,30 @@ class VITAE():
                                 random_state=random_state)
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
-        c = None if self.c_score is None else self.c_score.astype(tf.keras.backend.floatx())
-        self.train_dataset = train.warp_dataset(self.X_input[id_train].astype(tf.keras.backend.floatx()),
-                                                None if c is None else c[id_train],
-                                                batch_size, 
-                                                self.X_output[id_train].astype(tf.keras.backend.floatx()), 
-                                                self.scale_factor[id_train].astype(tf.keras.backend.floatx()))
-        self.test_dataset = train.warp_dataset(self.X_input[id_test].astype(tf.keras.backend.floatx()),
-                                                None if c is None else c[id_test],
-                                                batch_size, 
-                                                self.X_output[id_test].astype(tf.keras.backend.floatx()), 
-                                                self.scale_factor[id_test].astype(tf.keras.backend.floatx()))    
+        train_dataset = train.warp_dataset(self.X_input[id_train],
+                None if self.covariates is None else self.covariates[id_train],
+                batch_size, 
+                self.X_output[id_train], 
+                self.scale_factor[id_train],
+                conditions = conditions[id_train],
+                pi_cov = None if self.pi_cov is None else self.pi_cov[id_train])
+        test_dataset = train.warp_dataset(self.X_input[id_test],
+                None if self.covariates is None else self.covariates[id_test],
+                batch_size, 
+                self.X_output[id_test],
+                self.scale_factor[id_test],
+                conditions = conditions[id_test],
+                pi_cov = None if self.pi_cov is None else self.pi_cov[id_test])
                                    
         self.vae = train.train(
-            self.train_dataset,
-            self.test_dataset,
+            train_dataset,
+            test_dataset,
             self.vae,
             learning_rate,
             L,
             alpha,
             beta,
+            gamma,
             num_epoch,
             num_step_per_epoch,
             early_stopping_patience,
@@ -529,12 +566,29 @@ class VITAE():
         self.update_z()
         self.mu = self.vae.latent_space.mu.numpy()
         self.pi = np.triu(np.ones(self.n_states))
-        self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.pi).numpy()[0]
+        self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.log_pi).numpy()[0]
             
  #       if path_to_weights is not None:
  #           self.save_model(path_to_weights)
-          
+    
 
+    def output_pi(self, pi_cov):
+        """return a matrix n_states by n_states and a mask for plotting, which can be used to cover the lower triangular(except the diagnoals) of a heatmap"""
+        p = self.vae.pilayer
+        pi_cov = tf.expand_dims(tf.constant([pi_cov], dtype=tf.float32), 0)
+        pi_val = tf.nn.softmax(p(pi_cov)).numpy()[0]
+        # Create heatmap matrix
+        n = self.vae.n_states
+        matrix = np.zeros((n, n))
+        matrix[np.triu_indices(n)] = pi_val
+        mask = np.tril(np.ones_like(matrix), k=-1)
+        return matrix, mask
+
+    def return_pilayer_weights(self):
+        """return parameters of pilayer, which has dimension dim(pi_cov) + 1 by n_categories, the last row is biases"""
+        return np.vstack((model.vae.pilayer.weights[0].numpy(), model.vae.pilayer.weights[1].numpy().reshape(1, -1)))
+
+   ### TODO: Why do we reset test_dataset here?
     def posterior_estimation(self, batch_size: int = 32, L: int = 10, **kwargs):
         '''Initialize trajectory inference by computing the posterior estimations.        
 
@@ -547,12 +601,12 @@ class VITAE():
         **kwargs :  
             Extra key-value arguments for dimension reduction algorithms.              
         '''
-        c = None if self.c_score is None else self.c_score.astype(tf.keras.backend.floatx())
-        self.test_dataset = train.warp_dataset(self.X_input.astype(tf.keras.backend.floatx()), 
-                                               c,
-                                               batch_size)
-        _, _, self.pc_x,\
-            self.cell_position_posterior,self.cell_position_variance,_ = self.vae.inference(self.test_dataset, L=L)
+        c = None if self.covariates is None else self.covariates.astype(tf.keras.backend.floatx())
+        test_dataset = train.warp_dataset(self.X_input, 
+                self.covariates,
+                batch_size)
+        _, _, self.posterior_c,\
+            self.cell_position_posterior,self.cell_position_variance,_ = self.vae.inference(test_dataset, L=L)
             
         uni_cluster_labels = self.labels_map['label_names'].to_numpy()
         self.adata.obs['vitae_new_clustering'] = uni_cluster_labels[np.argmax(self.cell_position_posterior, 1)]
@@ -585,7 +639,7 @@ class VITAE():
             The weighted graph with weight on each edge indicating its score of existence.
         '''
         # build_graph, return graph
-        self.backbone = self.inferer.build_graphs(self.cell_position_posterior, self.pc_x,
+        self.backbone = self.inferer.build_graphs(self.cell_position_posterior, self.posterior_c,
                 method, thres, no_loop, cutoff)
         self.cell_position_projected = self.inferer.modify_wtilde(self.cell_position_posterior, 
                 np.array(list(self.backbone.edges)))
@@ -810,10 +864,10 @@ class VITAE():
 #        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
         X = stats.rankdata(self.pseudotime[cell_subset])
         X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
-        if self.c_score is None:
+        if self.covariates is None:
             X = np.c_[np.ones_like(X), X]
         else:
-            X = np.c_[np.ones_like(X), X, self.c_score[cell_subset,:]]
+            X = np.c_[np.ones_like(X), X, self.covariates[cell_subset,:]]
 
         res_df = DE_test(Y, X, self.adata.var_names, alpha)
         return res_df
@@ -879,7 +933,7 @@ class VITAE():
             self.z[self.labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
         
-        G, edges = self.inferer.init_inference(self.cell_position_posterior, self.pc_x, thres, method, no_loop)
+        G, edges = self.inferer.init_inference(self.cell_position_posterior, self.posterior_c, thres, method, no_loop)
         G, w, pseudotime = self.inferer.infer_trajectory(begin_node_pred, self.label_names, cutoff=cutoff, path=path, is_plot=False)
         
         # 1. Topology
