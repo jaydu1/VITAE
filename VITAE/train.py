@@ -17,7 +17,8 @@ def clear_session():
 
 
 ## TODO: currently X is implemented as the output
-def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None, seed=0, conditions = None, pi_cov = None):
+def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None, 
+                 conditions = None, pi_cov = None, seed=0):
     '''Get Tensorflow datasets.
 
     Parameters
@@ -52,8 +53,9 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
                                         reshuffle_each_iteration=True).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
         return train_dataset
     else:
-        test_dataset = tf.data.Dataset.from_tensor_slices((X_normalized, 
-                                                          c_score, conditions, pi_cov)).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+        test_dataset = tf.data.Dataset.from_tensor_slices((
+            X_normalized, c_score, conditions, pi_cov
+        )).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
         return test_dataset
 
 

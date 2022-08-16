@@ -103,7 +103,7 @@ class VITAE():
                 self.pi_cov = self.pi_cov.reshape(-1, 1)
             self.pi_cov = self.pi_cov.astype(tf.keras.backend.floatx())
         else:
-            self.pi_cov = None
+            self.pi_cov = np.zeros((adata.X.shape[0],1), dtype=tf.keras.backend.floatx())
             
         self.model_type = model_type
         self._adata = sc.AnnData(X = self.adata.X, var = self.adata.var)
@@ -311,7 +311,7 @@ class VITAE():
 
 
     def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
-                          ratio_prune= None, dist_thres = 0.5, pilayer = False):
+                          ratio_prune= None, dist_thres = 0.5):
         '''Initialize the latent space.
 
         Parameters
@@ -406,81 +406,7 @@ class VITAE():
         self.labels_map = labels_map
         self.vae.init_latent_space(self.n_states, mu, log_pi)
         self.inferer = Inferer(self.n_states)
-        self.mu = self.vae.latent_space.mu.numpy()
-        self.pi = np.triu(np.ones(self.n_states))
-        self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.log_pi).numpy()[0]
-
-        if pilayer:
-            self.vae.create_pilayer()
-
-    def update_latent_space(self, dist_thres: float=0.5):
-        pi = self.pi[np.triu_indices(self.n_states)]
-        mu = self.mu    
-        clustering = AgglomerativeClustering(
-            n_clusters=None,
-            distance_threshold=dist_thres,
-            linkage='complete'
-            ).fit(mu.T/np.sqrt(mu.shape[0]))
-        n_clusters = clustering.n_clusters_   
-
-        if n_clusters<self.n_states:      
-            print("Merge clusters for cluster centers that are too close ...")
-            mu_new = np.empty((self.dim_latent, n_clusters))
-            C = np.zeros((self.n_states, self.n_states))
-            C[np.triu_indices(self.n_states, 0)] = pi
-            C = np.triu(C, 1) + C.T
-            C_new = np.zeros((n_clusters, n_clusters))
-            
-            uni_cluster_labels = self.labels_map['label_names'].to_numpy()
-            returned_order = {}
-            cluster_labels = self.labels
-            for i in range(n_clusters):
-                temp = uni_cluster_labels[clustering.labels_ == i]
-                idx = np.isin(cluster_labels, temp)
-                cluster_labels[idx] = ','.join(temp)
-                returned_order[i] = ','.join(temp)
-                if np.sum(clustering.labels_==i)>1:
-                    print('Merge %s'% ','.join(temp))
-            uni_cluster_labels = np.unique(cluster_labels) 
-            for i,l in enumerate(uni_cluster_labels):  ## reorder the merged clusters based on the cluster names
-                k = np.where(returned_order == l)
-                mu_new[:, i] = np.mean(mu[:,clustering.labels_==k], axis=-1)
-                # sum of the aggregated pi's
-                C_new[i, i] = np.sum(np.triu(C[clustering.labels_==k,:][:,clustering.labels_==k]))
-                for j in range(i+1, n_clusters):
-                    k1 = np.where(returned_order == uni_cluster_labels[j])
-                    C_new[i, j] = np.sum(C[clustering.labels_== k, :][:, clustering.labels_==k1])
-
-#            labels_map_new = {}
-#            for i in range(n_clusters):                       
-#                # update label map: int->str
-#                labels_map_new[i] = self.labels_map.loc[clustering.labels_==i, 'label_names'].str.cat(sep=',')
-#                if np.sum(clustering.labels_==i)>1:
-#                    print('Merge %s'%labels_map_new[i])
-#                # mean of the aggregated cluster means
-#                mu_new[:, i] = np.mean(mu[:,clustering.labels_==i], axis=-1)
-#                # sum of the aggregated pi's
-#                C_new[i, i] = np.sum(np.triu(C[clustering.labels_==i,:][:,clustering.labels_==i]))
-#                for j in range(i+1, n_clusters):
-#                    C_new[i, j] = np.sum(C[clustering.labels_== i, :][:, clustering.labels_==j])
-            C_new = np.triu(C_new,1) + C_new.T
-
-            pi_new = C_new[np.triu_indices(n_clusters)]
-            log_pi_new = np.log(pi_new, out=np.ones_like(pi_new)*(-np.inf), where=(pi_new!=0)).reshape((1,-1))
-            self.n_states = n_clusters
-            self.labels_map = pd.DataFrame.from_dict(
-                {i:label for i,label in enumerate(uni_cluster_labels)},
-                orient='index', columns=['label_names'], dtype=str
-                )
-            self.labels = cluster_labels
-#            self.labels_map = pd.DataFrame.from_dict(
-#                labels_map_new, orient='index', columns=['label_names'], dtype=str
-#            )
-            self.vae.init_latent_space(self.n_states, mu_new, log_pi_new)
-            self.inferer = Inferer(self.n_states)
-            self.mu = self.vae.latent_space.mu.numpy()
-            self.pi = np.triu(np.ones(self.n_states))
-            self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.log_pi).numpy()[0]
+        self.mu = self.vae.latent_space.mu.numpy()    
 
 
 
@@ -551,14 +477,14 @@ class VITAE():
                 self.X_output[id_train], 
                 self.scale_factor[id_train],
                 conditions = conditions[id_train],
-                pi_cov = None if self.pi_cov is None else self.pi_cov[id_train])
+                pi_cov = self.pi_cov[id_train])
         test_dataset = train.warp_dataset(self.X_input[id_test],
                 None if self.covariates is None else self.covariates[id_test],
                 batch_size, 
                 self.X_output[id_test],
                 self.scale_factor[id_test],
                 conditions = conditions[id_test],
-                pi_cov = None if self.pi_cov is None else self.pi_cov[id_test])
+                pi_cov = self.pi_cov[id_test])
                                    
         self.vae = train.train(
             train_dataset,
@@ -581,8 +507,6 @@ class VITAE():
         
         self.update_z()
         self.mu = self.vae.latent_space.mu.numpy()
-        self.pi = np.triu(np.ones(self.n_states))
-        self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.log_pi).numpy()[0]
             
  #       if path_to_weights is not None:
  #           self.save_model(path_to_weights)
@@ -590,7 +514,7 @@ class VITAE():
 
     def output_pi(self, pi_cov):
         """return a matrix n_states by n_states and a mask for plotting, which can be used to cover the lower triangular(except the diagnoals) of a heatmap"""
-        p = self.vae.pilayer
+        p = self.vae.latent_space.log_pi
         pi_cov = tf.expand_dims(tf.constant([pi_cov], dtype=tf.float32), 0)
         pi_val = tf.nn.softmax(p(pi_cov)).numpy()[0]
         # Create heatmap matrix
@@ -602,7 +526,7 @@ class VITAE():
 
     def return_pilayer_weights(self):
         """return parameters of pilayer, which has dimension dim(pi_cov) + 1 by n_categories, the last row is biases"""
-        return np.vstack((model.vae.pilayer.weights[0].numpy(), model.vae.pilayer.weights[1].numpy().reshape(1, -1)))
+        return np.vstack((model.vae.latent_space.log_pi.weights[0].numpy(), model.vae.latent_space.log_pi.weights[1].numpy().reshape(1, -1)))
 
    ### TODO: Why do we reset test_dataset here?
     def posterior_estimation(self, batch_size: int = 32, L: int = 10, **kwargs):
@@ -618,10 +542,11 @@ class VITAE():
             Extra key-value arguments for dimension reduction algorithms.              
         '''
         c = None if self.covariates is None else self.covariates.astype(tf.keras.backend.floatx())
-        test_dataset = train.warp_dataset(self.X_input, 
-                self.covariates,
-                batch_size)
-        _, _, self.posterior_c,\
+        test_dataset = train.warp_dataset(self.X_input,
+                None if self.covariates is None else self.covariates,
+                batch_size,
+                pi_cov = self.pi_cov)
+        _, self.posterior_c,\
             self.cell_position_posterior,self.cell_position_variance,_ = self.vae.inference(test_dataset, L=L)
             
         uni_cluster_labels = self.labels_map['label_names'].to_numpy()
