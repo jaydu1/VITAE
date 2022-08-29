@@ -8,7 +8,7 @@ import warnings
 from sklearn.decomposition import PCA
 from VITAE.utils import _check_expression, _check_variability
 
-def log_norm(x, K = 1e4):
+def normalize_gene_expression(x, K : float = 1e4, transform_fn : str = 'log'):
     '''Normalize the gene expression counts for each cell by the total expression counts, 
     divide this by a size scale factor, which is determined by total counts and a constant K
     then log-transforms the result.
@@ -19,6 +19,8 @@ def log_norm(x, K = 1e4):
         \([N, G^{raw}]\) The raw count data.
     K : float, optional
         The normalizing constant.
+    transform_fn : str, optional
+        Either 'log' or 'sqrt'.
 
     Returns
     ----------
@@ -28,13 +30,17 @@ def log_norm(x, K = 1e4):
         \([N, ]\) The scale factors.
     '''          
     scale_factor = np.sum(x,axis=1, keepdims=True)/K
-    x_normalized = np.log(x/scale_factor + 1)
-    print('min normailized value: ' + str(np.min(x_normalized)))
-    print('max normailized value: ' + str(np.max(x_normalized)))
+    if transform_fn=='log':
+        x_normalized = np.log(x/scale_factor + 1)
+    else:
+        x_normalized = np.where(x>0, np.sqrt(x/scale_factor), 0)
+
+    print('min normalized value: ' + str(np.min(x_normalized)))
+    print('max normalized value: ' + str(np.max(x_normalized)))
     return x_normalized, scale_factor
 
 
-def feature_select(x, gene_num = 2000):
+def feature_select(x, gene_num : int = 2000):
     '''Select highly variable genes (HVGs)
     (See [Stuart *et al*, (2019)](https://www.nature.com/articles/nbt.4096) and its early version [preprint](https://www.biorxiv.org/content/10.1101/460147v1.full.pdf)
     Page 12-13: Data preprocessing - Feature selection for individual datasets).
@@ -85,7 +91,7 @@ def feature_select(x, gene_num = 2000):
 
 def preprocess(adata = None, processed: bool = False, dimred: bool = False, 
             x = None, c = None, label_names = None, raw_cell_names = None, raw_gene_names = None,  
-            K: float = 1e4, gene_num: int = 2000, data_type: str = 'UMI', 
+            K: float = 1e4, transform_fn: str = 'log', gene_num: int = 2000, data_type: str = 'UMI', 
             npc: int = 64, random_state=0):
     '''Preprocess count data.
 
@@ -109,6 +115,8 @@ def preprocess(adata = None, processed: bool = False, dimred: bool = False,
         \([G^{raw}, ]\) The names of genes.
     K : int, optional
         The normalizing constant.
+    transform_fn : str
+        The transform function used to normalize the gene expression after scaling. Either 'log' or 'sqrt'.
     gene_num : int, optional
         The number of genes to retain.
     data_type : str, optional
@@ -183,7 +191,7 @@ def preprocess(adata = None, processed: bool = False, dimred: bool = False,
         x = x[expressed==1,:]
         if c is not None:
             c = c[expressed==1,:]
-        if label_names is None:
+        if label_names is not None:
             label_names = label_names[expressed==1]        
         
         # remove genes without variability
@@ -193,7 +201,7 @@ def preprocess(adata = None, processed: bool = False, dimred: bool = False,
         gene_names = raw_gene_names[variable==1]
 
         # log-normalization
-        expression, scale_factor = log_norm(x, K)
+        expression, scale_factor = normalize_gene_expression(x, K, transform_fn)
         
         # feature selection
         x, index = feature_select(x, gene_num)
