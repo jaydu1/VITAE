@@ -101,8 +101,9 @@ class VITAE():
             self.pi_cov = adata.obs[pi_covariates].to_numpy()
             if self.pi_cov.ndim == 1:
                 self.pi_cov = self.pi_cov.reshape(-1, 1)
+            self.pi_cov = self.pi_cov.astype(tf.keras.backend.floatx())
         else:
-            self.pi_cov = np.zeros(adata.shape[0]).reshape(-1, 1)
+            self.pi_cov = np.zeros((adata.shape[0],1), dtype=tf.keras.backend.floatx())
             
         self.model_type = model_type
         self._adata = sc.AnnData(X = self.adata.X, var = self.adata.var)
