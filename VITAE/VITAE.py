@@ -90,9 +90,12 @@ class VITAE():
         else:
             self.adata = adata
         if covariates is not None:
-            self.c_score = adata.obs[covariates].to_numpy()
+            self.covariates = adata.obs[covariates].to_numpy()
+            if self.covariates.ndim == 1:
+                self.covariates = self.covariates.reshape(-1,1)
+            self.covariates = self.covariates.astype(tf.keras.backend.floatx())
         else:
-            self.c_score = None
+            self.covariates = None
 
         if pi_covariates is not None:
             self.pi_cov = adata.obs[pi_covariates].to_numpy()
@@ -122,6 +125,7 @@ class VITAE():
 
         if isinstance(conditions,str):
             self.conditions = np.array(adata.obs[conditions].values)
+            # To Do: encoding conditions automatically
         else:
             self.conditions = conditions
 
@@ -129,7 +133,7 @@ class VITAE():
         self.vae = model.VariationalAutoEncoder(
             self.X_output.shape[1], self.dimensions,
             self.dim_latent, self.model_type,
-            False if self.c_score is None else True,
+            False if self.covariates is None else True,
             )
 
         if hasattr(self, 'inferer'):
@@ -195,13 +199,13 @@ class VITAE():
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
         self.train_dataset = train.warp_dataset(self.X_input[id_train].astype(tf.keras.backend.floatx()), 
-                                                None if self.c_score is None else self.c_score[id_train].astype(tf.keras.backend.floatx()),
+                                                None if self.covariates is None else self.covariates[id_train].astype(tf.keras.backend.floatx()),
                                                 batch_size, 
                                                 self.X_output[id_train].astype(tf.keras.backend.floatx()), 
                                                 self.scale_factor[id_train].astype(tf.keras.backend.floatx()),
                                                 conditions = conditions[id_train])
         self.test_dataset = train.warp_dataset(self.X_input[id_test], 
-                                                None if self.c_score is None else self.c_score[id_test].astype(tf.keras.backend.floatx()),
+                                                None if self.covariates is None else self.covariates[id_test].astype(tf.keras.backend.floatx()),
                                                 batch_size, 
                                                 self.X_output[id_test].astype(tf.keras.backend.floatx()), 
                                                 self.scale_factor[id_test].astype(tf.keras.backend.floatx()),
@@ -240,7 +244,7 @@ class VITAE():
         z : np.array
             \([N,d]\) The latent means.
         ''' 
-        c = None if self.c_score is None else self.c_score
+        c = None if self.covariates is None else self.covariates
         return self.vae.get_z(self.X_input, c)
             
     
@@ -544,7 +548,7 @@ class VITAE():
                                 random_state=random_state)
         if num_step_per_epoch is None:
             num_step_per_epoch = len(id_train)//batch_size+1
-        c = None if self.c_score is None else self.c_score.astype(tf.keras.backend.floatx())
+        c = None if self.covariates is None else self.covariates.astype(tf.keras.backend.floatx())
         self.train_dataset = train.warp_dataset(self.X_input[id_train].astype(tf.keras.backend.floatx()),
                                                 None if c is None else c[id_train],
                                                 batch_size, 
@@ -617,7 +621,7 @@ class VITAE():
         **kwargs :  
             Extra key-value arguments for dimension reduction algorithms.              
         '''
-        c = None if self.c_score is None else self.c_score.astype(tf.keras.backend.floatx())
+        c = None if self.covariates is None else self.covariates.astype(tf.keras.backend.floatx())
         self.test_dataset = train.warp_dataset(self.X_input.astype(tf.keras.backend.floatx()), 
                                                c,
                                                batch_size)
@@ -880,10 +884,10 @@ class VITAE():
 #        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
         X = stats.rankdata(self.pseudotime[cell_subset])
         X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
-        if self.c_score is None:
+        if self.covariates is None:
             X = np.c_[np.ones_like(X), X]
         else:
-            X = np.c_[np.ones_like(X), X, self.c_score[cell_subset,:]]
+            X = np.c_[np.ones_like(X), X, self.covariates[cell_subset,:]]
 
         res_df = DE_test(Y, X, self.adata.var_names, alpha)
         return res_df
