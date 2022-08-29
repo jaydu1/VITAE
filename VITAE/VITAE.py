@@ -9,6 +9,7 @@ from VITAE.utils import get_igraph, leidenalg_igraph, \
 from VITAE.metric import topology, get_GRI
 import tensorflow as tf
 
+from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import AgglomerativeClustering
@@ -126,7 +127,11 @@ class VITAE():
 
         if isinstance(conditions,str):
             self.conditions = np.array(adata.obs[conditions].values)
-            # To Do: encoding conditions automatically
+            # To Do: encoding conditions automatically check if this is correct            
+            self.le_cond = LabelEncoder()
+            self.conditions = self.le_cond.fit_transform(
+                self.conditions).astype(tf.keras.backend.floatx())
+            self.conditions = self.conditions/10. + 1.
         else:
             self.conditions = conditions
 
