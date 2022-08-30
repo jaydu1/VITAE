@@ -705,13 +705,13 @@ class VariationalAutoEncoder(tf.keras.Model):
         mmd_loss = 0.0
         conditions = tf.cast(conditions,tf.int32)
         n_group = conditions.shape[1]
+
         for i in range(n_group):
             sub_conditions = conditions[:, i]
             # 0 means not participant in mmd
             z_cond = z[sub_conditions != 0]
             sub_conditions = sub_conditions[sub_conditions != 0]
             n_sub_group = tf.unique(sub_conditions)[0].shape[0]
-
             real_labels = K.reshape(sub_conditions, (-1,)).numpy()
             unique_set = list(set(real_labels))
             reindex_dict = dict(zip(unique_set, range(n_sub_group)))
@@ -726,8 +726,7 @@ class VariationalAutoEncoder(tf.keras.Model):
                                        kernel_method='multi-scale-rbf',
                                        computation_method="general")
             mmd_loss = mmd_loss + _loss
-
-            return mmd_loss
+        return mmd_loss
 
     # each loop the inputed shape is changed. Can not use @tf.function
     # tf graph requires static shape and tensor dtype
