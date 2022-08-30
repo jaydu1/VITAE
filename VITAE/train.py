@@ -44,6 +44,10 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
     # fake c_score
     if c_score is None:
         c_score = np.zeros((X_normalized.shape[0],1), tf.keras.backend.floatx())
+
+    # fake conditions
+    if conditions is None:
+        conditions = np.zeros((X_normalized.shape[0],1), tf.keras.backend.floatx())
         
     if X is not None:
         train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, c_score, scale_factor, conditions, pi_cov))
@@ -59,7 +63,7 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
 def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, alpha: float, gamma: float, phi: float,
               num_epoch: int, num_step_per_epoch: int, 
               es_patience: int, es_tolerance: int, es_relative: bool,
-              verbose: bool = True, conditions = None):
+              verbose: bool = True):
     '''Pretraining.
 
     Parameters

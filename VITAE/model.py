@@ -624,37 +624,10 @@ class VariationalAutoEncoder(tf.keras.Model):
             x_normalized
         _, z_log_var, z = self.encoder(x_normalized, L)
 
-        self.gamma = gamma
-
-        # The block below is used to calculate the MMD loss
-        if self.gamma != 0:
-            z_pred = z[~tf.math.is_nan(conditions)]
-            conditions = conditions[~tf.math.is_nan(conditions)]
-
-            unique_group_name = tf.unique(tf.cast(tf.unique(conditions[~tf.math.is_nan(conditions)])[0], tf.int32))[0]
-            group_label = tf.cast(conditions, tf.int32)
+        if gamma == 0:
             mmd_loss = 0.0
-
-            # time_start = time.time()
-            for group_name in unique_group_name:
-                idx = tf.equal(group_label, group_name)
-                indv_group = conditions[idx]
-                indv_group = tf.math.subtract(indv_group, tf.cast(group_name, tf.float64))
-                indv_group = tf.math.multiply(indv_group, 10)
-                indv_group = tf.cast(tf.math.round(indv_group), tf.int32)
-                n_group = tf.shape(tf.unique(indv_group)[0])[0].numpy()
-
-                if n_group == 1:
-                    _loss = 0.0
-                else:
-                    _loss = self._mmd_loss(real_labels=indv_group, y_pred=z_pred[idx], gamma=self.gamma,
-                                           n_conditions=n_group,
-                                           kernel_method='multi-scale-rbf',
-                                           computation_method="general")
-
-                mmd_loss = mmd_loss + _loss
         else:
-            mmd_loss = 0.0
+            mmd_loss = self._get_total_mmd_loss(conditions,z,gamma)
 
         z_in = tf.concat([z, tf.tile(tf.expand_dims(c_score,1), (1,L,1))], -1) if self.has_cov else z
         
@@ -728,15 +701,38 @@ class VariationalAutoEncoder(tf.keras.Model):
             neg_E_nb = tf.reduce_mean(tf.reduce_sum(neg_E_nb, axis=-1))
             return neg_E_nb
 
+    def _get_total_mmd_loss(self,conditions,z,gamma):
+        mmd_loss = 0.0
+        conditions = tf.cast(conditions,tf.int32)
+        n_group = conditions.shape[1]
+        for i in range(n_group):
+            sub_conditions = conditions[:, i]
+            # 0 means not participant in mmd
+            z_cond = z[sub_conditions != 0]
+            sub_conditions = sub_conditions[sub_conditions != 0]
+            n_sub_group = tf.unique(sub_conditions)[0].shape[0]
+
+            real_labels = K.reshape(sub_conditions, (-1,)).numpy()
+            unique_set = list(set(real_labels))
+            reindex_dict = dict(zip(unique_set, range(n_sub_group)))
+            real_labels = [reindex_dict[x] for x in real_labels]
+            real_labels = tf.convert_to_tensor(real_labels,dtype=tf.int32)
+
+            if n_sub_group == 1:
+                _loss = 0
+            else:
+                _loss = self._mmd_loss(real_labels=real_labels, y_pred=z_cond, gamma=gamma,
+                                       n_conditions=n_sub_group,
+                                       kernel_method='multi-scale-rbf',
+                                       computation_method="general")
+            mmd_loss = mmd_loss + _loss
+
+            return mmd_loss
+
+    # each loop the inputed shape is changed. Can not use @tf.function
+    # tf graph requires static shape and tensor dtype
     def _mmd_loss(self, real_labels, y_pred, gamma, n_conditions, kernel_method='multi-scale-rbf',
                   computation_method="general"):
-
-        real_labels = K.reshape(K.cast(real_labels, 'int32'), (-1,)).numpy()
-      
-        unique_set = list(set(real_labels))
-        reindex_dict = dict(zip(unique_set, range(n_conditions)))
-        real_labels = [reindex_dict[x] for x in real_labels]
-        
         conditions_mmd = tf.dynamic_partition(y_pred, real_labels, num_partitions=n_conditions)
         loss = 0.0
         if computation_method.isdigit():
