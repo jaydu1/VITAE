@@ -718,7 +718,7 @@ class VariationalAutoEncoder(tf.keras.Model):
             real_labels = [reindex_dict[x] for x in real_labels]
             real_labels = tf.convert_to_tensor(real_labels,dtype=tf.int32)
 
-            if n_sub_group == 1:
+            if (n_sub_group == 1) | (n_sub_group == 0):
                 _loss = 0
             else:
                 _loss = self._mmd_loss(real_labels=real_labels, y_pred=z_cond, gamma=gamma,
