@@ -103,7 +103,7 @@ class VITAE():
             self.conditions = adata.obs[conditions].to_numpy()
             if self.conditions.ndim == 1:
                 self.conditions = self.conditions.reshape(-1,1)
-                self.conditions = self.conditions.astype(tf.int32)
+                self.conditions = self.conditions.astype(int)
         else:
             self.conditions = None
 
