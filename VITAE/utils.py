@@ -25,6 +25,7 @@ import tensorflow.keras as keras
 #from keras import backend as K
 from tensorflow.keras import backend as K
 import sys
+import anndata
 
 #------------------------------------------------------------------------------
 # Early stopping
@@ -686,8 +687,19 @@ def load_data(path, file_name):
     if data['type']=='non-UMI':
         scale_factor = np.sum(data['count'],axis=1, keepdims=True)/1e6
         data['count'] = data['count']/scale_factor
-    
-    return data  
+
+    dd = anndata.AnnData(X=data["count"])
+    dd.var.index = data["gene_names"]
+    dd.obs["grouping"] = data["grouping"]
+    dd.obs.index = data["cell_ids"]
+    dd.layers["count"] = data["count"].copy()
+
+    if data.get("covariates") is not None:
+        cov = data.get("covariates")
+        cov_name = ["covariate_" + str(i) for i in range(cov.shape[1])]
+        dd.obs[cov_name] = cov
+
+    return data,dd
 
 
 # Below are some functions used in calculating MMD loss
