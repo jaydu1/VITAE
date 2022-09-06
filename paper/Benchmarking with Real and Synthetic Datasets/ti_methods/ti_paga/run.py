@@ -12,7 +12,7 @@ import numpy as np
 import h5py
 import json
 
-import scanpy.api as sc
+import scanpy as sc
 import anndata
 import numba
 import warnings
@@ -116,8 +116,6 @@ milestone_network = pd.DataFrame(
   columns=adata.obs.louvain.cat.categories
 ).stack().reset_index()
 milestone_network.columns = ["from", "to", "length"]
-# milestone_network = milestone_network.astype({'from':str,'to':str})
-# milestone_network = milestone_network.iloc[[0,4,8],:].reset_index(drop=True)
 milestone_network = milestone_network.query("length >= " + str(parameters["connectivity_cutoff"])).reset_index(drop=True)
 milestone_network["directed"] = False
 
@@ -144,7 +142,7 @@ branches = adata.obs.groupby("louvain").apply(lambda x: x["dpt_pseudotime"].max(
 branches.columns = ["branch_id", "length"]
 branches["branch_id"] = branches["branch_id"].astype(np.str)
 branches["directed"] = True
-
+print(branches)
 
 # branch network: determine order of from and to based on difference in average pseudotime
 branch_network = milestone_network[["from", "to"]]
@@ -153,7 +151,7 @@ for i, (branch_from, branch_to) in enumerate(zip(branch_network["from"], branch_
   if average_pseudotime[branch_from] > average_pseudotime[branch_to]:
     branch_network.at[i, "to"] = branch_from
     branch_network.at[i, "from"] = branch_to
-
+print(branch_network)
 
 # save
 dataset = dynclipy.wrap_data(cell_ids = adata.obs.index)

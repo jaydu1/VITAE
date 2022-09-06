@@ -1,20 +1,14 @@
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-import math
-import umap
-import os 
-import sys
-import matplotlib.pyplot as plt
-import matplotlib
-import networkx as nx
+import random
 
-from VITAE import VITAE, get_igraph, louvain_igraph, plot_clusters, load_data, get_embedding
+from VITAE import VITAE, clustering, load_data
+
 type_dict = {
     # dyno
     'dentate':'UMI', 
-    'immune':'UMI', 
-    'neonatal':'UMI', 
+    'immune':'UMI',  
     'planaria_muscle':'UMI',
     'planaria_full':'UMI',
     'aging':'non-UMI', 
@@ -44,18 +38,18 @@ type_dict = {
     'multifurcating':'UMI',
     'tree':'UMI',
 }
+
 source_dict = {
-    'dentate':'dyno', 
-    'immune':'dyno', 
-    'neonatal':'dyno', 
-    'planaria_muscle':'dyno',
-    'planaria_full':'dyno',
-    'aging':'dyno', 
-    'cell_cycle':'dyno',
-    'fibroblast':'dyno', 
-    'germline':'dyno',    
-    'human':'dyno', 
-    'mesoderm':'dyno',
+    'dentate':'real', 
+    'immune':'real', 
+    'planaria_muscle':'real',
+    'planaria_full':'real',
+    'aging':'real', 
+    'cell_cycle':'real',
+    'fibroblast':'real', 
+    'germline':'real',    
+    'human':'real', 
+    'mesoderm':'real',
     
     'bifurcating_2':'dyngen',
     "cycle_1":'dyngen', 
@@ -100,30 +94,28 @@ for datatype in ['NB','Gaussian']:
         )
             
         num_simulation = 20
-        dim_latent = 8
+        dim_latent = 16
         NUM_CLUSTER = len(np.unique(data['grouping']))
         for n in range(num_simulation):
             tf.keras.backend.clear_session()
-            model.build_model(dim_latent = dim_latent, 
-                            dimensions=[16])
+            random.seed(n)
+            np.random.seed(n)
+            tf.random.set_seed(n)
+
+            model.build_model(dim_latent = dim_latent, dimensions = [32])
+
             model.pre_train(learning_rate = 1e-3,    # (Optional) the initial learning rate for the Adam optimizer (the default is 1e-3).
                         batch_size=256,              # (Optional) the batch size for pre-training (the default is 32). 
-                        L=1,                         # (Optional) the number of MC samples (the default is 1).
-                        num_epoch = 300,             # (Optional) the maximum number of epoches (the default is 300).                
-                        num_step_per_epoch = None,   # (Optional) the number of step per epoch, it will be inferred from number of cells and batch size if it is None (the default is None).
                         early_stopping_tolerance=1,  # (Optional) the minimum change of loss to be considered as an improvement (the default is 1e-3).
                         early_stopping_patience=5,   # (Optional) the maximum number of epoches if there is no improvement (the default is 10).
-                        early_stopping_warmup=0,     # (Optional) the number of warmup epoches (the default is 0).
-                        path_to_weights=None,        # (Optional) the path of weight file to be saved; not saving weight if None (the default is None).
                         alpha=0.1
                         ) 
 
-            z = model.get_latent_z()
-            labels = model.labels    
-            mu = np.zeros((z.shape[1],NUM_CLUSTER))
-            for i in np.arange(NUM_CLUSTER):
-                mu[:,i] = np.mean(z[labels==i], axis=0)
-
+            z = model.get_latent_z()        
+            labels, mu = clustering(z)
+            NUM_CLUSTER = mu.shape[0]
+            mu = mu.T
+            
             model.init_latent_space(
                     NUM_CLUSTER,                     # numebr of clusters
                     cluster_labels=labels,           # (optional) names of the clustering labels for plotting
@@ -133,16 +125,8 @@ for datatype in ['NB','Gaussian']:
 
             model.train(learning_rate = 1e-3,        # (Optional) the initial learning rate for the Adam optimizer (the default is 1e-3).
                     batch_size=256,              # (Optional) the batch size for pre-training (the default is 32). 
-                    L=1,                         # (Optional) the number of MC samples (the default is 1).
                     alpha=0.1,
                     beta=2,
-                    num_epoch = 300,             # (Optional) the maximum number of epoches (the default is 300).                
-                    num_step_per_epoch = None,   # (Optional) the number of step per epoch, it will be inferred from number of cells and batch size if it is None (the default is None).
-                    early_stopping_tolerance=1,  # (Optional) the minimum change of loss to be considered as an improvement (the default is 1e-3).
-                    early_stopping_patience=5,   # (Optional) the maximum number of epoches if there is no improvement (the default is 10).
-                    early_stopping_warmup=5,     # (Optional) the number of warmup epoches (the default is 0).
-                    plot_every_num_epoch=None,
-                    path_to_weights=None,          # (Optional) the path of weight file to be saved; not saving weight if None (the default is None). 
                     )
 
             begin_node_true = model.le.transform([data['root_milestone_id']])[0]

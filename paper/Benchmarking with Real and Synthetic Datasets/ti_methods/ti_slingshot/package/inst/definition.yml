@@ -1,0 +1,137 @@
+method:
+  id: slingshot
+  name: Slingshot
+  source: tool
+  platform: R
+  license: "Artistic-2.0"
+  url: https://github.com/kstreet13/slingshot
+  authors:
+  - given: Kelly
+    family: Street
+    email: street.kelly@gmail.com
+    github: kstreet13
+  - given: Sandrine
+    family: Dudoit
+    email: sandrine@stat.berkeley.edu
+    ORCID: 0000-0002-6069-8629
+    github: sandrinedudoit
+
+manuscript:
+  doi: 10.1186/s12864-018-4772-0
+  google_scholar_cluster_id: '15798146274231272778'
+  preprint_date: '2017-04-19'
+  publication_date: '2018-06-19'
+
+container:
+  docker: dynverse/ti_slingshot
+  url: https://github.com/dynverse/ti_slingshot
+
+package:
+  remote: dynverse/ti_slingshot/package
+  name: tislingshot
+  function_name: ti_slingshot
+
+wrapper:
+  type: trajectory
+  topology_inference: free
+  trajectory_types:
+    - linear
+    - bifurcation
+    - convergence
+    - multifurcation
+    - binary_tree
+    - tree
+  input_required:
+    - expression
+  input_optional:
+    - start_id
+    - end_id
+    - dimred
+    - groups_id
+
+parameters:
+  - id: cluster_method
+    type: character
+    default: pam
+    values:
+      - pam
+      - clara
+  - id: ndim
+    type: integer
+    default: 20
+    distribution:
+      type: uniform
+      upper: 100
+      lower: 2
+    description: The number of dimensions in the new space.
+  - id: shrink
+    type: numeric
+    default: 1
+    distribution:
+      type: expuniform
+      lower: 0
+      upper: 1
+    description: logical or numeric between 0 and 1, determines whether and how much
+      to shrink branching lineages toward their average prior to the split.
+  - id: reweight
+    type: logical
+    default: yes
+    description: 'logical, whether to allow cells shared between lineages to be reweighted
+      during curve-fitting. If `TRUE`, cells shared between  lineages will be
+      weighted by: distance to nearest curve / distance to curve.'
+  - id: reassign
+    type: logical
+    default: yes
+    description: logical, whether to reassign cells to lineages at each iteration.
+      If TRUE, cells will be added to a lineage when their projection distance to
+      the curve is less than the median distance for all cells currently assigned
+      to the lineage. Additionally, shared cells will be removed from a lineage if
+      their projection distance to the curve is above the 90th percentile and their
+      weight along the curve is less than 0.1.
+  - id: thresh
+    type: numeric
+    default: 0.001
+    distribution:
+      type: expuniform
+      lower: 1.0e-05
+      upper: 100000
+    description: numeric, determines the convergence criterion. Percent change in
+      the total distance from cells to their projections along curves must be less
+      than thresh. Default is 0.001, similar to principal.curve.
+  - id: maxit
+    type: integer
+    default: 10
+    distribution:
+      type: uniform
+      lower: 0
+      upper: 50
+    description: numeric, maximum number of iterations, see principal.curve.
+  - id: stretch
+    type: numeric
+    default: 2
+    distribution:
+      type: expuniform
+      lower: 0
+      upper: 5
+    description: numeric factor by which curves can be extrapolated beyond endpoints.
+      Default is 2, see principal.curve.
+  - id: smoother
+    type: character
+    default: smooth.spline
+    values:
+    - smooth.spline
+    - loess
+    - periodic.lowess
+    description: choice of scatter plot smoother. Same as principal.curve, but "lowess"
+      option is replaced with "loess" for additional flexibility.
+  - id: shrink.method
+    type: character
+    default: cosine
+    values:
+    - cosine
+    - tricube
+    - density
+    description: character denoting how to determine the appropriate amount of shrinkage
+      for a branching lineage. Accepted values are the same as for `kernel` in
+      `density()` (default is `"cosine"`), as well as `"tricube"` and `"density"`.
+      See 'Details' for more.
