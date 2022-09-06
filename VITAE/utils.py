@@ -691,6 +691,7 @@ def load_data(path, file_name):
     dd = anndata.AnnData(X=data["count"])
     dd.var.index = data["gene_names"]
     dd.obs["grouping"] = data["grouping"]
+    dd.obs["grouping"] = dd.obs["grouping"].astype("category")
     dd.obs.index = data["cell_ids"]
     dd.layers["count"] = data["count"].copy()
 
