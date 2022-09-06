@@ -819,7 +819,7 @@ class VITAE():
         Returns
         ----------
         '''
-        if type(root)==str:
+        if isinstance(root,str):
             if root not in self.labels_map.values:
                 raise ValueError("Root {} is not in the label names!".format(root))
             root = self.labels_map[self.labels_map['label_names']==root].index[0]
