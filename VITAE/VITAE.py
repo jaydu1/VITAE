@@ -927,16 +927,19 @@ class VITAE():
         res : pd.DataFrame
             The evaluation result.
         '''
-        if not hasattr(self, 'le'):
+        if not hasattr(self, 'labels_map'):
             raise ValueError("No given labels for training.")
 
+        '''
         # Evaluate for the whole dataset will ignore selected_cell_subset.
         if len(self.selected_cell_subset)!=len(self.cell_names):
             warnings.warn("Evaluate for the whole dataset.")
+        '''
         
         # If the begin_node_true, need to encode it by self.le.
+        label_map_dict = dict(zip(self.labels_map["label_names"],self.labels_map.index))
         if isinstance(begin_node_true, str):
-            begin_node_true = self.le.transform([begin_node_true])[0]
+            begin_node_true = label_map_dict[begin_node_true]
             
         # For generated data, grouping information is already in milestone_net
         if 'w' in milestone_net.columns:
@@ -944,15 +947,24 @@ class VITAE():
             
         # If milestone_net is provided, transform them to be numeric.
         if milestone_net is not None:
-            milestone_net['from'] = self.le.transform(milestone_net['from'])
-            milestone_net['to'] = self.le.transform(milestone_net['to'])
+            milestone_net['from'] = [label_map_dict[x] for x in milestone_net["from"]]
+            milestone_net['to'] = [label_map_dict[x] for x in milestone_net["to"]]
             
         begin_node_pred = int(np.argmin(np.mean((
             self.z[self.labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
-        
-        G, edges = self.inferer.init_inference(self.cell_position_posterior, self.pc_x, thres, method, no_loop)
-        G, w, pseudotime = self.inferer.infer_trajectory(begin_node_pred, self.label_names, cutoff=cutoff, path=path, is_plot=False)
+
+        if cutoff is None:
+            cutoff = 0.01
+        self.backbone = self.inferer.build_graphs(self.cell_position_posterior, self.pc_x, method, thres, no_loop,cutoff)
+        ## w here is the modified_w projected to the infered backbone
+        self.cell_position_projected = self.inferer.modify_wtilde(self.cell_position_posterior,
+                                                                  np.array(list(self.backbone.edges)))
+        self.infer_trajectory(root=begin_node_pred, visualize=False)
+
+        G = self.backbone
+        w = self.cell_position_projected
+        pseudotime = self.pseudotime
         
         # 1. Topology
         G_pred = nx.Graph()
