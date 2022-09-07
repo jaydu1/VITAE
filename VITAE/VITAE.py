@@ -1069,7 +1069,7 @@ class VITAE():
             np.save(f, np.array([
                 self.dim_origin, self.dimensions, self.dim_latent,
                 self.model_type, False if self.covariates is None else True], dtype=object))
-        if hasattr(self, 'inferer'):
+        if hasattr(self, 'inferer') and hasattr(self, 'uncertainty'):
             with open(path_to_file + '.inference', 'wb') as f:
                 np.save(f, np.array([
                     self.pi, self.mu, self.pc_x, self.cell_position_posterior, self.uncertainty,
