@@ -992,7 +992,7 @@ class VITAE():
                 G_true.add_edges_from(list(
                     milestone_net.groupby(['from', 'to']).count().index))
             grouping = [label_map_dict[x] for x in grouping]
-        grouping = np.array(grouping)
+            grouping = np.array(grouping)
         G_true.remove_edges_from(nx.selfloop_edges(G_true))
         nx.set_node_attributes(G_true, False, 'is_init')
         G_true.nodes[begin_node_true]['is_init'] = True
@@ -1006,7 +1006,6 @@ class VITAE():
                                                                       &(milestone_net['w']<0.5)]['to'].values
         else:
             milestones_true = grouping
-        milestones_true = np.array(milestones_true)
         milestones_true = milestones_true[pseudotime!=-1]
         milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
         res['ARI'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
