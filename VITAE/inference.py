@@ -79,6 +79,14 @@ class Inferer(object):
                 for j in range(i+1,self.n_states):
                     if np.sum(c==self.C[i,j])>0:
                         graph[i,j] = np.sum(c==self.C[i,j])/np.sum(np.isin(c, np.diagonal(self.C)) == False)
+        elif method == "w_base":
+            for i in range(self.n_states):
+                for j in range(i+1,self.n_states):
+                    two_vertice_max_w = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j),:]
+                    num_two_vertice = two_vertice_max_w.shape[0]
+                    if num_two_vertice > 0:
+                        graph[i, j] = np.sum(
+                            np.abs(two_vertice_max_w[:, i] - two_vertice_max_w[:, j]) < 0.1) / num_two_vertice
         else:
             raise ValueError("Invalid method, must be one of 'mean', 'modified_mean', 'map', and 'modified_map'.")
         
