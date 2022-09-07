@@ -944,7 +944,12 @@ class VITAE():
         '''
         
         # If the begin_node_true, need to encode it by self.le.
-        label_map_dict = dict(zip(self.labels_map["label_names"],self.labels_map.index))
+        label_map_dict = dict()
+        for i in range(self.labels_map.shape[0]):
+            label_mapped = self.labels_map.loc[i]
+            ## merged cluster index is connected by comma
+            for each in label_mapped.values[0].split(","):
+                label_map_dict[each] = i
         if isinstance(begin_node_true, str):
             begin_node_true = label_map_dict[begin_node_true]
             
