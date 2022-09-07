@@ -639,13 +639,20 @@ def load_data(path, file_name):
     
     with h5py.File(os.path.join(path, file_name+'.h5'), 'r') as f:
         data['count'] = np.array(f['count'], dtype=np.float32)
+        dd = anndata.AnnData(X=data["count"])
+        dd.layers["count"] = data["count"].copy()
+
         data['grouping'] = np.array(f['grouping']).astype(str)
+        dd.obs["grouping"] = data["grouping"]
+        dd.obs["grouping"] = dd.obs["grouping"].astype("category")
         if 'gene_names' in f:
             data['gene_names'] = np.array(f['gene_names']).astype(str)
+            dd.var.index = data["gene_names"]
         else:
             data['gene_names'] = None
         if 'cell_ids' in f:
             data['cell_ids'] = np.array(f['cell_ids']).astype(str)
+            dd.obs.index = data["cell_ids"]
         else:
             data['cell_ids'] = None
         if 'days' in f:
@@ -687,13 +694,6 @@ def load_data(path, file_name):
     if data['type']=='non-UMI':
         scale_factor = np.sum(data['count'],axis=1, keepdims=True)/1e6
         data['count'] = data['count']/scale_factor
-
-    dd = anndata.AnnData(X=data["count"])
-    dd.var.index = data["gene_names"]
-    dd.obs["grouping"] = data["grouping"]
-    dd.obs["grouping"] = dd.obs["grouping"].astype("category")
-    dd.obs.index = data["cell_ids"]
-    dd.layers["count"] = data["count"].copy()
 
     if data.get("covariates") is not None:
         cov = data.get("covariates")
