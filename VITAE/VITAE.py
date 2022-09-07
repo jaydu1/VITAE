@@ -1069,10 +1069,10 @@ class VITAE():
             np.save(f, np.array([
                 self.dim_origin, self.dimensions, self.dim_latent,
                 self.model_type, False if self.covariates is None else True], dtype=object))
-        if hasattr(self, 'inferer') and hasattr(self.inferer, 'embed_mu'):
+        if hasattr(self, 'inferer'):
             with open(path_to_file + '.inference', 'wb') as f:
                 np.save(f, np.array([
-                    self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                    self.pi, self.mu, self.pc_x, self.cell_position_posterior, self.uncertainty,
                     self.z], dtype=object))
 
 
@@ -1109,10 +1109,10 @@ class VITAE():
                 with open(path_to_file + '.inference', 'rb') as f:
                     arr = np.load(f, allow_pickle=True)
                     if len(arr) == 7:
-                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                        [self.pi, self.mu, self.pc_x, self.cell_position_posterior, self.uncertainty,
                          self.D_JS, self.z] = arr
                     else:
-                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                        [self.pi, self.mu, self.pc_x, self.cell_position_posterior, self.uncertainty,
                          self.z] = arr
         ## initialize the weight of encoder and decoder
         self.vae.encoder(np.zeros((1, self.dim_origin)))
