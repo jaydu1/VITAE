@@ -494,7 +494,7 @@ class VITAE():
             num_epoch: int = 200, num_step_per_epoch: Optional[int] =  None,
             early_stopping_patience: int = 10, early_stopping_tolerance: float = 0.01, 
             early_stopping_relative: bool = True, early_stopping_warmup: int = 0,
-          #  path_to_weights: Optional[str] = None, 
+            path_to_weights: Optional[str] = None,
             verbose: bool = False, **kwargs):
         '''Train the model.
 
@@ -594,8 +594,8 @@ class VITAE():
         self.pi = np.triu(np.ones(self.n_states))
         self.pi[self.pi > 0] = tf.nn.softmax(self.vae.latent_space.pi).numpy()[0]
             
- #       if path_to_weights is not None:
- #           self.save_model(path_to_weights)
+        if path_to_weights is not None:
+            self.save_model(path_to_weights)
     
 
     def output_pi(self, pi_cov):
@@ -641,7 +641,7 @@ class VITAE():
 
     def infer_backbone(self, method: str = 'modified_map', thres = 0.5,
             no_loop: bool = True, cutoff: float = 0,
-            visualize: bool = True):
+            visualize: bool = True, path_to_fig = None):
         ''' Compute edge scores.
 
         Parameters
@@ -682,12 +682,10 @@ class VITAE():
         self.adata.obs['projection_uncertainty'] = self.uncertainty
         print("Cell projection uncertainties stored as 'projection_uncertainty' in self.adata.obs")
         if visualize:
-            ax = self.plot_backbone(directed = False)
-            ax.figure.show()
-          #  edgewidth = [ d['weight'] for (u,v,d) in self.backbone.edges(data=True)]
-          #  plt.figure()
-          #  nx.draw_spring((self.backbone, width = edgewidth/np.mean(edgewidth), with_labels = True)
-          #  plt.show()
+            self.ax = self.plot_backbone(directed = False)
+            if path_to_fig is not None:
+                self.ax.figure.savefig(path_to_fig)
+            self.ax.figure.show()
         return None
 
 
@@ -807,7 +805,7 @@ class VITAE():
 
         
     def infer_trajectory(self, root: Union[int,str], cutoff: Optional[float] = None,
-                         visualize: bool = True, method: str = 'UMAP', **kwargs):
+                         visualize: bool = True, path_to_fig = None, method: str = 'UMAP', **kwargs):
         '''Infer the trajectory.
 
         Parameters
@@ -854,8 +852,10 @@ class VITAE():
         print("Cell projection uncertainties stored as 'pseudotime' in self.adata.obs")
 
         if visualize: 
-            ax = self.plot_backbone(directed = True, color = 'pseudotime')
-            ax.figure.show()
+            self.ax = self.plot_backbone(directed = True, color = 'pseudotime')
+            if path_to_fig is not None:
+                self.ax.figure.savefig(path_to_fig)
+            self.ax.figure.show()
 
         return None
 
