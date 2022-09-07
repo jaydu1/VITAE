@@ -991,7 +991,8 @@ class VITAE():
             if milestone_net is not None:             
                 G_true.add_edges_from(list(
                     milestone_net.groupby(['from', 'to']).count().index))
-            grouping = self.le.transform(grouping)
+            grouping = [label_map_dict[x] for x in grouping]
+        grouping = np.array(grouping)
         G_true.remove_edges_from(nx.selfloop_edges(G_true))
         nx.set_node_attributes(G_true, False, 'is_init')
         G_true.nodes[begin_node_true]['is_init'] = True
@@ -1005,6 +1006,7 @@ class VITAE():
                                                                       &(milestone_net['w']<0.5)]['to'].values
         else:
             milestones_true = grouping
+        milestones_true = np.array(milestones_true)
         milestones_true = milestones_true[pseudotime!=-1]
         milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
         res['ARI'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
@@ -1103,7 +1105,6 @@ class VITAE():
         if load_labels:
             with open(path_to_file + '.label', 'rb') as f:
                 cluster_labels = np.load(f, allow_pickle=True)
-                print("here")
             self.init_latent_space(cluster_labels, dist_thres=0)
             if os.path.exists(path_to_file + '.inference'):
                 with open(path_to_file + '.inference', 'rb') as f:
