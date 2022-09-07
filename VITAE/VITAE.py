@@ -1,5 +1,6 @@
 import warnings
 from typing import Optional, Union
+import os
 
 import VITAE.model as model 
 import VITAE.train as train 
@@ -84,6 +85,7 @@ class VITAE():
             if 'highly_variable' not in adata.var:
                 raise ValueError("need to first select highly variable genes using scanpy")
 
+        self.model_type = model_type
 
         if copy_adata:
             self.adata = adata.copy()
@@ -153,7 +155,7 @@ class VITAE():
             learning_rate: float = 1e-3, batch_size: int = 256, L: int = 1, alpha: float = 0.10, gamma: float = 0,
             phi : float = 1,num_epoch: int = 200, num_step_per_epoch: Optional[int] = None,
             early_stopping_patience: int = 10, early_stopping_tolerance: float = 0.01, 
-            early_stopping_relative: bool = True, verbose: bool = False):
+            early_stopping_relative: bool = True, verbose: bool = False,path_to_weights: Optional[str] = None):
         '''Pretrain the model with specified learning rate.
 
         Parameters
@@ -224,8 +226,8 @@ class VITAE():
         
         self.update_z()
 
- #       if path_to_weights is not None:
- #           self.save_model(path_to_weights)
+        if path_to_weights is not None:
+            self.save_model(path_to_weights)
             
 
     def update_z(self):
@@ -335,8 +337,13 @@ class VITAE():
             cluster_labels = cluster_labels.astype(str) 
             uni_cluster_labels = np.unique(cluster_labels)
         else:
-            cluster_labels = self.adata.obs[cluster_label].to_numpy()                   
-            uni_cluster_labels = np.array(self.adata.obs[cluster_label].cat.categories)
+            if isinstance(cluster_label,str):
+                cluster_labels = self.adata.obs[cluster_label].to_numpy()
+                uni_cluster_labels = np.array(self.adata.obs[cluster_label].cat.categories)
+            else:
+                ## if cluster_label is a list
+                cluster_labels = cluster_label
+                uni_cluster_labels = np.unique(cluster_labels)
 
         n_clusters = len(uni_cluster_labels)
 
@@ -1044,3 +1051,71 @@ class VITAE():
 
         # res['score_cos_theta'] = score_cos_theta/(np.sum(np.sum(w>0, axis=-1)==2)+1e-12)
         return res
+
+    def save_model(self, path_to_file: str = 'model.checkpoint'):
+        '''Saving model weights.
+
+        Parameters
+        ----------
+        path_to_file : str, optional
+            The path to weight files of pre-trained or trained model
+        '''
+        self.vae.save_weights(path_to_file)
+        if hasattr(self, 'labels') and self.labels is not None:
+            with open(path_to_file + '.label', 'wb') as f:
+                np.save(f, self.labels)
+        with open(path_to_file + '.config', 'wb') as f:
+            self.dim_origin = self.X_input.shape[1]
+            np.save(f, np.array([
+                self.dim_origin, self.dimensions, self.dim_latent,
+                self.model_type, False if self.covariates is None else True], dtype=object))
+        if hasattr(self, 'inferer') and hasattr(self.inferer, 'embed_mu'):
+            with open(path_to_file + '.inference', 'wb') as f:
+                np.save(f, np.array([
+                    self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                    self.z], dtype=object))
+
+
+    def load_model(self, path_to_file: str = 'model.checkpoint', load_labels: bool = False):
+        '''Load model weights.
+        Parameters
+        ----------
+        path_to_file : str, optional
+            The path to weight files of pre trained or trained model
+        load_labels : boolean, optional
+            Whether to load clustering labels or not.
+            If load_labels is True, then the LatentSpace layer will be initialized basd on the model.
+            If load_labels is False, then the LatentSpace layer will not be initialized.
+        '''
+        if not os.path.exists(path_to_file + '.config'):
+            raise AssertionError('Config file not exist!')
+        if load_labels and not os.path.exists(path_to_file + '.label'):
+            raise AssertionError('Label file not exist!')
+
+        with open(path_to_file + '.config', 'rb') as f:
+            [self.dim_origin, self.dimensions,
+             self.dim_latent, self.model_type, has_c] = np.load(f, allow_pickle=True)
+        self.vae = model.VariationalAutoEncoder(
+            self.dim_origin, self.dimensions,
+            self.dim_latent, self.model_type, has_c
+        )
+
+        if load_labels:
+            with open(path_to_file + '.label', 'rb') as f:
+                cluster_labels = np.load(f, allow_pickle=True)
+                print("here")
+            self.init_latent_space(cluster_labels, dist_thres=0)
+            if os.path.exists(path_to_file + '.inference'):
+                with open(path_to_file + '.inference', 'rb') as f:
+                    arr = np.load(f, allow_pickle=True)
+                    if len(arr) == 7:
+                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                         self.D_JS, self.z] = arr
+                    else:
+                        [self.pi, self.mu, self.pc_x, self.w_tilde, self.var_w_tilde,
+                         self.z] = arr
+        ## initialize the weight of encoder and decoder
+        self.vae.encoder(np.zeros((1, self.dim_origin)))
+        self.vae.decoder(np.expand_dims(np.zeros((1,self.dim_latent)),1))
+
+        self.vae.load_weights(path_to_file)
