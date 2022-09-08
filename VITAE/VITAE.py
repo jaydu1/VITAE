@@ -961,9 +961,10 @@ class VITAE():
         if milestone_net is not None:
             milestone_net['from'] = [label_map_dict[x] for x in milestone_net["from"]]
             milestone_net['to'] = [label_map_dict[x] for x in milestone_net["to"]]
-            
+
+        mapped_labels = np.array([label_map_dict[x] for x in self.labels])
         begin_node_pred = int(np.argmin(np.mean((
-            self.z[self.labels==begin_node_true,:,np.newaxis] -
+            self.z[mapped_labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
 
         if cutoff is None:
@@ -977,7 +978,7 @@ class VITAE():
         G = self.backbone
         w = self.cell_position_projected
         pseudotime = self.pseudotime
-        
+
         # 1. Topology
         G_pred = nx.Graph()
         G_pred.add_nodes_from(G.nodes)
