@@ -944,6 +944,7 @@ class VITAE():
         '''
         
         # If the begin_node_true, need to encode it by self.le.
+        # this dict is for milestone net cause their labels are not merged
         label_map_dict = dict()
         for i in range(self.labels_map.shape[0]):
             label_mapped = self.labels_map.loc[i]
@@ -962,7 +963,9 @@ class VITAE():
             milestone_net['from'] = [label_map_dict[x] for x in milestone_net["from"]]
             milestone_net['to'] = [label_map_dict[x] for x in milestone_net["to"]]
 
-        mapped_labels = np.array([label_map_dict[x] for x in self.labels])
+        # this dict is for potentially merged clusters.
+        label_map_dict_for_merged_cluster = dict(zip(self.labels_map["label_names"],self.labels_map.index))
+        mapped_labels = np.array([label_map_dict_for_merged_cluster[x] for x in self.labels])
         begin_node_pred = int(np.argmin(np.mean((
             self.z[mapped_labels==begin_node_true,:,np.newaxis] -
             self.mu[np.newaxis,:,:])**2, axis=(0,1))))
