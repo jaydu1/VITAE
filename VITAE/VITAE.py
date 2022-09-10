@@ -846,7 +846,7 @@ class VITAE():
             self.pseudotime = self.inferer.comp_pseudotime(milestone_net, root, self.cell_position_projected)
         else:
             warnings.warn("There are no connected states for starting from the giving root.")
-            self.pseudotime = []
+            self.pseudotime = [np.nan] * self.adata.shape[0]
 
         self.adata.obs['pseudotime'] = self.pseudotime
         print("Cell projection uncertainties stored as 'pseudotime' in self.adata.obs")
