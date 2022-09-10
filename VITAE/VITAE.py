@@ -846,7 +846,7 @@ class VITAE():
             self.pseudotime = self.inferer.comp_pseudotime(milestone_net, root, self.cell_position_projected)
         else:
             warnings.warn("There are no connected states for starting from the giving root.")
-            self.pseudotime = [np.nan] * self.adata.shape[0]
+            self.pseudotime = -np.ones(self._adata.shape[0])
 
         self.adata.obs['pseudotime'] = self.pseudotime
         print("Cell projection uncertainties stored as 'pseudotime' in self.adata.obs")
@@ -1010,8 +1010,8 @@ class VITAE():
                                                                       &(milestone_net['w']<0.5)]['to'].values
         else:
             milestones_true = grouping
-        milestones_true = milestones_true[pseudotime!=-1]
-        milestones_pred = np.argmax(w[pseudotime!=-1,:], axis=1)
+        milestones_true = milestones_true
+        milestones_pred = np.argmax(w, axis=1)
         res['ARI'] = (adjusted_rand_score(milestones_true, milestones_pred) + 1)/2
         
         if grouping is None:
