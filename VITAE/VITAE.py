@@ -972,11 +972,6 @@ class VITAE():
 
         if cutoff is None:
             cutoff = 0.01
-        self.backbone = self.inferer.build_graphs(self.cell_position_posterior, self.pc_x, method, thres, no_loop,cutoff)
-        ## w here is the modified_w projected to the infered backbone
-        self.cell_position_projected = self.inferer.modify_wtilde(self.cell_position_posterior,
-                                                                  np.array(list(self.backbone.edges)))
-        self.infer_trajectory(root=begin_node_pred, visualize=False)
 
         G = self.backbone
         w = self.cell_position_projected
