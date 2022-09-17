@@ -1,6 +1,10 @@
-import warnings
 from typing import Optional, Union
+import warnings
 import os
+
+import numpy as np
+import pandas as pd
+from scipy import stats
 
 import VITAE.model as model 
 import VITAE.train as train 
@@ -13,13 +17,13 @@ import tensorflow as tf
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import AgglomerativeClustering
-import numpy as np
-import pandas as pd
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+import scanpy as sc
 import networkx as nx
 import matplotlib.pyplot as plt
-from scipy import stats
-import scanpy as sc
 import matplotlib.patheffects as pe
+
 
 class VITAE():
     """
@@ -93,10 +97,21 @@ class VITAE():
             self.adata = adata
 
         if covariates is not None:
-            self.covariates = adata.obs[covariates].to_numpy()
-            if self.covariates.ndim == 1:
-                self.covariates = self.covariates.reshape(-1,1)
-                self.covariates = self.covariates.astype(tf.keras.backend.floatx())
+            if isinstance(covariates, str):
+                covariates = [covariates]
+            covariates = np.array(covariates)
+            id_cat = (adata.obs[covariates].dtypes == 'category')
+            # add OneHotEncoder & StandardScaler as class variable if needed
+            if np.sum(id_cat)>0:
+                covariates_cat = OneHotEncoder(drop='if_binary', handle_unknown='ignore'
+                    ).fit_transform(adata.obs[covariates[id_cat]]).toarray()
+            else:
+                covariates_cat = np.array([]).reshape(adata.shape[0],0)
+            if np.sum(~id_cat)>0:
+                covariates_con = StandardScaler().fit_transform(adata.obs[covariates[~id_cat]])
+            else:
+                covariates_con = np.array([]).reshape(adata.shape[0],0)
+            self.covariates = np.c_[covariates_cat, covariates_con].astype(tf.keras.backend.floatx())
         else:
             self.covariates = None
 
