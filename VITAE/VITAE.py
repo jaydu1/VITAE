@@ -323,7 +323,6 @@ class VITAE():
             axes = sc.pl.diffmap(self._adata, color = color, **kwargs)
         elif method == 'draw_graph':
             axes = sc.pl.draw_graph(self._adata, color = color, **kwargs)
-            
         return axes
 
 

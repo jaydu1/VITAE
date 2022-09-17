@@ -709,8 +709,8 @@ class VariationalAutoEncoder(tf.keras.Model):
         for i in range(n_group):
             sub_conditions = conditions[:, i]
             # 0 means not participant in mmd
-            z_cond = z[sub_conditions != 0]
-            sub_conditions = sub_conditions[sub_conditions != 0]
+            z_cond = z[~tf.math.is_nan(sub_conditions)]
+            sub_conditions = sub_conditions[~tf.math.is_nan(sub_conditions)]
             n_sub_group = tf.unique(sub_conditions)[0].shape[0]
             real_labels = K.reshape(sub_conditions, (-1,)).numpy()
             unique_set = list(set(real_labels))
