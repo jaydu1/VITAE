@@ -1,4 +1,21 @@
 # -*- coding: utf-8 -*-
+import sys
+import os
+import random
+import numpy as np
+import pandas as pd
+from numba import jit, float32, int32
+import scipy
+from scipy import stats
+
+import tensorflow as tf
+import tensorflow.keras as keras
+from tensorflow.keras import backend as K
+
+import h5py
+import scanpy as sc
+import anndata
+
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 #from sklearn_extra.cluster import KMedoids
@@ -9,23 +26,10 @@ from sklearn.utils import check_random_state
 from scipy.sparse import coo_matrix
 import igraph as ig
 import leidenalg
+
 import matplotlib.pyplot as plt
 import matplotlib
-import os     
-import numpy as np
-from numba import jit, float32, int32
-import scipy
-from scipy import stats
-import pandas as pd
-import h5py
-import scanpy as sc
-import numpy as np
-import tensorflow as tf
-import tensorflow.keras as keras
-#from keras import backend as K
-from tensorflow.keras import backend as K
-import sys
-import anndata
+
 
 #------------------------------------------------------------------------------
 # Early stopping
@@ -80,7 +84,7 @@ def reset_random_seeds(seed):
     np.random.seed(seed)
     random.seed(seed)
 
-    
+
 def _comp_dist(x, y, mu=None, S=None):
     uni_y = np.unique(y)
     n_uni_y = len(uni_y)
