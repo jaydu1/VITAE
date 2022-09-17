@@ -74,7 +74,13 @@ class Early_Stopping():
 # Utils functions
 #------------------------------------------------------------------------------
 
+def reset_random_seeds(seed):
+    os.environ['PYTHONHASHSEED']=str(seed)
+    tf.random.set_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
+    
 def _comp_dist(x, y, mu=None, S=None):
     uni_y = np.unique(y)
     n_uni_y = len(uni_y)
