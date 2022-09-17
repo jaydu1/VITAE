@@ -632,7 +632,7 @@ type_dict = {
 
 
 
-def load_data(path, file_name):  
+def load_data(path, file_name,return_dict = False):
     '''Load h5df data.
 
     Parameters
@@ -712,7 +712,10 @@ def load_data(path, file_name):
         cov_name = ["covariate_" + str(i) for i in range(cov.shape[1])]
         dd.obs[cov_name] = cov
 
-    return data,dd
+    if return_dict:
+        return data,dd
+    else:
+        return dd
 
 
 # Below are some functions used in calculating MMD loss
