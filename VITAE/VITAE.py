@@ -1137,6 +1137,8 @@ class VITAE():
                     else:
                         [self.pi, self.mu, self.pc_x, self.cell_position_posterior, self.uncertainty,
                          self.z,self.cell_position_variance] = arr
+                self._adata_z = sc.AnnData(self.z)
+                sc.pp.neighbors(self._adata_z)
         ## initialize the weight of encoder and decoder
         self.vae.encoder(np.zeros((1, self.dim_origin)))
         self.vae.decoder(np.expand_dims(np.zeros((1,self.dim_latent)),1))
