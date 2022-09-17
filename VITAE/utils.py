@@ -589,7 +589,7 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
 #------------------------------------------------------------------------------
 
 type_dict = {
-    # dyno
+    # real data / dyno
     'dentate_withdays':'UMI',
     'dentate':'UMI', 
     'immune':'UMI', 
@@ -605,6 +605,8 @@ type_dict = {
     'germline':'non-UMI',    
     'human_embryos':'non-UMI', 
     'mesoderm':'non-UMI',
+    'human_hematopoiesis_scATAC':'UMI',
+    'human_hematopoiesis_scRNA':'UMI',
     
     # dyngen
     "linear_1":'non-UMI', 
