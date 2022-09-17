@@ -699,6 +699,7 @@ class VITAE():
         self.adata.obs['projection_uncertainty'] = self.uncertainty
         print("Cell projection uncertainties stored as 'projection_uncertainty' in self.adata.obs")
         if visualize:
+            self._adata.obs = self.adata.obs.copy()
             self.ax = self.plot_backbone(directed = False)
             if path_to_fig is not None:
                 self.ax.figure.savefig(path_to_fig)
@@ -868,7 +869,8 @@ class VITAE():
         self.adata.obs['pseudotime'] = self.pseudotime
         print("Cell projection uncertainties stored as 'pseudotime' in self.adata.obs")
 
-        if visualize: 
+        if visualize:
+            self._adata.obs['pseudotime'] = self.pseudotime
             self.ax = self.plot_backbone(directed = True, color = 'pseudotime')
             if path_to_fig is not None:
                 self.ax.figure.savefig(path_to_fig)
@@ -1097,7 +1099,7 @@ class VITAE():
                     self.pi, self.mu, self.pc_x, self.cell_position_posterior, self.uncertainty,
                     self.z,self.cell_position_variance], dtype=object))
         if save_adata:
-            self._adata.write(path_to_file + '.adata.h5ad')
+            self.adata.write(path_to_file + '.adata.h5ad')
 
 
     def load_model(self, path_to_file: str = 'model.checkpoint', load_labels: bool = False, load_adata: bool = False):
@@ -1148,4 +1150,4 @@ class VITAE():
         if load_adata:
             if not os.path.exists(path_to_file + '.adata.h5ad'):
                 raise AssertionError('AnnData file not exist!')
-            self._adata = sc.read_h5ad(path_to_file + '.adata.h5ad')
+            self.adata = sc.read_h5ad(path_to_file + '.adata.h5ad')
