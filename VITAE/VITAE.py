@@ -17,7 +17,7 @@ import tensorflow as tf
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, OrdinalEncoder
 
 import scanpy as sc
 import networkx as nx
@@ -116,11 +116,14 @@ class VITAE():
             self.covariates = None
 
         if conditions is not None:
-            ## observations with label 0 will not participant in calculating mmd_loss
-            self.conditions = adata.obs[conditions].to_numpy()
-            if self.conditions.ndim == 1:
-                self.conditions = self.conditions.reshape(-1,1)
-                self.conditions = self.conditions.astype(int)
+            ## observations with np.nan will not participant in calculating mmd_loss
+            if isinstance(conditions, str):
+                conditions = [conditions]
+            conditions = np.array(conditions)
+            if np.any(adata.obs[conditions].dtypes != 'category'):
+                raise ValueError("Conditions should all be categorical.")
+
+            self.conditions = OrdinalEncoder(dtype=int, encoded_missing_value=-1).fit_transform(adata.obs[conditions]) + int(1)
         else:
             self.conditions = None
 
