@@ -1074,7 +1074,7 @@ class VITAE():
         # res['score_cos_theta'] = score_cos_theta/(np.sum(np.sum(w>0, axis=-1)==2)+1e-12)
         return res
 
-    def save_model(self, path_to_file: str = 'model.checkpoint'):
+    def save_model(self, path_to_file: str = 'model.checkpoint',save_adata: bool = False):
         '''Saving model weights.
 
         Parameters
@@ -1095,10 +1095,12 @@ class VITAE():
             with open(path_to_file + '.inference', 'wb') as f:
                 np.save(f, np.array([
                     self.pi, self.mu, self.pc_x, self.cell_position_posterior, self.uncertainty,
-                    self.z], dtype=object))
+                    self.z,self.cell_position_variance], dtype=object))
+        if save_adata:
+            self._adata.write(path_to_file + '.adata.h5ad')
 
 
-    def load_model(self, path_to_file: str = 'model.checkpoint', load_labels: bool = False):
+    def load_model(self, path_to_file: str = 'model.checkpoint', load_labels: bool = False, load_adata: bool = False):
         '''Load model weights.
         Parameters
         ----------
@@ -1129,14 +1131,19 @@ class VITAE():
             if os.path.exists(path_to_file + '.inference'):
                 with open(path_to_file + '.inference', 'rb') as f:
                     arr = np.load(f, allow_pickle=True)
-                    if len(arr) == 7:
+                    if len(arr) == 8:
                         [self.pi, self.mu, self.pc_x, self.cell_position_posterior, self.uncertainty,
-                         self.D_JS, self.z] = arr
+                         self.D_JS, self.z,self.cell_position_variance] = arr
                     else:
                         [self.pi, self.mu, self.pc_x, self.cell_position_posterior, self.uncertainty,
-                         self.z] = arr
+                         self.z,self.cell_position_variance] = arr
         ## initialize the weight of encoder and decoder
         self.vae.encoder(np.zeros((1, self.dim_origin)))
         self.vae.decoder(np.expand_dims(np.zeros((1,self.dim_latent)),1))
 
         self.vae.load_weights(path_to_file)
+
+        if load_adata:
+            if not os.path.exists(path_to_file + '.adata.h5ad'):
+                raise AssertionError('AnnData file not exist!')
+            self._adata = sc.read_h5ad(path_to_file + '.adata.h5ad')
