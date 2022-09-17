@@ -107,10 +107,14 @@ class VITAE():
                     ).fit_transform(adata.obs[covariates[id_cat]]).toarray()
             else:
                 covariates_cat = np.array([]).reshape(adata.shape[0],0)
+
+            # temporarily disable StandardScaler
             if np.sum(~id_cat)>0:
-                covariates_con = StandardScaler().fit_transform(adata.obs[covariates[~id_cat]])
+                #covariates_con = StandardScaler().fit_transform(adata.obs[covariates[~id_cat]])
+                covariates_con = adata.obs[covariates[~id_cat]]
             else:
                 covariates_con = np.array([]).reshape(adata.shape[0],0)
+
             self.covariates = np.c_[covariates_cat, covariates_con].astype(tf.keras.backend.floatx())
         else:
             self.covariates = None
