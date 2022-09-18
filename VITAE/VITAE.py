@@ -166,11 +166,6 @@ class VITAE():
 
         if hasattr(self, 'inferer'):
             delattr(self, 'inferer')
-
-## TODO: what does the two last lines mean?        
-        
-## TODO: should we convert everything to dense matrix?
-## TODO: Add load_model and save_model back if needed
         
 
     def pre_train(self, test_size = 0.1, random_state: int = 0,
@@ -376,7 +371,7 @@ class VITAE():
             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
    #         mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=1)),:]
        
-   ### update cluster centers if some cluster centers are too close
+        ### update cluster centers if some cluster centers are too close
         clustering = AgglomerativeClustering(
             n_clusters=None,
             distance_threshold=dist_thres,
@@ -1155,3 +1150,5 @@ class VITAE():
             if not os.path.exists(path_to_file + '.adata.h5ad'):
                 raise AssertionError('AnnData file not exist!')
             self.adata = sc.read_h5ad(path_to_file + '.adata.h5ad')
+            # Jingshu, what are the difference between adata, _adata, adata_z?
+            self._adata.obs = self.adata.obs.copy()
