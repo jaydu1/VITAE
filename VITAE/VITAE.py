@@ -630,7 +630,7 @@ class VITAE():
         """return parameters of pilayer, which has dimension dim(pi_cov) + 1 by n_categories, the last row is biases"""
         return np.vstack((model.vae.pilayer.weights[0].numpy(), model.vae.pilayer.weights[1].numpy().reshape(1, -1)))
 
-    def posterior_estimation(self, batch_size: int = 32, L: int = 10, **kwargs):
+    def posterior_estimation(self, batch_size: int = 32, L: int = 50, **kwargs):
         '''Initialize trajectory inference by computing the posterior estimations.        
 
         Parameters
