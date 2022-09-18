@@ -16,7 +16,8 @@ def clear_session():
     return None
 
     
-def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None, seed=0, conditions = None, pi_cov = None):
+def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None,
+    conditions = None, pi_cov = None, seed=0):
     '''Get Tensorflow datasets.
 
     Parameters
@@ -50,20 +51,22 @@ def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=Non
         conditions = np.zeros((X_normalized.shape[0],1), tf.keras.backend.floatx())
         
     if X is not None:
-        train_dataset = tf.data.Dataset.from_tensor_slices((X, X_normalized, c_score, scale_factor, conditions, pi_cov))
-        train_dataset = train_dataset.shuffle(buffer_size = X.shape[0], seed=seed,
-                                        reshuffle_each_iteration=True).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+        train_dataset = tf.data.Dataset.from_tensor_slices(
+            (X, X_normalized, c_score, scale_factor, conditions, pi_cov))
+        train_dataset = train_dataset.shuffle(
+            buffer_size = X.shape[0], seed=seed, reshuffle_each_iteration=True
+            ).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
         return train_dataset
     else:
-        test_dataset = tf.data.Dataset.from_tensor_slices((X_normalized, 
-                                                          c_score, conditions, pi_cov)).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+        test_dataset = tf.data.Dataset.from_tensor_slices(
+            (X_normalized, c_score, conditions, pi_cov)
+            ).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
         return test_dataset
 
 
-def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, alpha: float, gamma: float, phi: float,
-              num_epoch: int, num_step_per_epoch: int, 
-              es_patience: int, es_tolerance: int, es_relative: bool,
-              verbose: bool = True):
+def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, 
+    alpha: float, gamma: float, phi: float, num_epoch: int, num_step_per_epoch: int, 
+    es_patience: int, es_tolerance: int, es_relative: bool, verbose: bool = True):
     '''Pretraining.
 
     Parameters
@@ -121,7 +124,9 @@ def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, al
         # Iterate over the batches of the dataset.
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, _) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
-                losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition)
+                losses = vae(
+                    x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, 
+                    alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition)
                 # Compute reconstruction loss
                 loss = tf.reduce_sum(losses[0:3]) # neg_ll, Jacob, mmd_loss
             grads = tape.gradient(loss, vae.trainable_weights,
@@ -139,7 +144,9 @@ def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, al
                     ])
                 
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, _) in enumerate(test_dataset):
-            losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition)
+            losses = vae(
+                x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, 
+                alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition)
             loss = tf.reduce_sum(losses[0:3]) # neg_ll, Jacob, mmd_loss
             loss_test(loss)
 
@@ -230,7 +237,9 @@ def train(train_dataset, test_dataset, vae,
         for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, pi_cov) in enumerate(train_dataset):
             if epoch<es_warmup:
                 with tf.GradientTape() as tape:
-                    losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha, gamma = gamma,phi = phi, conditions = x_condition, pi_cov = pi_cov)
+                    losses = vae(
+                        x_norm_batch, c_score, x_batch, x_scale_factor, L=L, 
+                        alpha=alpha, gamma = gamma,phi = phi, conditions = x_condition, pi_cov = pi_cov)
                     # Compute reconstruction loss
                     loss = tf.reduce_sum(losses[3:])
                 grads = tape.gradient(loss, vae.latent_space.trainable_weights,
@@ -238,7 +247,9 @@ def train(train_dataset, test_dataset, vae,
                 optimizer_.apply_gradients(zip(grads, vae.latent_space.trainable_weights))
             else:
                 with tf.GradientTape() as tape:
-                    losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition, pi_cov = pi_cov)
+                    losses = vae(
+                        x_norm_batch, c_score, x_batch, x_scale_factor, L=L, 
+                        alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition, pi_cov = pi_cov)
                     # Compute reconstruction loss
                     loss = tf.reduce_sum(losses*weight)
                 grads = tape.gradient(loss, vae.trainable_weights,
