@@ -1096,7 +1096,7 @@ class VITAE():
             self.dim_origin = self.X_input.shape[1]
             np.save(f, np.array([
                 self.dim_origin, self.dimensions, self.dim_latent,
-                self.model_type, False if self.covariates is None else True], dtype=object))
+                self.model_type, 0 if self.covariates is None else self.covariates.shape[1]], dtype=object))
         if hasattr(self, 'inferer') and hasattr(self, 'uncertainty'):
             with open(path_to_file + '.inference', 'wb') as f:
                 np.save(f, np.array([
@@ -1124,10 +1124,10 @@ class VITAE():
 
         with open(path_to_file + '.config', 'rb') as f:
             [self.dim_origin, self.dimensions,
-             self.dim_latent, self.model_type, has_c] = np.load(f, allow_pickle=True)
+             self.dim_latent, self.model_type, cov_dim] = np.load(f, allow_pickle=True)
         self.vae = model.VariationalAutoEncoder(
             self.dim_origin, self.dimensions,
-            self.dim_latent, self.model_type, has_c
+            self.dim_latent, self.model_type, False if cov_dim == 0 else True
         )
 
         if load_labels:
@@ -1146,8 +1146,8 @@ class VITAE():
                 self._adata_z = sc.AnnData(self.z)
                 sc.pp.neighbors(self._adata_z)
         ## initialize the weight of encoder and decoder
-        self.vae.encoder(np.zeros((1, self.dim_origin)))
-        self.vae.decoder(np.expand_dims(np.zeros((1,self.dim_latent)),1))
+        self.vae.encoder(np.zeros((1, self.dim_origin + cov_dim)))
+        self.vae.decoder(np.expand_dims(np.zeros((1,self.dim_latent + cov_dim)),1))
 
         self.vae.load_weights(path_to_file)
 
