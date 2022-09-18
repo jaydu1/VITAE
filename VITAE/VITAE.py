@@ -805,10 +805,8 @@ class VITAE():
 
         for i in range(len(uni_cluster_labels)):
             ax.scatter(*embed_mu[i:i+1,:].T, #c=[colors[i]],
-                        edgecolors='white', # linewidths=10,
-                      #  norm=norm,
+                        edgecolors='white', # linewidths=10,  norm=norm,
                         s=250, marker='*', label=uni_cluster_labels[i])
-            ax.text(embed_mu[i,0], embed_mu[i,1], uni_cluster_labels[i], fontsize=16)
 
         plt.setp(ax, xticks=[], yticks=[])
         box = ax.get_position()
@@ -870,7 +868,7 @@ class VITAE():
 
         if visualize:
             self._adata.obs['pseudotime'] = self.pseudotime
-            self.ax = self.plot_backbone(directed = True, color = 'pseudotime')
+            self.ax = self.plot_backbone(directed = True, color = 'pseudotime', **kwargs)
             if path_to_fig is not None:
                 self.ax.figure.savefig(path_to_fig)
             self.ax.figure.show()
