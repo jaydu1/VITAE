@@ -657,7 +657,7 @@ class VITAE():
 
     def infer_backbone(self, method: str = 'modified_map', thres = 0.5,
             no_loop: bool = True, cutoff: float = 0,
-            visualize: bool = True, path_to_fig = None,**kwargs):
+            visualize: bool = True, color = 'vitae_new_clustering',path_to_fig = None,**kwargs):
         ''' Compute edge scores.
 
         Parameters
@@ -699,7 +699,7 @@ class VITAE():
         print("Cell projection uncertainties stored as 'projection_uncertainty' in self.adata.obs")
         if visualize:
             self._adata.obs = self.adata.obs.copy()
-            self.ax = self.plot_backbone(directed = False,**kwargs)
+            self.ax = self.plot_backbone(directed = False,color = color, **kwargs)
             if path_to_fig is not None:
                 self.ax.figure.savefig(path_to_fig)
             self.ax.figure.show()
