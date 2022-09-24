@@ -1,4 +1,5 @@
 __pycache__/
+VITAE/__pycache__/
 .ipynb_checkpoints
 PyPI/
 data/mouse_brain_merged.h5
