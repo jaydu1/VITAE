@@ -961,6 +961,7 @@ class VITAE():
         
         # If the begin_node_true, need to encode it by self.le.
         # this dict is for milestone net cause their labels are not merged
+        # all keys of label_map_dict are str
         label_map_dict = dict()
         for i in range(self.labels_map.shape[0]):
             label_mapped = self.labels_map.loc[i]
