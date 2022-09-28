@@ -671,15 +671,8 @@ def load_data(path, file_name,return_dict = False):
             data['days'] = np.array(f['days']).astype(str)
 
         if 'milestone_network' in f:
-            if file_name in ['linear','bifurcation','multifurcating','tree']:
-                df = pd.DataFrame(list(f['milestone_network']))
-                df.columns = ["from", "to", "w"]
-                df["from"] = [x.decode('UTF-8') for x in df["from"]]
-                df["to"] = [x.decode('UTF-8') for x in df["to"]]
-                df["w"] = [x.decode('UTF-8') for x in df["w"]]
-                df = df.astype({"from": str, "to": str, "w": float})
-                data['milestone_network'] = df
-            elif file_name in ["cycle_1", "cycle_2", "cycle_3",
+            if file_name in ['linear','bifurcation','multifurcating','tree',
+                               "cycle_1", "cycle_2", "cycle_3",
                             "linear_1", "linear_2", "linear_3", 
                             "trifurcating_1", "trifurcating_2", 
                             "bifurcating_1", 'bifurcating_2', "bifurcating_3", 
