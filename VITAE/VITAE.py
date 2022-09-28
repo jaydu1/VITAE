@@ -819,8 +819,8 @@ class VITAE():
         return ax
 
         
-    def infer_trajectory(self, root: Union[int,str], cutoff: Optional[float] = None,
-                         visualize: bool = True, path_to_fig = None, method: str = 'UMAP', **kwargs):
+    def infer_trajectory(self, root: Union[int,str], color = "pseudotime",
+                         visualize: bool = True, path_to_fig = None,  **kwargs):
         '''Infer the trajectory.
 
         Parameters
@@ -868,7 +868,7 @@ class VITAE():
 
         if visualize:
             self._adata.obs['pseudotime'] = self.pseudotime
-            self.ax = self.plot_backbone(directed = True, color = 'pseudotime', **kwargs)
+            self.ax = self.plot_backbone(directed = True, color = color, **kwargs)
             if path_to_fig is not None:
                 self.ax.figure.savefig(path_to_fig)
             self.ax.figure.show()
