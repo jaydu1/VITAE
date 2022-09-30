@@ -702,6 +702,9 @@ def load_data(path, file_name,return_dict = False):
         if file_name == 'dentate_withdays':
             data['covariates'] = np.array([item.decode('utf-8').replace('*', '') for item in f['days']], dtype=object)
             data['covariates'] = data['covariates'].astype(float).reshape(-1, 1)
+        if file_name.startswith('human_hematopoiesis'):
+            data['covariates'] = np.array(np.array(list(f['covariates']), dtype=str).tolist()).reshape((-1,1))
+            
     data['type'] = type_dict[file_name]
     if data['type']=='non-UMI':
         scale_factor = np.sum(data['count'],axis=1, keepdims=True)/1e6
