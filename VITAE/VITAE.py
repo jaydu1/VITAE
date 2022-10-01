@@ -745,12 +745,13 @@ class VITAE():
     def plot_backbone(self, directed: bool = False, 
                       method: str = 'UMAP', color = 'vitae_new_clustering', **kwargs):
         ax = self.visualize_latent(method = method, color=color, show=False, **kwargs)
-        uni_cluster_labels = self.labels_map['label_names'].to_numpy()
+        dict_label_num = {j:i for i,j in self.labels_map['label_names'].to_dict().items()}
+        uni_cluster_labels = self.adata.obs['vitae_new_clustering'].cat.categories
         cluster_labels = self.adata.obs['vitae_new_clustering'].to_numpy()
         embed_z = self._adata.obsm[self.dict_method_scname[method]]
         embed_mu = np.zeros((len(uni_cluster_labels), 2))
-        for i,l in enumerate(uni_cluster_labels):
-            embed_mu[i,:] = np.mean(embed_z[cluster_labels==l], axis=0)
+        for l in uni_cluster_labels:
+            embed_mu[dict_label_num[l],:] = np.mean(embed_z[cluster_labels==l], axis=0)
 
         if directed:
             graph = self.directed_backbone
@@ -801,12 +802,11 @@ class VITAE():
                         shape='full', lw=0, length_includes_head=True,
                         head_width=np.maximum(0.01*(1 + edge_scores[i]), 0.03) * value_range,
                         zorder=2) 
-
-
-        for i in range(len(uni_cluster_labels)):
-            ax.scatter(*embed_mu[i:i+1,:].T, #c=[colors[i]],
+        
+        for l in uni_cluster_labels:
+            ax.scatter(*embed_mu[dict_label_num[l]:dict_label_num[l]+1,:].T, #c=[colors[i]],
                         edgecolors='white', # linewidths=10,  norm=norm,
-                        s=250, marker='*', label=uni_cluster_labels[i])
+                        s=250, marker='*', label=l)
 
         plt.setp(ax, xticks=[], yticks=[])
         box = ax.get_position()
