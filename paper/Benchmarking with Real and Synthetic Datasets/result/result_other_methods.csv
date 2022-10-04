@@ -68,7 +68,7 @@
 66,monocle,0,0,0,0.539511261,0.685611106,0.589294355,UMI,planaria_muscle,real
 67,paga,0,0,0,0.590028864,0.642432317,0.840638432,UMI,planaria_muscle,real
 68,slingshot,0,0,0,0.626937241,0.65253197,0.746653363,UMI,planaria_muscle,real
-69,monocle,0,,0,0.498646,0.628805,0.491994,UMI,tree,our model
+69,monocle,0,0,0,0.498646,0.628805,0.491994,UMI,tree,our model
 70,paga,0,0.666667,0.596864,0.821093,0.78242,0.413533,UMI,tree,our model
 71,slingshot,0,0.666667,0.41649,0.898723,0.876117,0.73876,UMI,tree,our model
 72,monocle,0,0,0,0.697562322,0.813381836,0.496869146,non-UMI,trifurcating_1,dyngen
