@@ -177,6 +177,8 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.preprocessing import LabelEncoder
+import sys#; sys.path.insert(0, '../..')
+sys.path.append('../..')
 from VITAE import load_data
 
 type_dict = {
@@ -333,7 +335,7 @@ for data_name in type_dict.keys():
         
         # 3. Correlation between geodesic distances / Pseudotime   
         if 'cycle' in data_name or 'immune' in data_name:
-            res['PDT score'] =  = np.nan
+            res['PDT score'] = np.nan
         else:
             if grouping is None:
                 pseudotime_true = milestone_net['from'].values + 1 - milestone_net['w'].values
