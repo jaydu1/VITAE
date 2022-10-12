@@ -748,7 +748,7 @@ class VITAE():
             raise ValueError('The color argument should be of type str!')
         ax = self.visualize_latent(method = method, color=color, show=False, **kwargs)
         dict_label_num = {j:i for i,j in self.labels_map['label_names'].to_dict().items()}
-        uni_cluster_labels = self.adata.obs['vitae_new_clustering'].cat.categories
+        uni_cluster_labels = self.adata.obs['vitae_init_clustering'].cat.categories
         cluster_labels = self.adata.obs['vitae_new_clustering'].to_numpy()
         embed_z = self._adata.obsm[self.dict_method_scname[method]]
         embed_mu = np.zeros((len(uni_cluster_labels), 2))
