@@ -744,6 +744,8 @@ class VITAE():
 
     def plot_backbone(self, directed: bool = False, 
                       method: str = 'UMAP', color = 'vitae_new_clustering', **kwargs):
+        if not isinstance(color,str):
+            raise ValueError('The color argument should be of type str!')
         ax = self.visualize_latent(method = method, color=color, show=False, **kwargs)
         dict_label_num = {j:i for i,j in self.labels_map['label_names'].to_dict().items()}
         uni_cluster_labels = self.adata.obs['vitae_new_clustering'].cat.categories
@@ -764,7 +766,6 @@ class VITAE():
         else:
             edge_scores = (edge_scores - min(edge_scores))/(max(edge_scores) - min(edge_scores))*3
 
-     #   colors = [plt.cm.jet(float(i)/self.n_states) for i in range(self.n_states)]
         value_range = np.maximum(np.diff(ax.get_xlim())[0], np.diff(ax.get_ylim())[0])
         y_range = np.min(embed_z[:,1]), np.max(embed_z[:,1], axis=0)
         for i in range(len(edges)):
@@ -788,7 +789,6 @@ class VITAE():
                 zorder=1
                 )
 
-
             if directed:
                 delta_x = embed_mu[edges[i][1], 0] - x_smooth[-2]
                 delta_y = embed_mu[edges[i][1], 1] - y_smooth[-2]
@@ -803,10 +803,12 @@ class VITAE():
                         head_width=np.maximum(0.01*(1 + edge_scores[i]), 0.03) * value_range,
                         zorder=2) 
         
-        for l in uni_cluster_labels:
-            ax.scatter(*embed_mu[dict_label_num[l]:dict_label_num[l]+1,:].T, #c=[colors[i]],
-                        edgecolors='white', # linewidths=10,  norm=norm,
-                        s=250, marker='*', label=l)
+        colors = self._adata.uns['vitae_new_clustering_colors']
+            
+        for i,l in enumerate(uni_cluster_labels):
+            ax.scatter(*embed_mu[dict_label_num[l]:dict_label_num[l]+1,:].T, 
+                       c=[colors[i]], edgecolors='white', # linewidths=10,  norm=norm,
+                       s=250, marker='*', label=l)
 
         plt.setp(ax, xticks=[], yticks=[])
         box = ax.get_position()
