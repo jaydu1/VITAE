@@ -900,8 +900,9 @@ class VITAE():
                         shape='full', lw=0, length_includes_head=True,
                         head_width=np.maximum(0.01 * (1 + edge_scores[i]), 0.03) * value_range,
                         zorder=2)
-
-        ax.figure.show()
+        self.ax = ax
+        self.ax.figure.show()
+        return None
 
 
         

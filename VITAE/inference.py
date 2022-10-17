@@ -87,8 +87,22 @@ class Inferer(object):
                     if num_two_vertice > 0:
                         graph[i, j] = np.sum(
                             np.abs(two_vertice_max_w[:, i] - two_vertice_max_w[:, j]) < 0.1) / num_two_vertice
+        elif method == "modified_w_base":
+            top2_idx = np.argpartition(w_tilde, -2, axis=1)[:, -2:]
+            for i in range(self.n_states):
+                for j in range(i + 1, self.n_states):
+                    two_vertice_max_w = np.all(top2_idx == [i, j], axis=1) | np.all(top2_idx == [j, i], axis=1)
+                    two_vertice_max_w = w_tilde[two_vertice_max_w, :]
+                    vertice_count = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j), :]
+                    vertice_count = vertice_count.shape[0]
+                    if vertice_count > 0:
+                        edge_count = \
+                            np.max((two_vertice_max_w[:, i], two_vertice_max_w[:, j]), axis=0) \
+                            / (two_vertice_max_w[:, i] + two_vertice_max_w[:, j])
+                        edge_count = np.sum(edge_count < 0.55)
+                        graph[i, j] = edge_count / vertice_count
         else:
-            raise ValueError("Invalid method, must be one of 'mean', 'modified_mean', 'map', and 'modified_map'.")
+            raise ValueError("Invalid method, must be one of 'mean', 'modified_mean', 'map', 'modified_map','raw_map','w_base', and 'modified_w_base'.")
         
         graph[graph<=cutoff] = 0
         G = nx.from_numpy_array(graph)
