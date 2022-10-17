@@ -820,6 +820,41 @@ class VITAE():
 
         return ax
 
+    def plot_center(self, color = "vitae_new_clustering", plot_legend = True, legend_add_index = True,
+                    method: str = 'UMAP',ncol = 2,font_size = "medium",**kwargs):
+        if color not in ["vitae_new_clustering","vitae_init_clustering"]:
+            raise ValueError("Can only plot center of vitae_new_clustering or vitae_init_clustering")
+        dict_label_num = {j: i for i, j in self.labels_map['label_names'].to_dict().items()}
+        if legend_add_index:
+            self._adata.obs["index_"+color] = self._adata.obs[color].map(lambda x: dict_label_num[x])
+            ax = self.visualize_latent(method=method, color="index_" + color, show=False, legend_loc="on data",
+                                        legend_fontsize=font_size,**kwargs)
+            colors = self._adata.uns["index_" + color + '_colors']
+        else:
+            ax = self.visualize_latent(method=method, color = color, show=False,**kwargs)
+            colors = self._adata.uns[color + '_colors']
+        uni_cluster_labels = self.adata.obs[color].cat.categories
+        cluster_labels = self.adata.obs[color].to_numpy()
+        embed_z = self._adata.obsm[self.dict_method_scname[method]]
+        embed_mu = np.zeros((len(uni_cluster_labels), 2))
+        for l in uni_cluster_labels:
+            embed_mu[dict_label_num[l], :] = np.mean(embed_z[cluster_labels == l], axis=0)
+
+        leg = (self.labels_map.index.astype(str) + " : " + self.labels_map.label_names).values
+        for i, l in enumerate(uni_cluster_labels):
+            ax.scatter(*embed_mu[dict_label_num[l]:dict_label_num[l] + 1, :].T,
+                       c=[colors[i]], edgecolors='white', # linewidths=3,
+                       s=250, marker='*', label=leg[i])
+        if plot_legend:
+            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=ncol, markerscale=0.8, frameon=False)
+        plt.setp(ax, xticks=[], yticks=[])
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                         box.width, box.height * 0.9])
+
+        ax.figure.show()
+
+
         
     def infer_trajectory(self, root: Union[int,str], color = "pseudotime",
                          visualize: bool = True, path_to_fig = None,  **kwargs):
