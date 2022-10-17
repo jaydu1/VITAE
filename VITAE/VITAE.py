@@ -821,7 +821,8 @@ class VITAE():
         return ax
 
     def plot_center(self, color = "vitae_new_clustering", plot_legend = True, legend_add_index = True,
-                    method: str = 'UMAP',ncol = 2,font_size = "medium",**kwargs):
+                    method: str = 'UMAP',ncol = 2,font_size = "medium",
+                    add_egde = False, add_direct = False,**kwargs):
         if color not in ["vitae_new_clustering","vitae_init_clustering"]:
             raise ValueError("Can only plot center of vitae_new_clustering or vitae_init_clustering")
         dict_label_num = {j: i for i, j in self.labels_map['label_names'].to_dict().items()}
@@ -851,6 +852,54 @@ class VITAE():
         box = ax.get_position()
         ax.set_position([box.x0, box.y0 + box.height * 0.1,
                          box.width, box.height * 0.9])
+        if add_egde:
+            if add_direct:
+                graph = self.directed_backbone
+            else:
+                graph = self.backbone
+            edges = list(graph.edges)
+            edge_scores = np.array([d['weight'] for (u, v, d) in graph.edges(data=True)])
+            if max(edge_scores) - min(edge_scores) == 0:
+                edge_scores = edge_scores / max(edge_scores)
+            else:
+                edge_scores = (edge_scores - min(edge_scores)) / (max(edge_scores) - min(edge_scores)) * 3
+
+            value_range = np.maximum(np.diff(ax.get_xlim())[0], np.diff(ax.get_ylim())[0])
+            y_range = np.min(embed_z[:, 1]), np.max(embed_z[:, 1], axis=0)
+            for i in range(len(edges)):
+                points = embed_z[np.sum(self.cell_position_projected[:, edges[i]] > 0, axis=-1) == 2, :]
+                points = points[points[:, 0].argsort()]
+                try:
+                    x_smooth, y_smooth = _get_smooth_curve(
+                        points,
+                        embed_mu[edges[i], :],
+                        y_range
+                    )
+                except:
+                    x_smooth, y_smooth = embed_mu[edges[i], 0], embed_mu[edges[i], 1]
+                ax.plot(x_smooth, y_smooth,
+                        '-',
+                        linewidth=1 + edge_scores[i],
+                        color="black",
+                        alpha=0.8,
+                        path_effects=[pe.Stroke(linewidth=1 + edge_scores[i] + 1.5,
+                                                foreground='white'), pe.Normal()],
+                        zorder=1
+                        )
+
+                if add_direct:
+                    delta_x = embed_mu[edges[i][1], 0] - x_smooth[-2]
+                    delta_y = embed_mu[edges[i][1], 1] - y_smooth[-2]
+                    length = np.sqrt(delta_x ** 2 + delta_y ** 2) / 50 * value_range
+                    ax.arrow(
+                        embed_mu[edges[i][1], 0] - delta_x / length,
+                        embed_mu[edges[i][1], 1] - delta_y / length,
+                        delta_x / length,
+                        delta_y / length,
+                        color='black', alpha=1.0,
+                        shape='full', lw=0, length_includes_head=True,
+                        head_width=np.maximum(0.01 * (1 + edge_scores[i]), 0.03) * value_range,
+                        zorder=2)
 
         ax.figure.show()
 
