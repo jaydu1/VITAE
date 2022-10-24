@@ -964,7 +964,7 @@ class VITAE():
 
 
 
-    def differential_expression_test(self, alpha: float = 0.05, cell_subset = None):
+    def differential_expression_test(self, alpha: float = 0.05, cell_subset = None, order: int = 1):
         '''Differentially gene expression test. All (selected and unselected) genes will be tested 
         Only cells in `selected_cell_subset` will be used, which is useful when one need to
         test differentially expressed genes on a branch of the inferred trajectory.
@@ -973,6 +973,8 @@ class VITAE():
         ----------
         alpha : float, optional
             The cutoff of p-values.
+        order : int, optional
+            The maxium order we used for pseudotime in regression.
 
         Returns
         ----------
@@ -985,6 +987,8 @@ class VITAE():
         if cell_subset is None:
             cell_subset = np.arange(self.X_input.shape[0])
             print("All cells are selected.")
+        if order < 1:
+            raise  ValueError("Maximal order of pseudotime in regression must be at least 1.")
 
         # Prepare X and Y for regression expression ~ rank(PDT) + covariates
         Y = self.adata.X[cell_subset,:]
@@ -992,13 +996,15 @@ class VITAE():
 #        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
         X = stats.rankdata(self.pseudotime[cell_subset])
         X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
-        if self.covariates is None:
-            X = np.c_[np.ones_like(X), X]
-        else:
-            X = np.c_[np.ones_like(X), X, self.covariates[cell_subset,:]]
+        X = np.c_[np.ones_like(X), X]
+        if order > 1:
+            for _order in range(2, order+1):
+                X = np.c_[X, X**_order]
+        if self.covariates is not None:
+            X = np.c_[np.ones_like(X), X, self.covariates[cell_subset, :]]
 
-        res_df = DE_test(Y, X, self.adata.var_names, alpha)
-        return res_df
+        res_df = DE_test(Y, X, self.adata.var_names, i_test = np.array(list(range(1,order+1))), alpha = alpha)
+        return res_df[res_df.pvalue_adjusted_1 != 0]
 
 
  

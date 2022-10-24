@@ -528,8 +528,7 @@ def _p_adjust_bh(p):
     p0[nna] = np.minimum(1, np.minimum.accumulate(steps * p[by_descend]))[by_orig]
     return p0
 
-
-def DE_test(Y, X, gene_names, alpha: float = 0.05):
+def DE_test(Y, X, gene_names, i_test, alpha: float = 0.05):
     '''Differential gene expression test.
 
     Parameters
@@ -540,6 +539,8 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
         \(n,1+1+s\) the constant term, the pseudotime and the covariates.
     gene_names : numpy.array
         \(n,\) the names of all genes.
+    i_test : numpy.array
+        The indices of covariates to be tested.
     alpha : float, optional
         The cutoff of p-values.
 
@@ -552,8 +553,8 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
     pinv_wexog, singular_values = _pinv_extended(X)
     normalized_cov = np.dot(
             pinv_wexog, np.transpose(pinv_wexog))
-    h = np.diag(np.dot(X, 
-                    np.dot(normalized_cov,X.T)))  
+    h = np.diag(np.dot(X,
+                    np.dot(normalized_cov,X.T)))
 
     def _DE_test(wendog,pinv_wexog,h):
         if np.any(np.isnan(wendog)):
@@ -562,26 +563,43 @@ def DE_test(Y, X, gene_names, alpha: float = 0.05):
             beta = np.dot(pinv_wexog, wendog)
             resid = wendog - X @ beta
             cov = _cov_hc3(h, pinv_wexog, resid)
-            if np.diag(cov)[1] == 0:
-                t = float("nan")
-            else:
-                t = beta[1]/np.sqrt(np.diag(cov)[1])
-            return np.r_[beta[1], t]
+            t = np.array([])
+            for j in i_test:
+                if np.diag(cov)[j] == 0:
+                    _t = float("nan")
+                else:
+                    _t = beta[j]/(np.sqrt(np.diag(cov)[j])+1e-6)
+                t = np.append(t, _t)
+            return np.r_[beta[i_test], t]
 
     res = np.apply_along_axis(lambda y: _DE_test(wendog=y, pinv_wexog=pinv_wexog, h=h),
-                            0, 
+                            0,
                             Y).T
-    if 'median_abs_deviation' in dir(stats):
-        sigma = stats.median_abs_deviation(res[:,1], nan_policy='omit')
-    else:
-        sigma = stats.median_absolute_deviation(res[:,1], nan_policy='omit')
-    pdt_new_pval = np.array([stats.norm.sf(x)*2 for x in np.abs(res[:,1]/sigma)])    
-    new_adj_pval = _p_adjust_bh(pdt_new_pval)
-    res_df = pd.DataFrame(np.c_[res[:,0], pdt_new_pval, new_adj_pval], 
-                    index=gene_names,
-                    columns=['beta_PDT', 'pvalue', 'pvalue_adjusted'])
-    res_df = res_df[(res_df.pvalue_adjusted < alpha) & np.any(~np.isnan(Y), axis=0)]
-    res_df = res_df.iloc[np.argsort(res_df.pvalue_adjusted).tolist(), :]
+
+    res_df = pd.DataFrame()
+    for i,j in enumerate(i_test):
+        if 'median_abs_deviation' in dir(stats):
+            sigma = stats.median_abs_deviation(res[:,len(i_test)+i], nan_policy='omit')
+        else:
+            sigma = stats.median_absolute_deviation(res[:,len(i_test)+i], nan_policy='omit')
+        pdt_new_pval = np.array([stats.norm.sf(x)*2 for x in np.abs(res[:,len(i_test)+i]/sigma)])
+        new_adj_pval = _p_adjust_bh(pdt_new_pval/len(i_test))
+        _res_df = pd.DataFrame(np.c_[res[:,i], pdt_new_pval, new_adj_pval],
+                        index=gene_names,
+                        columns=['beta_{}'.format(j),
+                                 'pvalue_{}'.format(j),
+                                 'pvalue_adjusted_{}'.format(j)])
+        res_df = pd.concat([res_df, _res_df], axis=1)
+    res_df = res_df[
+        (np.sum(
+            res_df[
+                res_df.columns[
+                    np.char.startswith(
+                        np.array(res_df.columns, dtype=str),
+                        'pvalue_adjusted')]
+            ] < alpha, axis=1
+        )>0) & np.any(~np.isnan(Y), axis=0)]
+#     res_df = res_df.iloc[np.argsort(res_df.pvalue_adjusted).tolist(), :]
     return res_df
 
 #------------------------------------------------------------------------------
