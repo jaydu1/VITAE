@@ -1001,7 +1001,7 @@ class VITAE():
             for _order in range(2, order+1):
                 X = np.c_[X, X**_order]
         if self.covariates is not None:
-            X = np.c_[np.ones_like(X), X, self.covariates[cell_subset, :]]
+            X = np.c_[X, self.covariates[cell_subset, :]]
 
         res_df = DE_test(Y, X, self.adata.var_names, i_test = np.array(list(range(1,order+1))), alpha = alpha)
         return res_df[res_df.pvalue_adjusted_1 != 0]
