@@ -22,8 +22,10 @@ sources = ['dyngen','our model','real']
 scores = ['GED score','IM score','ARI','GRI','PDT score']
 cmaps = ['YlOrRd_r', 'YlGn_r', 'RdPu_r', 'PuBu_r', 'BuGn_r']
 
-sns.set(font_scale=1.5, rc={'axes.facecolor':(0.85,0.85,0.85)})
-fig, ax = plt.subplots(3, 5, gridspec_kw={'height_ratios':[12, 4, 15], 'width_ratios' :[1,1,1,1,1]}, figsize = (20,16))
+rotation_xticklabels = 25
+
+sns.set(font_scale=1.5, rc={'axes.facecolor':(0.85,0.85,0.85), 'xtick.labelsize':14, 'ytick.labelsize':11})
+fig, ax = plt.subplots(3, 5, gridspec_kw={'height_ratios':[6, 2, 8], 'width_ratios' :[1,1,1,1,1]}, figsize = (20,10))
 for i in range(5):
     for j in range(3):
         vmin = dat[scores[i]].min()
@@ -33,15 +35,17 @@ for i in range(5):
         if  j == 0:
             ax[j][i].set_title(scores[i], fontweight='bold', fontsize = 18)
         if (j == 2) & (i == 0):
-            sns.heatmap(dat_t, ax = ax[j][i], cbar = True, cbar_kws={"orientation": "horizontal"}, vmin=vmin, vmax=vmax, cmap = cmaps[i])
-            ax[j][i].set_xticklabels(ax[j][i].get_xticklabels(), rotation=30, ha="right")
-            ax[j][i].set_yticklabels(ax[j][i].get_yticklabels(), rotation=30)
+            sns.heatmap(dat_t, ax = ax[j][i], cbar = True, 
+                cbar_kws={"orientation": "horizontal", "pad": 0.2}, vmin=vmin, vmax=vmax, cmap = cmaps[i])
+            ax[j][i].set_xticklabels(ax[j][i].get_xticklabels(), rotation=rotation_xticklabels, ha="center")
+            # ax[j][i].set_yticklabels(ax[j][i].get_yticklabels(), fontsize=12)#rotation=30)
         elif i == 0:
             sns.heatmap(dat_t, ax = ax[j][i], xticklabels=False, cbar = False, vmin=vmin, vmax=vmax, cmap = cmaps[i])
-            ax[j][i].set_yticklabels(ax[j][i].get_yticklabels(), rotation=30)
+            # ax[j][i].set_yticklabels(ax[j][i].get_yticklabels(), rotation=30)
         elif j == 2:
-            sns.heatmap(dat_t, ax = ax[j][i], yticklabels=False, cbar = True, cbar_kws={"orientation": "horizontal"}, vmin=vmin, vmax=vmax, cmap = cmaps[i])
-            ax[j][i].set_xticklabels(ax[j][i].get_xticklabels(), rotation=30, ha="right")
+            sns.heatmap(dat_t, ax = ax[j][i], yticklabels=False, cbar = True, 
+                cbar_kws={"orientation": "horizontal", "pad": 0.2}, vmin=vmin, vmax=vmax, cmap = cmaps[i])
+            ax[j][i].set_xticklabels(ax[j][i].get_xticklabels(), rotation=rotation_xticklabels, ha="center")
         else:
             sns.heatmap(dat_t, ax = ax[j][i], xticklabels=False, yticklabels=False, cbar = False, vmin=vmin, vmax=vmax, cmap = cmaps[i])
         if i == 4:
