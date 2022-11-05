@@ -2,7 +2,7 @@
 
 # Data
 
-Information of our data is described in Section 5.1 and Section 6 of the manuscript. All the data are also publicly available from [https://github.com/jaydu1/VITAE/tree/master/data](https://github.com/jaydu1/VITAE/tree/master/data).
+Information of our data is described in the Method section of the manuscript and the supplementary materials. All the data are also publicly available from [https://github.com/jaydu1/VITAE/tree/master/data](https://github.com/jaydu1/VITAE/tree/master/data).
 
 # Code
 
@@ -65,21 +65,35 @@ The folder `Benchmarking with Real and Synthetic Datasets` contains code to repr
 - `evaluate_other_methods.py`: Evaluate the trajectory inference results from other methods.
 - `run_and_evaluate_VITAE.py`: Run VITAE with different random seeds and record the evaluation result.
 
-The intermediate results of the above scripts are in the sub-folder `result`. Then the figures in Section 5 is given by the following Python script:
+The intermediate results of the above scripts are in the sub-folder `result`. Then the figures can be plotted with the following Jupyter notebook:
 
-- `plot_sec5.py`: Reproduce the Figure 3 in the manuscript.
+- `plot_benchmark.py`: Reproduce the Figure 2 in the manuscript.
 
-## An Application to the Developing Mouse Neocortex
-The folder `An Application to the Developing Mouse Neocortex` contains code to reproduce results in Section 6 of the manuscript.
+## Application on developing mouse neocortex
+The folder `Application on developing mouse neocortex` contains code to reproduce results on two developing mouse neocortex datasets of the manuscript.
 
 - `cc_scores.R`: Functions to compute cell-cycle scores.
 - `run_Seurat_Slingshot`: Run Seurat and Slingshot and record the results.
 - `run_VITAE.py`: Run VITAE, and save the trained model and intermediate results.
 
-The intermediate results of the above scripts are in the sub-folder `result`. Then the figures in Section 5 is given by the following Python and R scripts:
+The intermediate results of the above scripts are in the sub-folder `result`. Then the figures can be plotted with the following Jupyter notebook:
 
-- `plot_sec6.py`: Reproduce the Figure 4-5 and the subfigures of Figure 6 in the manuscript.
-- `plot_sec6.R`: Reproduce the main figures of Figure 6 in the manuscript.
+- `plot_mouse_brain.ipynb`: Reproduce the Figure 3 and S3 in the manuscript.
+
+
+## Application on integrating mouse brain datasets
+
+
+## Application on scRNA and scATAC datasets
+
+The folder `Application on scRNA and scATAC datasets` contains code to reproduce results on multiomic trajectory inference of the manuscript.
+
+- `run_VITAE.py`: Run VITAE, and save the trained model and intermediate results.
+
+The figures can be plotted with the following Jupyter notebook:
+
+- `plot_human_hematopoiesis.ipynb`: Reproduce the Figure 6 in the manuscript.
+
 
 # Reproducibility Workflow
 
@@ -88,8 +102,7 @@ The intermediate results of the above scripts are in the sub-folder `result`. Th
 3. Reproduce results in Section 5 of the manuscript. Note that we evaluate VITAE with 100 different random seeds on 25 datasets, so it will take much long time on a single desktop machine in serial. However, we have included intermediate results in the subfolder `Benchmarking with Real and Synthetic Datasets/result` and the readers can skip the first two steps and visualize Figure 3 in the manuscript directly.
 	- (Optional) Evaluate VITAE by running `run_and_evaluate_VITAE.py`. 
 	- (Optional) Evaluate other methods by running `run_other_methods.R` and `evaluate_other_methods.py`.
-	- Visualize the results by running `plot_sec5.py`.
-4. Reproduce results in Section 6 of the manuscript. 
-	- (Optional) Infer trajectory with VITAE by running `run_VITAE.py`.
-	- (Optional) Infer trajectory with Seurat+Slingshot by running `run_Seurat_Slingshot.R`.
-	- Visualize the results by running `plot_sec6.py` and `plot_sec6.R`.
+	- Visualize the results by running `plot_benchmark.py`.
+4. Reproduce results in the three case studies. 
+	- Run the Python and R scripts in the corresponding subfolder.
+	- Visualize the results by using the Jupyter notebooks.
