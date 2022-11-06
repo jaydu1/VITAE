@@ -1,0 +1,96 @@
+method:
+  id: monocle3
+  name: Monocle 3
+  tool_id: monocle3
+  source: tool
+  platform: R
+  url: https://github.com/cole-trapnell-lab/monocle3
+  license: MIT
+  authors:
+  - given: Hannah
+    family: Pliner
+    email: hpliner@uw.edu
+    github: hpliner
+  - given: Xiaojie
+    family: Qiu
+    email: xqiu@uw.edu
+    github: Xiaojieqiu
+  - given: Cole
+    family: Trapnell
+    email: coletrap@uw.edu
+    github: ctrapnell
+    ORCID: 0000-0002-8105-4347
+
+
+manuscript:
+  doi: 10.1038/s41586-019-0969-x
+  google_scholar_cluster_id: '12234971212037831948'
+  publication_date: '2019-02-20'
+
+container:
+  url: https://github.com/dynverse/ti_monocle3
+  docker: dynverse/ti_monocle3
+
+
+wrapper:
+  type: trajectory
+  topology_inference: free
+  trajectory_types:
+  - cycle
+  - linear
+  - bifurcation
+  - convergence
+  - multifurcation
+  - tree
+  - acyclic_graph
+  - graph
+  - disconnected_graph
+  input_required: expression
+
+parameters:
+  - id: num_dim
+    type: integer
+    default: 50
+    distribution:
+      type: uniform
+      lower: 10
+      upper: 100
+    description: the dimensionality of the preprocessing reduced space.
+  - id: max_components
+    type: integer
+    default: 2
+    distribution:
+      type: uniform
+      lower: 2
+      upper: 20
+    description: the dimensionality of the reduced space.
+  - id: reduction_method
+    type: character
+    default: UMAP
+    values:
+    - UMAP
+    - tSNE
+    - PCA
+    - LSI
+    description: |
+      A character string specifying the algorithm to use for dimensionality reduction.
+      Currently "UMAP", "tSNE", "PCA" and "LSI" are supported.
+  - id: cluster_method
+    type: character
+    default: leiden
+    values:
+    - leiden
+    - louvain
+    description: |
+      Indicates the clustering method to use.
+  - id: k
+    type: integer
+    default: 20
+    distribution:
+      type: uniform
+      lower: 5
+      upper: 50
+    description: |
+      Number of nearest neighbors to use when creating the k nearest neighbor graph for Louvain/Leiden clustering.
+      k is related to the resolution of the clustering result, a bigger k will result in lower resolution
+      and vice versa.
