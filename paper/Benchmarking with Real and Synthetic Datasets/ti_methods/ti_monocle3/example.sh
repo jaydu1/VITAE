@@ -1,1 +1,0 @@
-package/inst/example.sh
