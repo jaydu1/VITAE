@@ -15,7 +15,7 @@ real | dentate | UMI | linear | 3585 | 2182 | 5 | [Hochgerner *et al.* (2018)](h
 real | planaria\_muscle | UMI | bifurcation | 2338 | 4210 | 3 | [Wolf *et al.* (2019)](https://doi.org/10.1186/s13059-019-1663-x)
 real | planaria\_full | UMI | tree | 18837 | 4210 | 33 | [Wolf *et al.* (2019)](https://doi.org/10.1186/s13059-019-1663-x)
 real | immune | UMI | disconnected | 21082 | 18750 | 3 | [zheng *et al.* (2017)](https://doi.org/10.1038/ncomms14049)
-real | mouse\_brain\_merged | UMI | tree | 10261 <br> 6390 | 14707 | 15 | [Yuzwa *et al.* (2017)](https://doi.org/10.1016/j.celrep.2017.12.017),<br> [Ruan *et al.* (2021)](https://doi.org/10.1073/pnas.2018866118)
+real | mouse\_brain\_merged | UMI | tree | 6390 <br> 10261 | 14707 | 15 | [Yuzwa *et al.* (2017)](https://doi.org/10.1016/j.celrep.2017.12.017),<br> [Ruan *et al.* (2021)](https://doi.org/10.1073/pnas.2018866118)
 synthetic | linear\_1 | non-UMI | linear | 2000 | 991 | 4 | dyngen 
 synthetic | linear\_2 | non-UMI | linear | 2000 | 999 | 4 | dyngen 
 synthetic | linear\_3 | non-UMI | linear | 2000 | 1000 | 4 | dyngen 
