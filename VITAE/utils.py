@@ -303,22 +303,22 @@ def get_igraph(z, random_state=0):
     return g
 
 
-#def clustering(X, random_state=0):
-#    n_cell = X.shape[0]
-#    max_n_clusters = np.clip(n_cell-1, 3, 10)
-#    silhouette_avg = []
-#    models = []
-#    cluster_labels = []
-#    for n_clusters in range(3,max_n_clusters+1):
-#        kmedoids = KMedoids(n_clusters=n_clusters, random_state=random_state).fit(X)
-#        pred_labels = kmedoids.predict(X)
-#        silhouette_avg.append(silhouette_score(X, pred_labels))
-#        models.append(kmedoids)
-#        cluster_labels.append(pred_labels)
-#    id_n = np.minimum(np.argmax(silhouette_avg) + 1, 10-3)
-#    cluster_centers = models[id_n].cluster_centers_
-#    labels = cluster_labels[id_n]
-#    return labels, cluster_centers
+def clustering(X, random_state=0):
+   n_cell = X.shape[0]
+   max_n_clusters = np.clip(n_cell-1, 3, 10)
+   silhouette_avg = []
+   models = []
+   cluster_labels = []
+   for n_clusters in range(3,max_n_clusters+1):
+       kmedoids = KMedoids(n_clusters=n_clusters, random_state=random_state).fit(X)
+       pred_labels = kmedoids.predict(X)
+       silhouette_avg.append(silhouette_score(X, pred_labels))
+       models.append(kmedoids)
+       cluster_labels.append(pred_labels)
+   id_n = np.minimum(np.argmax(silhouette_avg) + 1, 10-3)
+   cluster_centers = models[id_n].cluster_centers_
+   labels = cluster_labels[id_n]
+   return labels, cluster_centers
 
 
 def leidenalg_igraph(g, res, random_state=0):
@@ -742,15 +742,18 @@ def load_data(path, file_name,return_dict = False):
 # Below are some functions used in calculating MMD loss
 
 def compute_kernel(x, y, kernel='rbf', **kwargs):
-    """
-        Computes RBF kernel between x and y.
-        # Parameters
-            x: Tensor
-                Tensor with shape [batch_size, z_dim]
-            y: Tensor
-                Tensor with shape [batch_size, z_dim]
-        # Returns
-            returns the computed RBF kernel between x and y
+    """Computes RBF kernel between x and y.
+
+    Parameters
+    ----------
+        x: Tensor
+            Tensor with shape [batch_size, z_dim]
+        y: Tensor
+            Tensor with shape [batch_size, z_dim]
+
+    Returns
+    ----------
+        The computed RBF kernel between x and y
     """
     scales = kwargs.get("scales", [])
     if kernel == "rbf":
@@ -778,21 +781,41 @@ def compute_kernel(x, y, kernel='rbf', **kwargs):
         return K.reshape(tf.reduce_sum(input_tensor=tf.exp(-s), axis=0), K.shape(distances)) / len(sigmas)
 
 
-def squared_distance(x, y):  # returns the pairwise euclidean distance
+def squared_distance(x, y):
+    '''Compute the pairwise euclidean distance.
+
+    Parameters
+    ----------
+    x: Tensor
+        Tensor with shape [batch_size, z_dim]
+    y: Tensor
+        Tensor with shape [batch_size, z_dim]
+
+    Returns
+    ----------
+    The pairwise euclidean distance between x and y.
+    '''
     r = K.expand_dims(x, axis=1)
     return K.sum(K.square(r - y), axis=-1)
 
 
-def compute_mmd(x, y, kernel, **kwargs):  # [batch_size, z_dim] [batch_size, z_dim]
-    """
-        Computes Maximum Mean Discrepancy(MMD) between x and y.
-        # Parameters
-            x: Tensor
-                Tensor with shape [batch_size, z_dim]
-            y: Tensor
-                Tensor with shape [batch_size, z_dim]
-        # Returns
-            returns the computed MMD between x and y
+def compute_mmd(x, y, kernel, **kwargs):
+    """Computes Maximum Mean Discrepancy(MMD) between x and y.
+    
+    Parameters
+    ----------
+    x: Tensor
+        Tensor with shape [batch_size, z_dim]
+    y: Tensor
+        Tensor with shape [batch_size, z_dim]
+    kernel: str
+        The kernel type used in MMD. It can be 'rbf', 'multi-scale-rbf' or 'raphy'.
+    **kwargs: dict
+        The parameters used in kernel function.
+    
+    Returns
+    ----------
+    The computed MMD between x and y
     """
     x_kernel = compute_kernel(x, x, kernel=kernel, **kwargs)
     y_kernel = compute_kernel(y, y, kernel=kernel, **kwargs)
@@ -801,14 +824,18 @@ def compute_mmd(x, y, kernel, **kwargs):  # [batch_size, z_dim] [batch_size, z_d
 
 
 def sample_z(args):
-    """
-        Samples from standard Normal distribution with shape [size, z_dim] and
-        applies re-parametrization trick. It is actually sampling from latent
-        space distributions with N(mu, var) computed in `_encoder` function.
-        # Parameters
-            No parameters are needed.
-        # Returns
-            The computed Tensor of samples with shape [size, z_dim].
+    """Samples from standard Normal distribution with shape [size, z_dim] and
+    applies re-parametrization trick. It is actually sampling from latent
+    space distributions with N(mu, var) computed in `_encoder` function.
+    
+    Parameters
+    ----------
+    args: list
+        List of [mu, log_var] computed in `_encoder` function.
+        
+    Returns
+    ----------
+    The computed Tensor of samples with shape [size, z_dim].
     """
     mu, log_var = args
     batch_size = K.shape(mu)[0]

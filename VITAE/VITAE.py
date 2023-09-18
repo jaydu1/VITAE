@@ -626,9 +626,11 @@ class VITAE():
         mask = np.tril(np.ones_like(matrix), k=-1)
         return matrix, mask
 
+
     def return_pilayer_weights(self):
         """return parameters of pilayer, which has dimension dim(pi_cov) + 1 by n_categories, the last row is biases"""
         return np.vstack((model.vae.pilayer.weights[0].numpy(), model.vae.pilayer.weights[1].numpy().reshape(1, -1)))
+
 
     def posterior_estimation(self, batch_size: int = 32, L: int = 50, **kwargs):
         '''Initialize trajectory inference by computing the posterior estimations.        
@@ -654,6 +656,7 @@ class VITAE():
         self.adata.obs['vitae_new_clustering'] = self.adata.obs['vitae_new_clustering'].astype('category')
         print("New clustering labels saved as 'vitae_new_clustering' in self.adata.obs.")
         return None
+
 
     def infer_backbone(self, method: str = 'modified_map', thres = 0.5,
             no_loop: bool = True, cutoff: float = 0,
@@ -744,6 +747,20 @@ class VITAE():
 
     def plot_backbone(self, directed: bool = False, 
                       method: str = 'UMAP', color = 'vitae_new_clustering', **kwargs):
+        '''Plot the current trajectory backbone (undirected graph).
+
+        Parameters
+        ----------
+        directed : boolean, optional
+            Whether the backbone is directed or not.
+        method : str, optional
+            The dimension reduction method to use. The default is "UMAP".
+        color : str, optional
+            The key for annotations of observations/cells or variables/genes, e.g., 'ann1' or ['ann1', 'ann2'].
+            The default is 'vitae_new_clustering'.
+        **kwargs :
+            Extra key-value arguments that can be passed to scanpy plotting functions (scanpy.pl.XX).
+        '''
         if not isinstance(color,str):
             raise ValueError('The color argument should be of type str!')
         ax = self.visualize_latent(method = method, color=color, show=False, **kwargs)
@@ -820,9 +837,31 @@ class VITAE():
 
         return ax
 
+
     def plot_center(self, color = "vitae_new_clustering", plot_legend = True, legend_add_index = True,
                     method: str = 'UMAP',ncol = 2,font_size = "medium",
                     add_egde = False, add_direct = False,**kwargs):
+        '''Plot the center of each cluster in the latent space.
+
+        Parameters
+        ----------
+        color : str, optional
+            The color of the center of each cluster. Default is "vitae_new_clustering".
+        plot_legend : bool, optional
+            Whether to plot the legend. Default is True.
+        legend_add_index : bool, optional
+            Whether to add the index of each cluster in the legend. Default is True.
+        method : str, optional
+            The dimension reduction method used for visualization. Default is 'UMAP'.
+        ncol : int, optional
+            The number of columns in the legend. Default is 2.
+        font_size : str, optional
+            The font size of the legend. Default is "medium".
+        add_egde : bool, optional
+            Whether to add the edges between the centers of clusters. Default is False.
+        add_direct : bool, optional
+            Whether to add the direction of the edges. Default is False.
+        '''
         if color not in ["vitae_new_clustering","vitae_init_clustering"]:
             raise ValueError("Can only plot center of vitae_new_clustering or vitae_init_clustering")
         dict_label_num = {j: i for i, j in self.labels_map['label_names'].to_dict().items()}
@@ -905,7 +944,6 @@ class VITAE():
         return None
 
 
-        
     def infer_trajectory(self, root: Union[int,str], color = "pseudotime",
                          visualize: bool = True, path_to_fig = None,  **kwargs):
         '''Infer the trajectory.
@@ -916,15 +954,12 @@ class VITAE():
             The root of the inferred trajectory. Can provide either an int (vertex index) or string (label name)
         cutoff : string, optional
             The threshold for filtering edges with scores less than cutoff.
-        is_plot : boolean, optional
-            Whether to plot or not.
-        path : string, optional  
-            The path to save figure, or don't save if it is None.
         visualize: boolean
-            whether plot the current trajectory backbone (directed graph)
-
-        Returns
-        ----------
+            Whether plot the current trajectory backbone (directed graph)
+        path_to_fig : string, optional  
+            The path to save figure, or don't save if it is None.
+        **kwargs : dict, optional
+            Other keywords arguments for plotting.
         '''
         if isinstance(root,str):
             if root not in self.labels_map.values:
@@ -973,6 +1008,8 @@ class VITAE():
         ----------
         alpha : float, optional
             The cutoff of p-values.
+        cell_subset : np.array, optional
+            The subset of cells to be used for testing. If None, all cells will be used.
         order : int, optional
             The maxium order we used for pseudotime in regression.
 
@@ -1167,6 +1204,7 @@ class VITAE():
         # res['score_cos_theta'] = score_cos_theta/(np.sum(np.sum(w>0, axis=-1)==2)+1e-12)
         return res
 
+
     def save_model(self, path_to_file: str = 'model.checkpoint',save_adata: bool = False):
         '''Saving model weights.
 
@@ -1174,6 +1212,8 @@ class VITAE():
         ----------
         path_to_file : str, optional
             The path to weight files of pre-trained or trained model
+        save_adata : boolean, optional
+            Whether to save adata or not.
         '''
         self.vae.save_weights(path_to_file)
         if hasattr(self, 'labels') and self.labels is not None:
@@ -1195,6 +1235,7 @@ class VITAE():
 
     def load_model(self, path_to_file: str = 'model.checkpoint', load_labels: bool = False, load_adata: bool = False):
         '''Load model weights.
+
         Parameters
         ----------
         path_to_file : str, optional
@@ -1203,6 +1244,8 @@ class VITAE():
             Whether to load clustering labels or not.
             If load_labels is True, then the LatentSpace layer will be initialized basd on the model.
             If load_labels is False, then the LatentSpace layer will not be initialized.
+        load_adata : boolean, optional
+            Whether to load adata or not.
         '''
         if not os.path.exists(path_to_file + '.config'):
             raise AssertionError('Config file not exist!')
