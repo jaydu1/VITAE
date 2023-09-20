@@ -22,7 +22,7 @@ One can also install all dependencies by hand and use the source code in the git
 
 package|version
 ---|---
-Python|>=3.6.0
+Python|>=3.7.0
 tensorflow| >=2.3.0 
 tensorflow-probability| >=0.11.0
 pandas| >=1.1.5
@@ -36,6 +36,7 @@ scikit-misc| >=0.1.3
 statsmodels | >= 0.12.1
 louvain| >=0.7.0
 networkx| >=2.5
+scanpy| >=1.8.2
 
 For reproducing the results in the manuscript, the following versions of the R language and packages are needed.
 
@@ -63,7 +64,8 @@ The folder `Benchmarking with Real and Synthetic Datasets` contains code to repr
 
 - `run_other_methods.R`: Run PAGA, monocle 3 and slingshot on all datasets. To run the new version of PAGA and monocle 3, one would need to create TI methods from docker with dyno (see [https://dynverse.org/developers/creating-ti-method/create_ti_method_container/](https://dynverse.org/developers/creating-ti-method/create_ti_method_container/)). The source code for them is in the folder `ti_methods`.
 - `evaluate_other_methods.py`: Evaluate the trajectory inference results from other methods.
-- `run_and_evaluate_VITAE.py`: Run VITAE with different random seeds and record the evaluation result.
+- `run_and_evaluate_VITAE_Gaussian.py`: Run VITAE using Gaussian likelihood with different random seeds and record the evaluation result.
+- `run_and_evaluate_VITAE_NB.py`: Run VITAE using Negative Binomial likelihood with different random seeds and record the evaluation result.
 
 The intermediate results of the above scripts are in the sub-folder `result`. Then the figures can be plotted with the following Jupyter notebook:
 
@@ -93,16 +95,3 @@ The folder `Application on scRNA and scATAC datasets` contains code to reproduce
 The figures can be plotted with the following Jupyter notebook:
 
 - `plot_human_hematopoiesis.ipynb`: Reproduce the Figure 6 in the manuscript.
-
-
-# Reproducibility Workflow
-
-1. Install the required Python and R packages.
-2. Clone the github repo [https://github.com/jaydu1/VITAE](https://github.com/jaydu1/VITAE) and use code in folder [paper](https://github.com/jaydu1/VITAE/tree/master/paper) for the following steps. 
-3. Reproduce results in Section 5 of the manuscript. Note that we evaluate VITAE with 100 different random seeds on 25 datasets, so it will take much long time on a single desktop machine in serial. However, we have included intermediate results in the subfolder `Benchmarking with Real and Synthetic Datasets/result` and the readers can skip the first two steps and visualize Figure 3 in the manuscript directly.
-	- (Optional) Evaluate VITAE by running `run_and_evaluate_VITAE.py`. 
-	- (Optional) Evaluate other methods by running `run_other_methods.R` and `evaluate_other_methods.py`.
-	- Visualize the results by running `plot_benchmark.py`.
-4. Reproduce results in the three case studies. 
-	- Run the Python and R scripts in the corresponding subfolder.
-	- Visualize the results by using the Jupyter notebooks.
