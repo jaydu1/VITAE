@@ -8,6 +8,7 @@ import warnings
 from sklearn.decomposition import PCA
 from VITAE.utils import _check_expression, _check_variability
 
+
 def normalize_gene_expression(x, K : float = 1e4, transform_fn : str = 'log'):
     '''Normalize the gene expression counts for each cell by the total expression counts, 
     divide this by a size scale factor, which is determined by total counts and a constant K

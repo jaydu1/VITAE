@@ -18,7 +18,6 @@ import anndata
 
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-#from sklearn_extra.cluster import KMedoids
 from sklearn.metrics import silhouette_score
 from umap.umap_ import nearest_neighbors, smooth_knn_dist
 import umap
@@ -301,24 +300,6 @@ def get_igraph(z, random_state=0):
     g.add_edges(list(zip(sources, targets)))
     g.es['weight'] = weights
     return g
-
-
-def clustering(X, random_state=0):
-   n_cell = X.shape[0]
-   max_n_clusters = np.clip(n_cell-1, 3, 10)
-   silhouette_avg = []
-   models = []
-   cluster_labels = []
-   for n_clusters in range(3,max_n_clusters+1):
-       kmedoids = KMedoids(n_clusters=n_clusters, random_state=random_state).fit(X)
-       pred_labels = kmedoids.predict(X)
-       silhouette_avg.append(silhouette_score(X, pred_labels))
-       models.append(kmedoids)
-       cluster_labels.append(pred_labels)
-   id_n = np.minimum(np.argmax(silhouette_avg) + 1, 10-3)
-   cluster_centers = models[id_n].cluster_centers_
-   labels = cluster_labels[id_n]
-   return labels, cluster_centers
 
 
 def leidenalg_igraph(g, res, random_state=0):

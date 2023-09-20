@@ -3,9 +3,7 @@ import warnings
 
 import pandas as pd
 import numpy as np
-#from scipy.interpolate import splrep, splev
 import networkx as nx
-#import umap
 
 
 class Inferer(object):
