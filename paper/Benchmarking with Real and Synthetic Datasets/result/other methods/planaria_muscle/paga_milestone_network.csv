@@ -1,6 +1,0 @@
-"","from","to","length","directed"
-"1","1","1-muscle bodya",0.974097788333893,TRUE
-"2","2","1",0.762041807174683,TRUE
-"3","1","3",0.7334303855896,TRUE
-"4","1-muscle bodya","1-muscle bodyb",0.00823189993699392,TRUE
-"5","1-muscle bodyb","1",0.00823189993699392,TRUE

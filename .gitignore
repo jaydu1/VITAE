@@ -1,4 +1,6 @@
 __pycache__/
+VITAE/__pycache__
+VITAE/__pycache__/
 .ipynb_checkpoints
 PyPI/
 data/mouse_brain_merged.h5
@@ -7,3 +9,4 @@ data/mouse_brain.h5
 code.txt
 update.py
 update.bash
+VITAE/.idea/workspace.xml

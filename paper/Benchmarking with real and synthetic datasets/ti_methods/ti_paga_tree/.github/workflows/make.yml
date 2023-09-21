@@ -1,0 +1,45 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: "0 0 * * 1"
+
+name: make
+
+jobs:
+  build_containers:
+    runs-on: 'ubuntu-latest'
+    if: "!contains(github.event.head_commit.message, 'ci skip')"
+    name: build container
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build
+        run: |
+          source version
+          TAG="v$VERSION"
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          docker build --build-arg GITHUB_PAT=${{ secrets.PAT }} -t dynbuild .
+          docker tag dynbuild $GITHUB_REPOSITORY:$BRANCH
+          if [[ $BRANCH == "master" ]] ; then
+            docker tag dynbuild $GITHUB_REPOSITORY:$TAG
+            docker tag dynbuild $GITHUB_REPOSITORY:latest
+          fi
+
+      - name: Test
+        if: github.repository != 'dynverse/ti_error'
+        run: |
+          mkdir test_out
+          docker run --entrypoint /code/example.sh -v `pwd`/test_out:/mnt dynbuild /mnt/example.h5
+          docker run -v `pwd`/test_out:/mnt dynbuild --dataset /mnt/example.h5 --output /mnt/output.h5 --verbosity 3
+          docker run --entrypoint Rscript -v `pwd`/test_out:/mnt dynbuild -e 'traj <- dynutils::read_h5("/mnt/output.h5"); if (!dynwrap::is_wrapper_with_trajectory(traj)) stop("No trajectory found!")'
+          
+      - name: Push
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker push $GITHUB_REPOSITORY

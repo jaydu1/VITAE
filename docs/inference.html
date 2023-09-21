@@ -3,18 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.8.1" />
 <title>VITAE.inference API documentation</title>
 <meta name="description" content="" />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_CHTML'></script>
 </head>
 <body>
 <main>
@@ -27,49 +25,43 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import os
-import warnings
-from typing import Optional
+<pre><code class="python">import warnings
+#from typing import Optional
 
 import pandas as pd
 import numpy as np
-from scipy.interpolate import splrep, splev
 import networkx as nx
-import umap
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.patheffects as pe
 
-from VITAE.utils import get_embedding, _get_smooth_curve
 
 class Inferer(object):
     &#39;&#39;&#39;
     The class for doing inference based on posterior estimations.
     &#39;&#39;&#39;
 
-    def __init__(self, NUM_CLUSTER: int):
+    def __init__(self, n_states: int):
         &#39;&#39;&#39;
         Parameters
         ----------
-        NUM_CLUSTER : int
+        n_states : int
             The number of vertices in the latent space.
         &#39;&#39;&#39;        
-        self.NUM_CLUSTER = NUM_CLUSTER
-        self.NUM_STATE = int(NUM_CLUSTER*(NUM_CLUSTER+1)/2)
-        self.CLUSTER_CENTER = np.array([int((NUM_CLUSTER+(1-i)/2)*i) for i in range(NUM_CLUSTER)])
-        self.A, self.B = np.nonzero(np.triu(np.ones(NUM_CLUSTER)))
-        self.C = np.triu(np.ones(NUM_CLUSTER))
-        self.C[self.C&gt;0] = np.arange(self.NUM_STATE)
+        self.n_states = n_states
+        self.n_categories = int(n_states*(n_states+1)/2)
+      #  self.A, self.B = np.nonzero(np.triu(np.ones(n_states)))
+       ## indicator of the catagories
+        self.C = np.triu(np.ones(n_states))
+        self.C[self.C&gt;0] = np.arange(self.n_categories)
         self.C = self.C.astype(int)
         
-    def build_graphs(self, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5):
+    def build_graphs(self, w_tilde, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5, no_loop: bool = False, 
+            cutoff = 0):
         &#39;&#39;&#39;Build the backbone.
         
         Parameters
         ----------
         pc_x : np.array
             \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).        
-        method : string, optional
+        method : string, optional 
             &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
         thres : float, optional 
             The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
@@ -79,37 +71,69 @@ class Inferer(object):
         G : nx.Graph
             The graph of edge scores.
         &#39;&#39;&#39;
-        graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER))
+        self.no_loop = no_loop
+    #    self.w_tilde = w_tilde
+
+        graph = np.zeros((self.n_states,self.n_states))
         if method==&#39;mean&#39;:
-            for i in range(self.NUM_CLUSTER-1):
-                for j in range(i+1,self.NUM_CLUSTER):
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
                     idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
                     if np.sum(idx)&gt;0:
                         graph[i,j] = np.mean(pc_x[idx,self.C[i,j]]/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]], axis=-1))
         elif method==&#39;modified_mean&#39;:
-            for i in range(self.NUM_CLUSTER-1):
-                for j in range(i+1,self.NUM_CLUSTER):
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
                     idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
                     if np.sum(idx)&gt;0:
                         graph[i,j] = np.sum(pc_x[idx,self.C[i,j]])/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]])
         elif method==&#39;map&#39;:
             c = np.argmax(pc_x, axis=-1)
-            for i in range(self.NUM_CLUSTER-1):
-                for j in range(i+1,self.NUM_CLUSTER):
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
                     if np.sum(c==self.C[i,j])&gt;0:
                         graph[i,j] = np.sum(c==self.C[i,j])/np.sum((c==self.C[i,j])|(c==self.C[i,i])|(c==self.C[j,j]))
         elif method==&#39;modified_map&#39;:
             c = np.argmax(pc_x, axis=-1)
-            for i in range(self.NUM_CLUSTER-1):
-                for j in range(i+1,self.NUM_CLUSTER):
-                    graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((self.w_tilde[:,i]&gt;0.5)|(self.w_tilde[:,j]&gt;0.5))+1e-16)
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
+                    graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((w_tilde[:,i]&gt;0.5)|(w_tilde[:,j]&gt;0.5))+1e-16)
+        elif method==&#39;raw_map&#39;:
+            c = np.argmax(pc_x, axis=-1)
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
+                    if np.sum(c==self.C[i,j])&gt;0:
+                        graph[i,j] = np.sum(c==self.C[i,j])/np.sum(np.isin(c, np.diagonal(self.C)) == False)
+        elif method == &#34;w_base&#34;:
+            for i in range(self.n_states):
+                for j in range(i+1,self.n_states):
+                    two_vertice_max_w = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j),:]
+                    num_two_vertice = two_vertice_max_w.shape[0]
+                    if num_two_vertice &gt; 0:
+                        graph[i, j] = np.sum(
+                            np.abs(two_vertice_max_w[:, i] - two_vertice_max_w[:, j]) &lt; 0.1) / num_two_vertice
+        elif method == &#34;modified_w_base&#34;:
+            top2_idx = np.argpartition(w_tilde, -2, axis=1)[:, -2:]
+            for i in range(self.n_states):
+                for j in range(i + 1, self.n_states):
+                    two_vertice_max_w = np.all(top2_idx == [i, j], axis=1) | np.all(top2_idx == [j, i], axis=1)
+                    two_vertice_max_w = w_tilde[two_vertice_max_w, :]
+                    vertice_count = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j), :]
+                    vertice_count = vertice_count.shape[0]
+                    if vertice_count &gt; 0:
+                        edge_count = \
+                            np.max((two_vertice_max_w[:, i], two_vertice_max_w[:, j]), axis=0) \
+                            / (two_vertice_max_w[:, i] + two_vertice_max_w[:, j])
+                        edge_count = np.sum(edge_count &lt; 0.55)
+                        graph[i, j] = edge_count / vertice_count
         else:
-            raise ValueError(&#34;Invalid method, must be one of &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, and &#39;modified_map&#39;.&#34;)
-                    
+            raise ValueError(&#34;Invalid method, must be one of &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, &#39;modified_map&#39;,&#39;raw_map&#39;,&#39;w_base&#39;, and &#39;modified_w_base&#39;.&#34;)
+        
+        graph[graph&lt;=cutoff] = 0
         G = nx.from_numpy_array(graph)
         
         if self.no_loop and not nx.is_tree(G):
-            # prune and merge points if there are loops
+            # prune if there are no loops
             G = nx.maximum_spanning_tree(G)
             
         return G
@@ -123,8 +147,6 @@ class Inferer(object):
             \([N, k]\) The estimated \(\\tilde{w}\).        
         edges : np.array
             \([|\\mathcal{E}(\\widehat{\\mathcal{B}})|, 2]\).
-        thres : float, optional 
-            The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
 
         Retruns
         ----------
@@ -153,104 +175,7 @@ class Inferer(object):
             w[idc, best_proj_err_node_ind] = 1
         return w
 
-    def init_inference(self, w_tilde, pc_x, thres: float = 0.5, method: str = &#39;mean&#39;, no_loop: bool = False):
-        &#39;&#39;&#39;Initialze inference.
-        
-        Parameters
-        ----------
-        w_tilde : np.array
-            \([N, k]\) The estimated \(\\tilde{w}\).        
-        pc_x : np.array
-            \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).  
-        method : string, optional
-            &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
-        thres : float, optional 
-            The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.    
-        no_loop : boolean, optional 
-            if loops are allowed to exist in The graph.
-
-        Retruns
-        ----------
-        G : np.array
-            The estimated backbone \(\\widehat{\\mathcal{B}}\).
-        edges : np.array
-            \(|\\mathcal{E}(\\widehat{\\mathcal{B}})|,2\) The edges in the estimated backbone.
-        &#39;&#39;&#39;
-        self.no_loop = no_loop
-        self.w_tilde = w_tilde
-        
-        # Build graph
-        self.G = self.build_graphs(pc_x, method=method, thres=thres)
-        
-        edges = np.array(list(self.G.edges))
-        self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
-
-        return self.G, self.edges
-    
-    def init_embedding(self, z, mu, dimred: str =&#39;umap&#39;, **kwargs):
-        &#39;&#39;&#39;Initialze embeddings for visualizations.
-
-        Parameters
-        ----------
-        z : np.array
-            \([N,d]\) The latent means.
-        mu : np.array
-            \([d,k]\) The value of initial \(\\mu\).
-        dimred : str, optional 
-            The name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;. Only used if &#39;plot_every_num_epoch&#39; is not None. 
-        **kwargs : 
-            Extra key-value arguments for dimension reduction algorithms.   
-
-        Retruns
-        ----------
-        embed_z : np.array
-            \([N, 2]\) latent variables after dimension reduction.
-        &#39;&#39;&#39;
-        self.mu = mu.copy()
-        concate_z = np.concatenate((z, mu.T), axis=0)
-        embed = get_embedding(concate_z, dimred, **kwargs)
-        embed = (embed - np.min(embed, axis=0, keepdims=True)) / (np.max(embed, axis=0, keepdims=True) - np.min(embed, axis=0, keepdims=True))
-        
-        self.embed_z = embed[:-self.NUM_CLUSTER,:]
-        self.embed_mu = embed[-self.NUM_CLUSTER:,:]
-        return self.embed_z.copy()    
-        
-    def plot_clusters(self, labels, plot_labels: bool=False, path: Optional[str] = None):
-        &#39;&#39;&#39;Plot the embeddings with labels.
-
-        Parameters
-        ----------
-        labels : np.array     
-            \([N, ]\) The clustered labels.
-        plot_labels : boolean, optional
-            Whether to plot text of labels or not.
-        path : str, optional
-            The path to save the figure.
-        &#39;&#39;&#39;  
-        if labels is None:
-            print(&#39;No clustering labels available!&#39;)
-        else:
-            n_labels = len(np.unique(labels))
-            colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
-            
-            fig, ax = plt.subplots(1,1, figsize=(20, 10))
-            for i,x in enumerate(np.unique(labels)):
-                ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                    s=16, alpha=0.5, label=str(x))
-                if plot_labels:
-                    ax.text(np.mean(self.embed_z[labels==x,0]), 
-                            np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                             box.width, box.height * 0.9])
-            ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-                      fancybox=True, shadow=True, markerscale=3, ncol=5)
-            ax.set_title(&#39;Cluster Membership&#39;)
-            plt.setp(ax, xticks=[], yticks=[])
-            if path is not None:
-                plt.savefig(path, dpi=300)
-            plt.show()
-        return None
+     
         
     def build_milestone_net(self, subgraph, init_node: int):
         &#39;&#39;&#39;Build the milestone network.
@@ -318,7 +243,8 @@ class Inferer(object):
         pseudotime : np.array
             \([N, k]\) The estimated pseudtotime.
         &#39;&#39;&#39;
-        pseudotime = - np.ones(w.shape[0])
+        pseudotime = np.empty(w.shape[0])
+        pseudotime.fill(np.nan)
         pseudotime[w[:,init_node]==1] = 0
         
         if len(milestone_net)&gt;0:
@@ -329,138 +255,7 @@ class Inferer(object):
                 idc = ((w[:,_from]&gt;0)&amp;(w[:,_to]&gt;0)) | (w[:,_to]==1)
                 pseudotime[idc] = w[idc,_to] + milestone_net[i,-1] - 1
         
-        return pseudotime
-
-
-    def infer_trajectory(self, init_node: int, labels = None, cutoff: Optional[float] = None, is_plot: bool = True, path: Optional[str] = None):
-        &#39;&#39;&#39;Infer the trajectory.        
-
-        Parameters
-        ----------
-        init_node : int
-            The initial node for the inferred trajectory.
-        cutoff : string, optional
-            The threshold for filtering edges with scores less than cutoff.
-        is_plot : boolean, optional
-            Whether to plot or not.
-        path : string, optional  
-            The path to save figure, or don&#39;t save if it is None.
-
-        Returns
-        ----------
-        G : nx.Graph 
-            The modified graph that indicates the inferred trajectory.
-        w : np.array
-            \([N,k]\) The modified \(\\tilde{w}\).
-        pseudotime : np.array
-            \([N,]\) The pseudotime based on projected trajectory.      
-        &#39;&#39;&#39;
-        # select edges
-        if len(self.edges)==0:
-            milestone_net = select_edges = []
-            G = nx.Graph()
-            G.add_nodes_from(self.G.nodes)
-        else:
-            if self.no_loop:
-                G = nx.maximum_spanning_tree(self.G)
-            else:
-                G = self.G
-            if cutoff is None:
-                cutoff = 0.01
-            graph = nx.to_numpy_matrix(G)
-            graph[graph&lt;=cutoff] = 0
-            G = nx.from_numpy_array(graph)
-            connected_comps = nx.node_connected_component(G, init_node)
-            subG = G.subgraph(connected_comps)
-            if len(subG.edges)&gt;0:                
-                milestone_net = self.build_milestone_net(subG,init_node)
-                if self.no_loop is False and milestone_net.shape[0]&lt;len(G.edges):
-                    warnings.warn(&#34;The directed graph shown is a minimum spanning tree of the estimated trajectory backbone to avoid arbitrary assignment of the directions.&#34;)
-                select_edges = milestone_net[:,:2]
-                select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
-                if select_edges_score.max() - select_edges_score.min() == 0:
-                    select_edges_score = select_edges_score/select_edges_score.max()
-                else:
-                    select_edges_score = (select_edges_score - select_edges_score.min())/(select_edges_score.max() - select_edges_score.min())*3                    
-            else:
-                milestone_net = select_edges = []                    
-        
-        # modify w_tilde
-        w = self.modify_wtilde(self.w_tilde, select_edges)
-        
-        # compute pseudotime
-        pseudotime = self.comp_pseudotime(milestone_net, init_node, w)
-        
-        if is_plot:
-            fig, ax = plt.subplots(1,1, figsize=(20, 10))
-                
-            cmap = matplotlib.cm.get_cmap(&#39;viridis&#39;)
-            colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
-            if np.sum(pseudotime&gt;-1)&gt;0:
-                norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime&gt;-1]), vmax=np.max(pseudotime))
-                sc = ax.scatter(*self.embed_z[pseudotime&gt;-1,:].T,
-                    norm=norm,
-                    c=pseudotime[pseudotime&gt;-1],
-                    s=16, alpha=0.5)
-                plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
-            else:
-                norm = None
-                
-            if np.sum(pseudotime==-1)&gt;0:
-                ax.scatter(*self.embed_z[pseudotime==-1,:].T,
-                            c=&#39;gray&#39;, s=16, alpha=0.4)
-            
-            for i in range(len(select_edges)):
-                points = self.embed_z[np.sum(w[:,select_edges[i,:]]&gt;0, axis=-1)==2,:]
-                points = points[points[:,0].argsort()]                
-                try:
-                    x_smooth, y_smooth = _get_smooth_curve(
-                        points, 
-                        self.embed_mu[select_edges[i,:], :]
-                        )
-                except:
-                    x_smooth, y_smooth = self.embed_mu[select_edges[i,:], 0], self.embed_mu[select_edges[i,:], 1]
-                ax.plot(x_smooth, y_smooth, 
-                    &#39;-&#39;, 
-                    linewidth= 1 + select_edges_score[0,i],
-                    color=&#34;black&#34;, 
-                    alpha=0.8, 
-                    path_effects=[pe.Stroke(linewidth=1+select_edges_score[0,i]+1.5, 
-                                            foreground=&#39;white&#39;), pe.Normal()],
-                    zorder=1
-                    )
-
-                delta_x = self.embed_mu[select_edges[i,1], 0]-x_smooth[-2]
-                delta_y = self.embed_mu[select_edges[i,1], 1]-y_smooth[-2]
-                length = np.sqrt(delta_x**2 + delta_y**2) * 50              
-                ax.arrow(
-                        self.embed_mu[select_edges[i,1], 0]-delta_x/length, 
-                        self.embed_mu[select_edges[i,1], 1]-delta_y/length, 
-                        delta_x/length,
-                        delta_y/length,
-                        color=&#39;black&#39;, alpha=1.0,
-                        shape=&#39;full&#39;, lw=0, length_includes_head=True, head_width=0.02, zorder=2)
-            
-            for i in range(len(self.CLUSTER_CENTER)):
-                ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
-                            edgecolors=&#39;white&#39;, # linewidths=10,
-                            norm=norm,
-                            s=250, marker=&#39;*&#39;, label=str(i))
-                ax.text(self.embed_mu[i,0], self.embed_mu[i,1], &#39;%02d&#39;%i, fontsize=16)
-                
-            plt.setp(ax, xticks=[], yticks=[])
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                                box.width, box.height * 0.9])
-            ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-                fancybox=True, shadow=True, ncol=5)
-            
-            ax.set_title(&#39;Trajectory&#39;)
-            if path is not None:
-                plt.savefig(path, dpi=300)
-            plt.show()
-        return G, w, pseudotime
-            </code></pre>
+        return pseudotime</code></pre>
 </details>
 </section>
 <section>
@@ -474,13 +269,13 @@ class Inferer(object):
 <dl>
 <dt id="VITAE.inference.Inferer"><code class="flex name class">
 <span>class <span class="ident">Inferer</span></span>
-<span>(</span><span>NUM_CLUSTER: int)</span>
+<span>(</span><span>n_states: int)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>The class for doing inference based on posterior estimations.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>NUM_CLUSTER</code></strong> :&ensp;<code>int</code></dt>
+<dt><strong><code>n_states</code></strong> :&ensp;<code>int</code></dt>
 <dd>The number of vertices in the latent space.</dd>
 </dl></div>
 <details class="source">
@@ -492,29 +287,30 @@ class Inferer(object):
     The class for doing inference based on posterior estimations.
     &#39;&#39;&#39;
 
-    def __init__(self, NUM_CLUSTER: int):
+    def __init__(self, n_states: int):
         &#39;&#39;&#39;
         Parameters
         ----------
-        NUM_CLUSTER : int
+        n_states : int
             The number of vertices in the latent space.
         &#39;&#39;&#39;        
-        self.NUM_CLUSTER = NUM_CLUSTER
-        self.NUM_STATE = int(NUM_CLUSTER*(NUM_CLUSTER+1)/2)
-        self.CLUSTER_CENTER = np.array([int((NUM_CLUSTER+(1-i)/2)*i) for i in range(NUM_CLUSTER)])
-        self.A, self.B = np.nonzero(np.triu(np.ones(NUM_CLUSTER)))
-        self.C = np.triu(np.ones(NUM_CLUSTER))
-        self.C[self.C&gt;0] = np.arange(self.NUM_STATE)
+        self.n_states = n_states
+        self.n_categories = int(n_states*(n_states+1)/2)
+      #  self.A, self.B = np.nonzero(np.triu(np.ones(n_states)))
+       ## indicator of the catagories
+        self.C = np.triu(np.ones(n_states))
+        self.C[self.C&gt;0] = np.arange(self.n_categories)
         self.C = self.C.astype(int)
         
-    def build_graphs(self, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5):
+    def build_graphs(self, w_tilde, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5, no_loop: bool = False, 
+            cutoff = 0):
         &#39;&#39;&#39;Build the backbone.
         
         Parameters
         ----------
         pc_x : np.array
             \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).        
-        method : string, optional
+        method : string, optional 
             &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
         thres : float, optional 
             The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
@@ -524,37 +320,69 @@ class Inferer(object):
         G : nx.Graph
             The graph of edge scores.
         &#39;&#39;&#39;
-        graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER))
+        self.no_loop = no_loop
+    #    self.w_tilde = w_tilde
+
+        graph = np.zeros((self.n_states,self.n_states))
         if method==&#39;mean&#39;:
-            for i in range(self.NUM_CLUSTER-1):
-                for j in range(i+1,self.NUM_CLUSTER):
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
                     idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
                     if np.sum(idx)&gt;0:
                         graph[i,j] = np.mean(pc_x[idx,self.C[i,j]]/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]], axis=-1))
         elif method==&#39;modified_mean&#39;:
-            for i in range(self.NUM_CLUSTER-1):
-                for j in range(i+1,self.NUM_CLUSTER):
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
                     idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
                     if np.sum(idx)&gt;0:
                         graph[i,j] = np.sum(pc_x[idx,self.C[i,j]])/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]])
         elif method==&#39;map&#39;:
             c = np.argmax(pc_x, axis=-1)
-            for i in range(self.NUM_CLUSTER-1):
-                for j in range(i+1,self.NUM_CLUSTER):
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
                     if np.sum(c==self.C[i,j])&gt;0:
                         graph[i,j] = np.sum(c==self.C[i,j])/np.sum((c==self.C[i,j])|(c==self.C[i,i])|(c==self.C[j,j]))
         elif method==&#39;modified_map&#39;:
             c = np.argmax(pc_x, axis=-1)
-            for i in range(self.NUM_CLUSTER-1):
-                for j in range(i+1,self.NUM_CLUSTER):
-                    graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((self.w_tilde[:,i]&gt;0.5)|(self.w_tilde[:,j]&gt;0.5))+1e-16)
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
+                    graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((w_tilde[:,i]&gt;0.5)|(w_tilde[:,j]&gt;0.5))+1e-16)
+        elif method==&#39;raw_map&#39;:
+            c = np.argmax(pc_x, axis=-1)
+            for i in range(self.n_states-1):
+                for j in range(i+1,self.n_states):
+                    if np.sum(c==self.C[i,j])&gt;0:
+                        graph[i,j] = np.sum(c==self.C[i,j])/np.sum(np.isin(c, np.diagonal(self.C)) == False)
+        elif method == &#34;w_base&#34;:
+            for i in range(self.n_states):
+                for j in range(i+1,self.n_states):
+                    two_vertice_max_w = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j),:]
+                    num_two_vertice = two_vertice_max_w.shape[0]
+                    if num_two_vertice &gt; 0:
+                        graph[i, j] = np.sum(
+                            np.abs(two_vertice_max_w[:, i] - two_vertice_max_w[:, j]) &lt; 0.1) / num_two_vertice
+        elif method == &#34;modified_w_base&#34;:
+            top2_idx = np.argpartition(w_tilde, -2, axis=1)[:, -2:]
+            for i in range(self.n_states):
+                for j in range(i + 1, self.n_states):
+                    two_vertice_max_w = np.all(top2_idx == [i, j], axis=1) | np.all(top2_idx == [j, i], axis=1)
+                    two_vertice_max_w = w_tilde[two_vertice_max_w, :]
+                    vertice_count = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j), :]
+                    vertice_count = vertice_count.shape[0]
+                    if vertice_count &gt; 0:
+                        edge_count = \
+                            np.max((two_vertice_max_w[:, i], two_vertice_max_w[:, j]), axis=0) \
+                            / (two_vertice_max_w[:, i] + two_vertice_max_w[:, j])
+                        edge_count = np.sum(edge_count &lt; 0.55)
+                        graph[i, j] = edge_count / vertice_count
         else:
-            raise ValueError(&#34;Invalid method, must be one of &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, and &#39;modified_map&#39;.&#34;)
-                    
+            raise ValueError(&#34;Invalid method, must be one of &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, &#39;modified_map&#39;,&#39;raw_map&#39;,&#39;w_base&#39;, and &#39;modified_w_base&#39;.&#34;)
+        
+        graph[graph&lt;=cutoff] = 0
         G = nx.from_numpy_array(graph)
         
         if self.no_loop and not nx.is_tree(G):
-            # prune and merge points if there are loops
+            # prune if there are no loops
             G = nx.maximum_spanning_tree(G)
             
         return G
@@ -568,8 +396,6 @@ class Inferer(object):
             \([N, k]\) The estimated \(\\tilde{w}\).        
         edges : np.array
             \([|\\mathcal{E}(\\widehat{\\mathcal{B}})|, 2]\).
-        thres : float, optional 
-            The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
 
         Retruns
         ----------
@@ -598,104 +424,7 @@ class Inferer(object):
             w[idc, best_proj_err_node_ind] = 1
         return w
 
-    def init_inference(self, w_tilde, pc_x, thres: float = 0.5, method: str = &#39;mean&#39;, no_loop: bool = False):
-        &#39;&#39;&#39;Initialze inference.
-        
-        Parameters
-        ----------
-        w_tilde : np.array
-            \([N, k]\) The estimated \(\\tilde{w}\).        
-        pc_x : np.array
-            \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).  
-        method : string, optional
-            &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
-        thres : float, optional 
-            The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.    
-        no_loop : boolean, optional 
-            if loops are allowed to exist in The graph.
-
-        Retruns
-        ----------
-        G : np.array
-            The estimated backbone \(\\widehat{\\mathcal{B}}\).
-        edges : np.array
-            \(|\\mathcal{E}(\\widehat{\\mathcal{B}})|,2\) The edges in the estimated backbone.
-        &#39;&#39;&#39;
-        self.no_loop = no_loop
-        self.w_tilde = w_tilde
-        
-        # Build graph
-        self.G = self.build_graphs(pc_x, method=method, thres=thres)
-        
-        edges = np.array(list(self.G.edges))
-        self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
-
-        return self.G, self.edges
-    
-    def init_embedding(self, z, mu, dimred: str =&#39;umap&#39;, **kwargs):
-        &#39;&#39;&#39;Initialze embeddings for visualizations.
-
-        Parameters
-        ----------
-        z : np.array
-            \([N,d]\) The latent means.
-        mu : np.array
-            \([d,k]\) The value of initial \(\\mu\).
-        dimred : str, optional 
-            The name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;. Only used if &#39;plot_every_num_epoch&#39; is not None. 
-        **kwargs : 
-            Extra key-value arguments for dimension reduction algorithms.   
-
-        Retruns
-        ----------
-        embed_z : np.array
-            \([N, 2]\) latent variables after dimension reduction.
-        &#39;&#39;&#39;
-        self.mu = mu.copy()
-        concate_z = np.concatenate((z, mu.T), axis=0)
-        embed = get_embedding(concate_z, dimred, **kwargs)
-        embed = (embed - np.min(embed, axis=0, keepdims=True)) / (np.max(embed, axis=0, keepdims=True) - np.min(embed, axis=0, keepdims=True))
-        
-        self.embed_z = embed[:-self.NUM_CLUSTER,:]
-        self.embed_mu = embed[-self.NUM_CLUSTER:,:]
-        return self.embed_z.copy()    
-        
-    def plot_clusters(self, labels, plot_labels: bool=False, path: Optional[str] = None):
-        &#39;&#39;&#39;Plot the embeddings with labels.
-
-        Parameters
-        ----------
-        labels : np.array     
-            \([N, ]\) The clustered labels.
-        plot_labels : boolean, optional
-            Whether to plot text of labels or not.
-        path : str, optional
-            The path to save the figure.
-        &#39;&#39;&#39;  
-        if labels is None:
-            print(&#39;No clustering labels available!&#39;)
-        else:
-            n_labels = len(np.unique(labels))
-            colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
-            
-            fig, ax = plt.subplots(1,1, figsize=(20, 10))
-            for i,x in enumerate(np.unique(labels)):
-                ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                    s=16, alpha=0.5, label=str(x))
-                if plot_labels:
-                    ax.text(np.mean(self.embed_z[labels==x,0]), 
-                            np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                             box.width, box.height * 0.9])
-            ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-                      fancybox=True, shadow=True, markerscale=3, ncol=5)
-            ax.set_title(&#39;Cluster Membership&#39;)
-            plt.setp(ax, xticks=[], yticks=[])
-            if path is not None:
-                plt.savefig(path, dpi=300)
-            plt.show()
-        return None
+     
         
     def build_milestone_net(self, subgraph, init_node: int):
         &#39;&#39;&#39;Build the milestone network.
@@ -763,7 +492,8 @@ class Inferer(object):
         pseudotime : np.array
             \([N, k]\) The estimated pseudtotime.
         &#39;&#39;&#39;
-        pseudotime = - np.ones(w.shape[0])
+        pseudotime = np.empty(w.shape[0])
+        pseudotime.fill(np.nan)
         pseudotime[w[:,init_node]==1] = 0
         
         if len(milestone_net)&gt;0:
@@ -774,142 +504,12 @@ class Inferer(object):
                 idc = ((w[:,_from]&gt;0)&amp;(w[:,_to]&gt;0)) | (w[:,_to]==1)
                 pseudotime[idc] = w[idc,_to] + milestone_net[i,-1] - 1
         
-        return pseudotime
-
-
-    def infer_trajectory(self, init_node: int, labels = None, cutoff: Optional[float] = None, is_plot: bool = True, path: Optional[str] = None):
-        &#39;&#39;&#39;Infer the trajectory.        
-
-        Parameters
-        ----------
-        init_node : int
-            The initial node for the inferred trajectory.
-        cutoff : string, optional
-            The threshold for filtering edges with scores less than cutoff.
-        is_plot : boolean, optional
-            Whether to plot or not.
-        path : string, optional  
-            The path to save figure, or don&#39;t save if it is None.
-
-        Returns
-        ----------
-        G : nx.Graph 
-            The modified graph that indicates the inferred trajectory.
-        w : np.array
-            \([N,k]\) The modified \(\\tilde{w}\).
-        pseudotime : np.array
-            \([N,]\) The pseudotime based on projected trajectory.      
-        &#39;&#39;&#39;
-        # select edges
-        if len(self.edges)==0:
-            milestone_net = select_edges = []
-            G = nx.Graph()
-            G.add_nodes_from(self.G.nodes)
-        else:
-            if self.no_loop:
-                G = nx.maximum_spanning_tree(self.G)
-            else:
-                G = self.G
-            if cutoff is None:
-                cutoff = 0.01
-            graph = nx.to_numpy_matrix(G)
-            graph[graph&lt;=cutoff] = 0
-            G = nx.from_numpy_array(graph)
-            connected_comps = nx.node_connected_component(G, init_node)
-            subG = G.subgraph(connected_comps)
-            if len(subG.edges)&gt;0:                
-                milestone_net = self.build_milestone_net(subG,init_node)
-                if self.no_loop is False and milestone_net.shape[0]&lt;len(G.edges):
-                    warnings.warn(&#34;The directed graph shown is a minimum spanning tree of the estimated trajectory backbone to avoid arbitrary assignment of the directions.&#34;)
-                select_edges = milestone_net[:,:2]
-                select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
-                if select_edges_score.max() - select_edges_score.min() == 0:
-                    select_edges_score = select_edges_score/select_edges_score.max()
-                else:
-                    select_edges_score = (select_edges_score - select_edges_score.min())/(select_edges_score.max() - select_edges_score.min())*3                    
-            else:
-                milestone_net = select_edges = []                    
-        
-        # modify w_tilde
-        w = self.modify_wtilde(self.w_tilde, select_edges)
-        
-        # compute pseudotime
-        pseudotime = self.comp_pseudotime(milestone_net, init_node, w)
-        
-        if is_plot:
-            fig, ax = plt.subplots(1,1, figsize=(20, 10))
-                
-            cmap = matplotlib.cm.get_cmap(&#39;viridis&#39;)
-            colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
-            if np.sum(pseudotime&gt;-1)&gt;0:
-                norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime&gt;-1]), vmax=np.max(pseudotime))
-                sc = ax.scatter(*self.embed_z[pseudotime&gt;-1,:].T,
-                    norm=norm,
-                    c=pseudotime[pseudotime&gt;-1],
-                    s=16, alpha=0.5)
-                plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
-            else:
-                norm = None
-                
-            if np.sum(pseudotime==-1)&gt;0:
-                ax.scatter(*self.embed_z[pseudotime==-1,:].T,
-                            c=&#39;gray&#39;, s=16, alpha=0.4)
-            
-            for i in range(len(select_edges)):
-                points = self.embed_z[np.sum(w[:,select_edges[i,:]]&gt;0, axis=-1)==2,:]
-                points = points[points[:,0].argsort()]                
-                try:
-                    x_smooth, y_smooth = _get_smooth_curve(
-                        points, 
-                        self.embed_mu[select_edges[i,:], :]
-                        )
-                except:
-                    x_smooth, y_smooth = self.embed_mu[select_edges[i,:], 0], self.embed_mu[select_edges[i,:], 1]
-                ax.plot(x_smooth, y_smooth, 
-                    &#39;-&#39;, 
-                    linewidth= 1 + select_edges_score[0,i],
-                    color=&#34;black&#34;, 
-                    alpha=0.8, 
-                    path_effects=[pe.Stroke(linewidth=1+select_edges_score[0,i]+1.5, 
-                                            foreground=&#39;white&#39;), pe.Normal()],
-                    zorder=1
-                    )
-
-                delta_x = self.embed_mu[select_edges[i,1], 0]-x_smooth[-2]
-                delta_y = self.embed_mu[select_edges[i,1], 1]-y_smooth[-2]
-                length = np.sqrt(delta_x**2 + delta_y**2) * 50              
-                ax.arrow(
-                        self.embed_mu[select_edges[i,1], 0]-delta_x/length, 
-                        self.embed_mu[select_edges[i,1], 1]-delta_y/length, 
-                        delta_x/length,
-                        delta_y/length,
-                        color=&#39;black&#39;, alpha=1.0,
-                        shape=&#39;full&#39;, lw=0, length_includes_head=True, head_width=0.02, zorder=2)
-            
-            for i in range(len(self.CLUSTER_CENTER)):
-                ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
-                            edgecolors=&#39;white&#39;, # linewidths=10,
-                            norm=norm,
-                            s=250, marker=&#39;*&#39;, label=str(i))
-                ax.text(self.embed_mu[i,0], self.embed_mu[i,1], &#39;%02d&#39;%i, fontsize=16)
-                
-            plt.setp(ax, xticks=[], yticks=[])
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                                box.width, box.height * 0.9])
-            ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-                fancybox=True, shadow=True, ncol=5)
-            
-            ax.set_title(&#39;Trajectory&#39;)
-            if path is not None:
-                plt.savefig(path, dpi=300)
-            plt.show()
-        return G, w, pseudotime</code></pre>
+        return pseudotime</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
 <dt id="VITAE.inference.Inferer.build_graphs"><code class="name flex">
-<span>def <span class="ident">build_graphs</span></span>(<span>self, pc_x, method: str = 'mean', thres: float = 0.5)</span>
+<span>def <span class="ident">build_graphs</span></span>(<span>self, w_tilde, pc_x, method: str = 'mean', thres: float = 0.5, no_loop: bool = False, cutoff=0)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Build the backbone.</p>
@@ -929,14 +529,15 @@ The graph of edge scores.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def build_graphs(self, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5):
+<pre><code class="python">def build_graphs(self, w_tilde, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5, no_loop: bool = False, 
+        cutoff = 0):
     &#39;&#39;&#39;Build the backbone.
     
     Parameters
     ----------
     pc_x : np.array
         \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).        
-    method : string, optional
+    method : string, optional 
         &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
     thres : float, optional 
         The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
@@ -946,37 +547,69 @@ The graph of edge scores.</p></div>
     G : nx.Graph
         The graph of edge scores.
     &#39;&#39;&#39;
-    graph = np.zeros((self.NUM_CLUSTER,self.NUM_CLUSTER))
+    self.no_loop = no_loop
+#    self.w_tilde = w_tilde
+
+    graph = np.zeros((self.n_states,self.n_states))
     if method==&#39;mean&#39;:
-        for i in range(self.NUM_CLUSTER-1):
-            for j in range(i+1,self.NUM_CLUSTER):
+        for i in range(self.n_states-1):
+            for j in range(i+1,self.n_states):
                 idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
                 if np.sum(idx)&gt;0:
                     graph[i,j] = np.mean(pc_x[idx,self.C[i,j]]/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]], axis=-1))
     elif method==&#39;modified_mean&#39;:
-        for i in range(self.NUM_CLUSTER-1):
-            for j in range(i+1,self.NUM_CLUSTER):
+        for i in range(self.n_states-1):
+            for j in range(i+1,self.n_states):
                 idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
                 if np.sum(idx)&gt;0:
                     graph[i,j] = np.sum(pc_x[idx,self.C[i,j]])/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]])
     elif method==&#39;map&#39;:
         c = np.argmax(pc_x, axis=-1)
-        for i in range(self.NUM_CLUSTER-1):
-            for j in range(i+1,self.NUM_CLUSTER):
+        for i in range(self.n_states-1):
+            for j in range(i+1,self.n_states):
                 if np.sum(c==self.C[i,j])&gt;0:
                     graph[i,j] = np.sum(c==self.C[i,j])/np.sum((c==self.C[i,j])|(c==self.C[i,i])|(c==self.C[j,j]))
     elif method==&#39;modified_map&#39;:
         c = np.argmax(pc_x, axis=-1)
-        for i in range(self.NUM_CLUSTER-1):
-            for j in range(i+1,self.NUM_CLUSTER):
-                graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((self.w_tilde[:,i]&gt;0.5)|(self.w_tilde[:,j]&gt;0.5))+1e-16)
+        for i in range(self.n_states-1):
+            for j in range(i+1,self.n_states):
+                graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((w_tilde[:,i]&gt;0.5)|(w_tilde[:,j]&gt;0.5))+1e-16)
+    elif method==&#39;raw_map&#39;:
+        c = np.argmax(pc_x, axis=-1)
+        for i in range(self.n_states-1):
+            for j in range(i+1,self.n_states):
+                if np.sum(c==self.C[i,j])&gt;0:
+                    graph[i,j] = np.sum(c==self.C[i,j])/np.sum(np.isin(c, np.diagonal(self.C)) == False)
+    elif method == &#34;w_base&#34;:
+        for i in range(self.n_states):
+            for j in range(i+1,self.n_states):
+                two_vertice_max_w = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j),:]
+                num_two_vertice = two_vertice_max_w.shape[0]
+                if num_two_vertice &gt; 0:
+                    graph[i, j] = np.sum(
+                        np.abs(two_vertice_max_w[:, i] - two_vertice_max_w[:, j]) &lt; 0.1) / num_two_vertice
+    elif method == &#34;modified_w_base&#34;:
+        top2_idx = np.argpartition(w_tilde, -2, axis=1)[:, -2:]
+        for i in range(self.n_states):
+            for j in range(i + 1, self.n_states):
+                two_vertice_max_w = np.all(top2_idx == [i, j], axis=1) | np.all(top2_idx == [j, i], axis=1)
+                two_vertice_max_w = w_tilde[two_vertice_max_w, :]
+                vertice_count = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j), :]
+                vertice_count = vertice_count.shape[0]
+                if vertice_count &gt; 0:
+                    edge_count = \
+                        np.max((two_vertice_max_w[:, i], two_vertice_max_w[:, j]), axis=0) \
+                        / (two_vertice_max_w[:, i] + two_vertice_max_w[:, j])
+                    edge_count = np.sum(edge_count &lt; 0.55)
+                    graph[i, j] = edge_count / vertice_count
     else:
-        raise ValueError(&#34;Invalid method, must be one of &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, and &#39;modified_map&#39;.&#34;)
-                
+        raise ValueError(&#34;Invalid method, must be one of &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, &#39;modified_map&#39;,&#39;raw_map&#39;,&#39;w_base&#39;, and &#39;modified_w_base&#39;.&#34;)
+    
+    graph[graph&lt;=cutoff] = 0
     G = nx.from_numpy_array(graph)
     
     if self.no_loop and not nx.is_tree(G):
-        # prune and merge points if there are loops
+        # prune if there are no loops
         G = nx.maximum_spanning_tree(G)
         
     return G</code></pre>
@@ -993,8 +626,6 @@ The graph of edge scores.</p></div>
 <dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> The estimated <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</dd>
 <dt><strong><code>edges</code></strong> :&ensp;<code>np.array</code></dt>
 <dd><span><span class="MathJax_Preview">[|\mathcal{E}(\widehat{\mathcal{B}})|, 2]</span><script type="math/tex">[|\mathcal{E}(\widehat{\mathcal{B}})|, 2]</script></span>.</dd>
-<dt><strong><code>thres</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd>The threshold used for filtering edges <span><span class="MathJax_Preview">e_{ij}</span><script type="math/tex">e_{ij}</script></span> that <span><span class="MathJax_Preview">(n_{i}+n_{j}+e_{ij})/N&lt;thres</span><script type="math/tex">(n_{i}+n_{j}+e_{ij})/N<thres</script></span>, only applied to mean method.</dd>
 </dl>
 <h2 id="retruns">Retruns</h2>
 <p>w : np.array
@@ -1012,8 +643,6 @@ The projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="
         \([N, k]\) The estimated \(\\tilde{w}\).        
     edges : np.array
         \([|\\mathcal{E}(\\widehat{\\mathcal{B}})|, 2]\).
-    thres : float, optional 
-        The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
 
     Retruns
     ----------
@@ -1041,177 +670,6 @@ The projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="
         idc = np.arange(w.shape[0])
         w[idc, best_proj_err_node_ind] = 1
     return w</code></pre>
-</details>
-</dd>
-<dt id="VITAE.inference.Inferer.init_inference"><code class="name flex">
-<span>def <span class="ident">init_inference</span></span>(<span>self, w_tilde, pc_x, thres: float = 0.5, method: str = 'mean', no_loop: bool = False)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Initialze inference.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>w_tilde</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> The estimated <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</dd>
-<dt><strong><code>pc_x</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N, K]</span><script type="math/tex">[N, K]</script></span> The estimated <span><span class="MathJax_Preview">p(c_i|Y_i,X_i)</span><script type="math/tex">p(c_i|Y_i,X_i)</script></span>.</dd>
-<dt><strong><code>method</code></strong> :&ensp;<code>string</code>, optional</dt>
-<dd>'mean', 'modified_mean', 'map', or 'modified_map'.</dd>
-<dt><strong><code>thres</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd>The threshold used for filtering edges <span><span class="MathJax_Preview">e_{ij}</span><script type="math/tex">e_{ij}</script></span> that <span><span class="MathJax_Preview">(n_{i}+n_{j}+e_{ij})/N&lt;thres</span><script type="math/tex">(n_{i}+n_{j}+e_{ij})/N<thres</script></span>, only applied to mean method.</dd>
-<dt><strong><code>no_loop</code></strong> :&ensp;<code>boolean</code>, optional</dt>
-<dd>if loops are allowed to exist in The graph.</dd>
-</dl>
-<h2 id="retruns">Retruns</h2>
-<p>G : np.array
-The estimated backbone <span><span class="MathJax_Preview">\widehat{\mathcal{B}}</span><script type="math/tex">\widehat{\mathcal{B}}</script></span>.
-edges : np.array
-<span><span class="MathJax_Preview">|\mathcal{E}(\widehat{\mathcal{B}})|,2</span><script type="math/tex">|\mathcal{E}(\widehat{\mathcal{B}})|,2</script></span> The edges in the estimated backbone.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def init_inference(self, w_tilde, pc_x, thres: float = 0.5, method: str = &#39;mean&#39;, no_loop: bool = False):
-    &#39;&#39;&#39;Initialze inference.
-    
-    Parameters
-    ----------
-    w_tilde : np.array
-        \([N, k]\) The estimated \(\\tilde{w}\).        
-    pc_x : np.array
-        \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).  
-    method : string, optional
-        &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
-    thres : float, optional 
-        The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.    
-    no_loop : boolean, optional 
-        if loops are allowed to exist in The graph.
-
-    Retruns
-    ----------
-    G : np.array
-        The estimated backbone \(\\widehat{\\mathcal{B}}\).
-    edges : np.array
-        \(|\\mathcal{E}(\\widehat{\\mathcal{B}})|,2\) The edges in the estimated backbone.
-    &#39;&#39;&#39;
-    self.no_loop = no_loop
-    self.w_tilde = w_tilde
-    
-    # Build graph
-    self.G = self.build_graphs(pc_x, method=method, thres=thres)
-    
-    edges = np.array(list(self.G.edges))
-    self.edges = [self.C[edges[i,0], edges[i,1]] for i in range(len(edges))]
-
-    return self.G, self.edges</code></pre>
-</details>
-</dd>
-<dt id="VITAE.inference.Inferer.init_embedding"><code class="name flex">
-<span>def <span class="ident">init_embedding</span></span>(<span>self, z, mu, dimred: str = 'umap', **kwargs)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Initialze embeddings for visualizations.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>z</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N,d]</span><script type="math/tex">[N,d]</script></span> The latent means.</dd>
-<dt><strong><code>mu</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[d,k]</span><script type="math/tex">[d,k]</script></span> The value of initial <span><span class="MathJax_Preview">\mu</span><script type="math/tex">\mu</script></span>.</dd>
-<dt><strong><code>dimred</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>The name of dimension reduction algorithms, can be 'umap', 'pca' and 'tsne'. Only used if 'plot_every_num_epoch' is not None.</dd>
-<dt><strong><code>**kwargs</code></strong></dt>
-<dd>Extra key-value arguments for dimension reduction algorithms.</dd>
-</dl>
-<h2 id="retruns">Retruns</h2>
-<p>embed_z : np.array
-<span><span class="MathJax_Preview">[N, 2]</span><script type="math/tex">[N, 2]</script></span> latent variables after dimension reduction.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def init_embedding(self, z, mu, dimred: str =&#39;umap&#39;, **kwargs):
-    &#39;&#39;&#39;Initialze embeddings for visualizations.
-
-    Parameters
-    ----------
-    z : np.array
-        \([N,d]\) The latent means.
-    mu : np.array
-        \([d,k]\) The value of initial \(\\mu\).
-    dimred : str, optional 
-        The name of dimension reduction algorithms, can be &#39;umap&#39;, &#39;pca&#39; and &#39;tsne&#39;. Only used if &#39;plot_every_num_epoch&#39; is not None. 
-    **kwargs : 
-        Extra key-value arguments for dimension reduction algorithms.   
-
-    Retruns
-    ----------
-    embed_z : np.array
-        \([N, 2]\) latent variables after dimension reduction.
-    &#39;&#39;&#39;
-    self.mu = mu.copy()
-    concate_z = np.concatenate((z, mu.T), axis=0)
-    embed = get_embedding(concate_z, dimred, **kwargs)
-    embed = (embed - np.min(embed, axis=0, keepdims=True)) / (np.max(embed, axis=0, keepdims=True) - np.min(embed, axis=0, keepdims=True))
-    
-    self.embed_z = embed[:-self.NUM_CLUSTER,:]
-    self.embed_mu = embed[-self.NUM_CLUSTER:,:]
-    return self.embed_z.copy()    </code></pre>
-</details>
-</dd>
-<dt id="VITAE.inference.Inferer.plot_clusters"><code class="name flex">
-<span>def <span class="ident">plot_clusters</span></span>(<span>self, labels, plot_labels: bool = False, path: Union[str, NoneType] = None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Plot the embeddings with labels.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>labels</code></strong> :&ensp;<code>np.array
-</code></dt>
-<dd><span><span class="MathJax_Preview">[N, ]</span><script type="math/tex">[N, ]</script></span> The clustered labels.</dd>
-<dt><strong><code>plot_labels</code></strong> :&ensp;<code>boolean</code>, optional</dt>
-<dd>Whether to plot text of labels or not.</dd>
-<dt><strong><code>path</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>The path to save the figure.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def plot_clusters(self, labels, plot_labels: bool=False, path: Optional[str] = None):
-    &#39;&#39;&#39;Plot the embeddings with labels.
-
-    Parameters
-    ----------
-    labels : np.array     
-        \([N, ]\) The clustered labels.
-    plot_labels : boolean, optional
-        Whether to plot text of labels or not.
-    path : str, optional
-        The path to save the figure.
-    &#39;&#39;&#39;  
-    if labels is None:
-        print(&#39;No clustering labels available!&#39;)
-    else:
-        n_labels = len(np.unique(labels))
-        colors = [plt.cm.jet(float(i)/n_labels) for i in range(n_labels)]
-        
-        fig, ax = plt.subplots(1,1, figsize=(20, 10))
-        for i,x in enumerate(np.unique(labels)):
-            ax.scatter(*self.embed_z[labels==x].T, c=[colors[i]],
-                s=16, alpha=0.5, label=str(x))
-            if plot_labels:
-                ax.text(np.mean(self.embed_z[labels==x,0]), 
-                        np.mean(self.embed_z[labels==x,1]), str(x), fontsize=16)
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                         box.width, box.height * 0.9])
-        ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-                  fancybox=True, shadow=True, markerscale=3, ncol=5)
-        ax.set_title(&#39;Cluster Membership&#39;)
-        plt.setp(ax, xticks=[], yticks=[])
-        if path is not None:
-            plt.savefig(path, dpi=300)
-        plt.show()
-    return None</code></pre>
 </details>
 </dd>
 <dt id="VITAE.inference.Inferer.build_milestone_net"><code class="name flex">
@@ -1325,7 +783,8 @@ edges : np.array
     pseudotime : np.array
         \([N, k]\) The estimated pseudtotime.
     &#39;&#39;&#39;
-    pseudotime = - np.ones(w.shape[0])
+    pseudotime = np.empty(w.shape[0])
+    pseudotime.fill(np.nan)
     pseudotime[w[:,init_node]==1] = 0
     
     if len(milestone_net)&gt;0:
@@ -1337,166 +796,6 @@ edges : np.array
             pseudotime[idc] = w[idc,_to] + milestone_net[i,-1] - 1
     
     return pseudotime</code></pre>
-</details>
-</dd>
-<dt id="VITAE.inference.Inferer.infer_trajectory"><code class="name flex">
-<span>def <span class="ident">infer_trajectory</span></span>(<span>self, init_node: int, labels=None, cutoff: Union[float, NoneType] = None, is_plot: bool = True, path: Union[str, NoneType] = None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Infer the trajectory.
-</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>init_node</code></strong> :&ensp;<code>int</code></dt>
-<dd>The initial node for the inferred trajectory.</dd>
-<dt><strong><code>cutoff</code></strong> :&ensp;<code>string</code>, optional</dt>
-<dd>The threshold for filtering edges with scores less than cutoff.</dd>
-<dt><strong><code>is_plot</code></strong> :&ensp;<code>boolean</code>, optional</dt>
-<dd>Whether to plot or not.</dd>
-<dt><strong><code>path</code></strong> :&ensp;<code>string</code>, optional</dt>
-<dd>The path to save figure, or don't save if it is None.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>G</code></strong> :&ensp;<code>nx.Graph </code></dt>
-<dd>The modified graph that indicates the inferred trajectory.</dd>
-<dt><strong><code>w</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N,k]</span><script type="math/tex">[N,k]</script></span> The modified <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</dd>
-<dt><strong><code>pseudotime</code></strong> :&ensp;<code>np.array</code></dt>
-<dd><span><span class="MathJax_Preview">[N,]</span><script type="math/tex">[N,]</script></span> The pseudotime based on projected trajectory.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def infer_trajectory(self, init_node: int, labels = None, cutoff: Optional[float] = None, is_plot: bool = True, path: Optional[str] = None):
-    &#39;&#39;&#39;Infer the trajectory.        
-
-    Parameters
-    ----------
-    init_node : int
-        The initial node for the inferred trajectory.
-    cutoff : string, optional
-        The threshold for filtering edges with scores less than cutoff.
-    is_plot : boolean, optional
-        Whether to plot or not.
-    path : string, optional  
-        The path to save figure, or don&#39;t save if it is None.
-
-    Returns
-    ----------
-    G : nx.Graph 
-        The modified graph that indicates the inferred trajectory.
-    w : np.array
-        \([N,k]\) The modified \(\\tilde{w}\).
-    pseudotime : np.array
-        \([N,]\) The pseudotime based on projected trajectory.      
-    &#39;&#39;&#39;
-    # select edges
-    if len(self.edges)==0:
-        milestone_net = select_edges = []
-        G = nx.Graph()
-        G.add_nodes_from(self.G.nodes)
-    else:
-        if self.no_loop:
-            G = nx.maximum_spanning_tree(self.G)
-        else:
-            G = self.G
-        if cutoff is None:
-            cutoff = 0.01
-        graph = nx.to_numpy_matrix(G)
-        graph[graph&lt;=cutoff] = 0
-        G = nx.from_numpy_array(graph)
-        connected_comps = nx.node_connected_component(G, init_node)
-        subG = G.subgraph(connected_comps)
-        if len(subG.edges)&gt;0:                
-            milestone_net = self.build_milestone_net(subG,init_node)
-            if self.no_loop is False and milestone_net.shape[0]&lt;len(G.edges):
-                warnings.warn(&#34;The directed graph shown is a minimum spanning tree of the estimated trajectory backbone to avoid arbitrary assignment of the directions.&#34;)
-            select_edges = milestone_net[:,:2]
-            select_edges_score = graph[select_edges[:,0], select_edges[:,1]]
-            if select_edges_score.max() - select_edges_score.min() == 0:
-                select_edges_score = select_edges_score/select_edges_score.max()
-            else:
-                select_edges_score = (select_edges_score - select_edges_score.min())/(select_edges_score.max() - select_edges_score.min())*3                    
-        else:
-            milestone_net = select_edges = []                    
-    
-    # modify w_tilde
-    w = self.modify_wtilde(self.w_tilde, select_edges)
-    
-    # compute pseudotime
-    pseudotime = self.comp_pseudotime(milestone_net, init_node, w)
-    
-    if is_plot:
-        fig, ax = plt.subplots(1,1, figsize=(20, 10))
-            
-        cmap = matplotlib.cm.get_cmap(&#39;viridis&#39;)
-        colors = [plt.cm.jet(float(i)/self.NUM_CLUSTER) for i in range(self.NUM_CLUSTER)]
-        if np.sum(pseudotime&gt;-1)&gt;0:
-            norm = matplotlib.colors.Normalize(vmin=np.min(pseudotime[pseudotime&gt;-1]), vmax=np.max(pseudotime))
-            sc = ax.scatter(*self.embed_z[pseudotime&gt;-1,:].T,
-                norm=norm,
-                c=pseudotime[pseudotime&gt;-1],
-                s=16, alpha=0.5)
-            plt.colorbar(sc, ax=[ax], location=&#39;right&#39;)
-        else:
-            norm = None
-            
-        if np.sum(pseudotime==-1)&gt;0:
-            ax.scatter(*self.embed_z[pseudotime==-1,:].T,
-                        c=&#39;gray&#39;, s=16, alpha=0.4)
-        
-        for i in range(len(select_edges)):
-            points = self.embed_z[np.sum(w[:,select_edges[i,:]]&gt;0, axis=-1)==2,:]
-            points = points[points[:,0].argsort()]                
-            try:
-                x_smooth, y_smooth = _get_smooth_curve(
-                    points, 
-                    self.embed_mu[select_edges[i,:], :]
-                    )
-            except:
-                x_smooth, y_smooth = self.embed_mu[select_edges[i,:], 0], self.embed_mu[select_edges[i,:], 1]
-            ax.plot(x_smooth, y_smooth, 
-                &#39;-&#39;, 
-                linewidth= 1 + select_edges_score[0,i],
-                color=&#34;black&#34;, 
-                alpha=0.8, 
-                path_effects=[pe.Stroke(linewidth=1+select_edges_score[0,i]+1.5, 
-                                        foreground=&#39;white&#39;), pe.Normal()],
-                zorder=1
-                )
-
-            delta_x = self.embed_mu[select_edges[i,1], 0]-x_smooth[-2]
-            delta_y = self.embed_mu[select_edges[i,1], 1]-y_smooth[-2]
-            length = np.sqrt(delta_x**2 + delta_y**2) * 50              
-            ax.arrow(
-                    self.embed_mu[select_edges[i,1], 0]-delta_x/length, 
-                    self.embed_mu[select_edges[i,1], 1]-delta_y/length, 
-                    delta_x/length,
-                    delta_y/length,
-                    color=&#39;black&#39;, alpha=1.0,
-                    shape=&#39;full&#39;, lw=0, length_includes_head=True, head_width=0.02, zorder=2)
-        
-        for i in range(len(self.CLUSTER_CENTER)):
-            ax.scatter(*self.embed_mu[i:i+1,:].T, c=[colors[i]],
-                        edgecolors=&#39;white&#39;, # linewidths=10,
-                        norm=norm,
-                        s=250, marker=&#39;*&#39;, label=str(i))
-            ax.text(self.embed_mu[i,0], self.embed_mu[i,1], &#39;%02d&#39;%i, fontsize=16)
-            
-        plt.setp(ax, xticks=[], yticks=[])
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                            box.width, box.height * 0.9])
-        ax.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, -0.05),
-            fancybox=True, shadow=True, ncol=5)
-        
-        ax.set_title(&#39;Trajectory&#39;)
-        if path is not None:
-            plt.savefig(path, dpi=300)
-        plt.show()
-    return G, w, pseudotime</code></pre>
 </details>
 </dd>
 </dl>
@@ -1519,15 +818,11 @@ edges : np.array
 <ul>
 <li>
 <h4><code><a title="VITAE.inference.Inferer" href="#VITAE.inference.Inferer">Inferer</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="VITAE.inference.Inferer.build_graphs" href="#VITAE.inference.Inferer.build_graphs">build_graphs</a></code></li>
 <li><code><a title="VITAE.inference.Inferer.modify_wtilde" href="#VITAE.inference.Inferer.modify_wtilde">modify_wtilde</a></code></li>
-<li><code><a title="VITAE.inference.Inferer.init_inference" href="#VITAE.inference.Inferer.init_inference">init_inference</a></code></li>
-<li><code><a title="VITAE.inference.Inferer.init_embedding" href="#VITAE.inference.Inferer.init_embedding">init_embedding</a></code></li>
-<li><code><a title="VITAE.inference.Inferer.plot_clusters" href="#VITAE.inference.Inferer.plot_clusters">plot_clusters</a></code></li>
 <li><code><a title="VITAE.inference.Inferer.build_milestone_net" href="#VITAE.inference.Inferer.build_milestone_net">build_milestone_net</a></code></li>
 <li><code><a title="VITAE.inference.Inferer.comp_pseudotime" href="#VITAE.inference.Inferer.comp_pseudotime">comp_pseudotime</a></code></li>
-<li><code><a title="VITAE.inference.Inferer.infer_trajectory" href="#VITAE.inference.Inferer.infer_trajectory">infer_trajectory</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1536,7 +831,9 @@ edges : np.array
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
 </footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
 </body>
 </html>
