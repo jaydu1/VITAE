@@ -1,0 +1,153 @@
+---
+title: "my_slingshot"
+author: "TianyuChen"
+date: "2022/10/20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+se.integrated <- readRDS("seuract_batch_correction_cca.rds")
+```
+
+```{r}
+raw_clusters <- se.integrated@meta.data[["Clusters"]]
+```
+
+
+```{r}
+library(Seurat)
+clusters <- se.integrated@meta.data[["Clusters"]]
+days <- se.integrated@meta.data[["Days"]]
+clusters[(clusters=="SCPN")&(days=="E14")]<- "SCPN1"
+clusters[(clusters=="SCPN")&(days=="E15")]<- "SCPN1"
+clusters[(clusters=="SCPN")&(days=="E16")]<- "SCPN1"
+```
+
+```{r}
+count = se.integrated@assays$integrated@scale.data
+count = count[,(clusters!= "Low quality cells") & (clusters!= "Doublet")]
+
+umap <- se.integrated[['umap']][[]][,c(2,1)]
+umap <- umap[(clusters!= "Low quality cells") & (clusters!= "Doublet"),]
+
+clusters <- clusters[(clusters!= "Low quality cells") & (clusters!= "Doublet")]
+```
+
+```{r}
+library(slingshot)
+sim <- SingleCellExperiment(assays = list(counts = count), 
+                            reducedDims = SimpleList(UMAP = data.matrix(umap)))
+```
+
+```{r}
+colData(sim)$clusters <- clusters
+```
+
+```{r}
+ptm <- proc.time()
+sim <- slingshot(sim, 
+                 clusterLabels = 'clusters', reducedDim = 'UMAP',
+                 start.clus = "Apical progenitors",
+                 stretch = 0
+                 # approx_points = 100
+                 )
+proc.time() - ptm
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(dyno)
+library(purrr)
+labels <- data.frame(colData(sim)$clusters)
+rownames(labels) <- colnames(se.integrated)[(raw_clusters!= "Low quality cells") & (raw_clusters!= "Doublet")]
+start_cell <- apply(slingshot::slingPseudotime(sim), 1, min) %>% sort() %>% head(1) %>% names()
+start.clus <- labels[[start_cell]]
+# satisfy r cmd check
+from <- to <- NULL
+```
+
+```{r}
+# collect milestone network
+lineages <- slingLineages(sim)
+lineage_ctrl <- slingParams(sim)
+cluster_network <- lineages %>%
+    map_df(~ tibble(from = .[-length(.)], to = .[-1])) %>%
+    unique() %>%
+    mutate(
+        length = lineage_ctrl$dist[cbind(from, to)],
+        directed = TRUE
+    )
+cluster_network$length <- 1
+
+```
+
+```{r}
+# collect dimred
+dimred <- reducedDim(sim)
+
+# collect clusters
+cluster <- slingClusterLabels(sim)
+
+# collect progressions
+#adj <- slingAdjacency(sim)
+lin_assign <- apply(slingCurveWeights(sim), 1, which.max)
+
+progressions <- map_df(seq_along(lineages), function(l) {
+    ind <- lin_assign == l
+    lin <- lineages[[l]]
+    pst.full <- slingPseudotime(sim, na = FALSE)[,l]
+    pst <- pst.full[ind]
+    means <- sapply(lin, function(clID){
+        stats::weighted.mean(pst.full, cluster[,clID])
+    })
+    non_ends <- means[-c(1,length(means))]
+    edgeID.l <- as.numeric(cut(pst, breaks = c(-Inf, non_ends, Inf)))
+    from.l <- lineages[[l]][edgeID.l]
+    to.l <- lineages[[l]][edgeID.l + 1]
+    m.from <- means[from.l]
+    m.to <- means[to.l]
+    
+    pct <- (pst - m.from) / (m.to - m.from)
+    pct[pct < 0] <- 0
+    pct[pct > 1] <- 1
+    
+    tibble(cell_id = names(which(ind)), from = from.l, to = to.l, percentage = pct)
+})
+```
+
+```{r}
+trajectory <-
+    dynwrap::wrap_data(
+        cell_ids = rownames(labels)
+    ) %>%
+    dynwrap::add_trajectory(
+        milestone_network = cluster_network,
+        progressions = progressions
+    ) %>%
+    dynwrap::add_dimred(
+        dimred = dimred
+    )
+pseudotime <- calculate_pseudotime(trajectory)
+
+```
+```{r}
+write.csv(cluster_network, "Slingshot_cluster_network.csv")
+```
+```{r}
+write.csv(cbind(umap, clusters), "Seurat_clustering.csv")
+```
+
+# get color code
+
+```{r}
+library(scales)
+hue_pal()(29)
+```
+
+
+

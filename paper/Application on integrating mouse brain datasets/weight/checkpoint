@@ -1,2 +1,2 @@
-model_checkpoint_path: "merge.checkpoint"
-all_model_checkpoint_paths: "merge.checkpoint"
+model_checkpoint_path: "new_merge.checkpoint"
+all_model_checkpoint_paths: "new_merge.checkpoint"
