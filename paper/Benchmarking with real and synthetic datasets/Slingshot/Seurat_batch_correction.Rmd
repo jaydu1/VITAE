@@ -1,0 +1,217 @@
+---
+title: "Seurat_batch_correction"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(anndata)
+```
+
+```{r}
+dd <- read_h5ad("/project/jingshuw/trajectory_analysis/data/cortex_mouse_brain_merge/cortex_mouse_merged_raw_count_transpose.h5ad",backed = NULL)
+```
+```{r}
+library(Seurat)
+```
+```{r}
+row.names(dd$X) <- dd$obs_names
+colnames(dd$X) <- dd$var_names
+```
+
+
+```{r}
+se <- CreateSeuratObject(counts = dd$X)
+```
+
+```{r}
+se$Days <- dd$var$Days
+```
+```{r}
+se$Source <- dd$var$Source
+```
+```{r}
+se$Clusters <- dd$var$Clusters
+```
+
+```{r}
+se.list <- SplitObject(se, split.by = "Source")
+```
+
+```{r}
+se.list <- lapply(X = se.list, FUN = function(x) {
+    x <- NormalizeData(x, verbose = FALSE)
+    x <- FindVariableFeatures(x, verbose = FALSE)
+})
+```
+
+
+```{r}
+features <- SelectIntegrationFeatures(object.list = se.list)
+se.list <- lapply(X = se.list, FUN = function(x) {
+    x <- ScaleData(x, features = features, verbose = FALSE)
+    x <- RunPCA(x, features = features, verbose = FALSE)
+})
+```
+
+
+```{r}
+anchors <- FindIntegrationAnchors(object.list = se.list, reference = c(1, 2), reduction = "cca",
+    dims = 1:50)
+se.integrated <- IntegrateData(anchorset = anchors, dims = 1:50)
+```
+
+```{r}
+se.integrated <- ScaleData(se.integrated, verbose = FALSE)
+se.integrated <- RunPCA(se.integrated, verbose = FALSE)
+se.integrated <- RunUMAP(se.integrated, dims = 1:50)
+```
+
+```{r}
+DimPlot(se.integrated, group.by = "Source")
+```
+```{r}
+DimPlot(se.integrated, group.by = "Days")
+```
+```{r}
+DimPlot(se.integrated, group.by = "Clusters")
+```
+
+```{r}
+FeaturePlot(object = se.integrated, features = c('Bcl11b'))
+```
+```{r}
+mouse_clusters <- dd$var$Clusters
+source <- dd$var$Source
+mouse_days <- dd$var$Days
+mouse_clusters <- as.character(mouse_clusters)
+source <- as.character(source)
+mouse_days <- as.character(mouse_days)
+
+mouse_days[source == "2"] <-NA
+mouse_clusters[source == "2"] <-NA
+```
+```{r}
+se.integrated$mouse_days <- mouse_days
+se.integrated$mouse_clusters <- mouse_clusters
+```
+
+```{r}
+DimPlot(se.integrated, group.by = "mouse_clusters")
+```
+
+```{r}
+
+#f <- "/project/jingshuw/trajectory_analysis/data/cortex_mouse_brain_merge/mouse_brain_merged.h5"
+#mouse <- read_hdf(f,"grouping")
+```
+```{r}
+DimPlot(se.integrated, group.by = "mouse_days")
+```
+
+
+```{r}
+mouse_grouping <- read.csv("mouse_grouping.csv")
+```
+
+```{r}
+mouse_clusters[source != "2"] <- mouse_grouping$grouping
+```
+
+```{r}
+se.integrated$mouse_raw_clusters <- mouse_clusters
+```
+```{r}
+DimPlot(se.integrated, group.by = "mouse_raw_clusters")
+```
+
+
+```{r}
+ciliated_genes <- c("Npy","Sst","Nxph1")
+```
+
+```{r}
+FeaturePlot(object = se.integrated, features = c("Npy","Sst"),split.by = "Source",ncol=2)
+```
+
+```{r}
+FeaturePlot(object = se.integrated, features = c("Prox1","Cxcl14"),split.by = "Source",ncol=2)
+```
+
+
+```{r}
+FeaturePlot(object = se.integrated, features = c("Etv4","Sp8"),split.by = "Source",pt.size = 1)
+```
+```{r}
+FeaturePlot(object = se.integrated, features = c("Olig1","Olig2"),split.by = "Source",ncol=2)
+```
+```{r}
+FeaturePlot(object = se.integrated, features = c("Pdgfra"),split.by = "Source",ncol=2)
+```
+
+
+
+```{r}
+FeaturePlot(object = se.integrated, features = c("Olig1","Pdgfra"),ncol=2)
+```
+
+```{r}
+FeaturePlot(object = se.integrated, features = c("Olig2"),ncol=2)
+```
+```{r}
+FeaturePlot(object = se.integrated, features = c("Sox2","Pax6"),ncol=2)
+```
+
+```{r}
+FeaturePlot(object = se.integrated, features = c("Sst"),,ncol=2)
+```
+
+```{r}
+FeaturePlot(object = se.integrated, features = c("Prox1"),,ncol=2)
+```
+
+```{r}
+FeaturePlot(object = se.integrated, features = c("Sp8"),,ncol=2)
+```
+
+```{r}
+saveRDS(se.integrated,file = "seuract_batch_correction_cca.rds")
+```
+
+
+# load model
+
+```{r}
+library(Seurat)
+library(anndata)
+```
+```{r}
+se.integrated <- readRDS("seurat_batch_correction.rds")
+```
+
+```{r}
+dim(se.integrated@reductions$umap)
+```
+```{r}
+write.table(se.integrated@reductions[["umap"]]@cell.embeddings,"seurat_batch_correction_umap.txt")
+```
+
+```{r}
+write.table(se.integrated@meta.data,"seurat_batch_correction_metadata.txt")
+```
+
+```{r}
+marker <- c("Hmga2","Sox2", "Pax6", "Hes5","Ube2c", "Id4","Olig1", "Olig2", "Pdgfra","Apoe",
+            "Neurog2","Neurod1","Npy","Sst","Nxph1","Htr3a","Prox1","Cxcl14","Meis2","Etv1","Sp8",
+            "Btg2","Neurog2","Hes6","Slc1a3","Dbi","Fabp7","Bcl11b")
+marker_exp <- FetchData(se.integrated,vars = marker,slot = "scale.data")
+```
+
+```{r}
+write.table(marker_exp,"seurat_batch_correction_marker_exp.txt")
+```
+
+

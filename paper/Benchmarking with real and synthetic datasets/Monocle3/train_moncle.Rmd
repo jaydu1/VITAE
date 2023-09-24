@@ -1,0 +1,425 @@
+---
+title: "my_monocle"
+author: "TianyuChen"
+date: "2022-10-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(monocle3)
+library(rhdf5)
+```
+
+## we start here
+## nature cortex and mouse brain merged data
+The data has been prepossessed and only maintain highly variable genes
+
+```{r}
+library(anndata)
+```
+
+```{r}
+f = "monocle_adata_forR_trans_highly.h5ad"
+dd <- read_h5ad(f, backed = NULL)
+```
+
+```{r}
+dd$obs["gene_short_name"] <- dd$obs_names
+```
+
+```{r}
+cds <- new_cell_data_set(dd$X,
+                         cell_metadata = dd$var,
+                         gene_metadata = dd$obs)
+```
+
+```{r}
+rm(dd)
+```
+
+
+```{r}
+cds <- preprocess_cds(cds, num_dim = 50,scaling = FALSE,norm_method = "none",method = "PCA",verbose = TRUE)
+```
+
+```{r}
+cds <- align_cds(cds, alignment_group = "Source")
+```
+
+
+```{r}
+cds <- reduce_dimension(cds)
+```
+
+```{r}
+plot_cells(cds, label_groups_by_cluster=FALSE,  color_cells_by = "Cluster2")
+```
+
+```{r}
+cds <- cluster_cells(cds)
+plot_cells(cds, color_cells_by = "partition")
+```
+
+```{r}
+cds <- learn_graph(cds)
+```
+
+```{r}
+p1 <- plot_cells(cds,
+           color_cells_by = "Cluster2",
+           label_cell_groups=FALSE,
+           label_leaves=TRUE,
+           label_branch_points=TRUE,
+           graph_label_size=1.5)
+p1
+```
+
+```{r}
+png(file="traj_plot1.png",width=1000, height=700)
+p1
+dev.off()
+```
+
+```{r}
+p2 <- plot_cells(cds,
+           color_cells_by = "Day",
+           label_cell_groups=FALSE,
+           label_leaves=TRUE,
+           label_branch_points=TRUE,
+           graph_label_size=1.5)
+p2
+```
+
+```{r}
+png(file="traj_plot2.png",width=1000, height=700)
+p2
+dev.off()
+```
+
+```{r}
+cds <- order_cells(cds)
+```
+
+```{r}
+p3 <- plot_cells(cds,
+           color_cells_by = "pseudotime",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           graph_label_size=1.5)
+p3
+```
+
+```{r}
+png(file="traj_plot3.png",width=1000, height=700)
+p3
+dev.off()
+```
+
+```{r}
+ciliated_genes <- c(
+                    "Hmga2")
+
+p4 <- plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE)
+```
+
+```{r}
+png(file="NEC_marker.png",width=1000, height=700)
+p4
+dev.off()
+```
+
+```{r}
+p4
+```
+
+```{r}
+saveRDS(cds, file = "monocle_traj_batch_corrected.Rds")
+```
+
+```{r}
+ciliated_genes <- c("Sox2",
+                    "Pax6","Hes5","Ube2c","Id4")
+
+p5 <- plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE)
+p5
+```
+
+```{r}
+png(file="RGC_marker.png",width=1000, height=700)
+p5
+dev.off()
+```
+
+```{r}
+ciliated_genes <- c("Olig1",
+                    "Olig2","Pdgfra","Apoe")
+
+p6 <- plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE)
+p6
+```
+
+```{r}
+png(file="OPC_marker.png",width=1000, height=700)
+p6
+dev.off()
+```
+
+```{r}
+ciliated_genes <- c("Neurog2",
+                    "Neurod1")
+
+p7 <- plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE)
+p7
+```
+
+```{r}
+png(file="inter_marker.png",width=1000, height=700)
+p7
+dev.off()
+```
+
+```{r}
+ciliated_genes <- c("Bcl11b")
+
+p8 <- plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE)
+p8
+```
+
+```{r}
+png(file="layer6_marker.png",width=1000, height=700)
+p8
+dev.off()
+```
+
+```{r}
+cd <- colData(cds)
+```
+
+```{r}
+ciliated_genes <- c("Npy","Sst","Nxph1","Htr3a","Prox1","Cxcl14","Meis2","Etv1","Sp8")
+
+p9 <- plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE)
+```
+
+```{r}
+p9
+```
+
+```{r}
+png(file="interneurons_marker.png",width=1000, height=700)
+p9
+dev.off()
+```
+
+
+
+```{r}
+ciliated_genes <- c("Htr3a","Prox1","Cxcl14")
+
+plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE)
+```
+
+```{r}
+ciliated_genes <- c("Meis2","Etv1","Sp8")
+
+plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE)
+```
+
+```{r}
+cl <- cd$Clusters
+day <- cd$Day
+source <- cd$Source
+source <- as.character(source)
+```
+
+```{r}
+cl <- as.character(cl)
+cl[source == "2.0"] <- NA
+```
+
+```{r}
+day <- as.character(day)
+day[source == "2.0"] <- NA
+```
+
+```{r}
+cd$mouse_day <- day
+cd$mouse_clusters <- cl
+```
+```{r}
+base_cl <- as.character(cd$Clusters)
+base_cl[base_cl == "SCPN1"] <- "SCPN"
+cd$base_cl <- base_cl
+```
+
+```{r}
+colData(cds) <- cd
+```
+
+```{r}
+p10 <- plot_cells(cds,
+           color_cells_by = "mouse_clusters",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           graph_label_size=1.5)
+p10
+```
+
+```{r}
+png(file="mouse_clusters.png",width=1000, height=700)
+p10
+dev.off()
+```
+
+
+
+
+```{r}
+p11 <- plot_cells(cds,
+           color_cells_by = "mouse_day",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           graph_label_size=1.5)
+p11
+```
+
+```{r}
+png(file="mouse_days.png",width=1000, height=700)
+p11
+dev.off()
+```
+
+```{r}
+p12 <- plot_cells(cds,
+           color_cells_by = "base_cl",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           graph_label_size=1.5)
+p12
+```
+
+```{r}
+png(file="traj_base_cl.png",width=1000, height=700)
+p12
+dev.off()
+```
+
+# Load model
+
+```{r}
+cds <- readRDS("monocle_traj.Rds")
+```
+
+
+```{r}
+plot_cells(cds,
+           color_cells_by = "Clusters",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           graph_label_size=1.5)
+```
+```{r}
+ciliated_genes <- c("Fezf2")
+
+p9 <- plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE)
+p9
+```
+
+```{r}
+merge_18 <- rep(NA,dim(cds)[2])
+day <- as.character(colData(cds)$Day)
+merge_18[day=="E18"] <- 0
+merge_18[day=="E18_S1"] <- 1
+merge_18[day=="E18_S3"] <- 2
+```
+
+```{r}
+colData(cds)$merge_18 <- merge_18
+```
+
+```{r}
+p11 <- plot_cells(cds,
+           color_cells_by = "merge_18",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           graph_label_size=1.5)
+p11
+```
+```{r}
+png(file="merge_18.png",width=1000, height=700)
+p11
+dev.off()
+```
+```{r}
+merge_P1 <- rep(NA,dim(cds)[2])
+day <- as.character(colData(cds)$Day)
+merge_P1[day=="P1"] <- 0
+merge_P1[day=="P1_S1"] <- 1
+colData(cds)$merge_P1 <- merge_P1
+```
+
+```{r}
+p13 <- plot_cells(cds,
+           color_cells_by = "merge_P1",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           graph_label_size=1.5)
+p13
+```
+
+ 
+
+```{r}
+p14 <- plot_cells(cds,
+           color_cells_by = "Source",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           graph_label_size=1.5)
+p14
+```
+```{r}
+png(file="Source.png",width=1000, height=700)
+p14
+dev.off()
+```
+
+ 
