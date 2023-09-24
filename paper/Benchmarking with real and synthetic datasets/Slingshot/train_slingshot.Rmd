@@ -12,7 +12,8 @@ library(anndata)
 ```
 
 ```{r}
-dd <- read_h5ad("/project/jingshuw/trajectory_analysis/data/cortex_mouse_brain_merge/cortex_mouse_merged_raw_count_transpose.h5ad",backed = NULL)
+# "/project/jingshuw/trajectory_analysis/data/cortex_mouse_brain_merge/cortex_mouse_merged_raw_count_transpose.h5ad"
+dd <- read_h5ad("cortex_mouse_merged_raw_count_transpose.h5ad",backed = NULL)
 ```
 ```{r}
 library(Seurat)
