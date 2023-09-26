@@ -11,10 +11,10 @@ import seaborn
 import random
 import tensorflow as tf
 
-## Preprocess for dataset from "Molecular logic of cellular diversification in the mouse cerebral cortex"
-## One can download the dataset and meta data through the url:
+## Preprocess datasets from "Molecular logic of cellular diversification in the mouse cerebral cortex"
+## One can download the dataset and meta data through the URL:
 ## https://singlecell.broadinstitute.org/single_cell/study/SCP1290/molecular-logic-of-cellular-diversification-in-the-mammalian-cerebral-cortex
-## transoform.h5ad file we used means data has been normalized to 10000 and done log(x+1) tranformation.
+## transoform.h5ad file we used means data has been normalized to 10000 and done log(x+1) transformation.
 
 
 ###################################### Preprocess Di Bella's dataset #################################################
@@ -60,7 +60,7 @@ dd.obs["Source"] = "Di Bella"
 
 
 
-###################################### Preprocess Di Bella's dataset #################################################
+###################################### Preprocess Yuzwa's and Ruan's merged dataset #################################################
 mouse = load_data(path='data/',file_name="mouse_brain_merged")
 sc.pp.normalize_total(mouse, target_sum=1e4)
 sc.pp.log1p(mouse)
@@ -79,11 +79,11 @@ mouse_day = mouse.obs.index.values.copy()
 mouse_day = [x[:3] for x in mouse_day]
 mouse.obs["Day"] = mouse_day
 mouse.obs.rename(columns={"grouping": "Clusters", "covariate_0": "S_Score",
-                     "covariate_1":"G2M_Score"},inplace = True)
+                     "covariate_1":"G2M_Score"}, inplace = True)
 
 
 
-###################################### Merge two detasets  #################################################
+###################################### Merge two datasets  #################################################
 
 dd = dd.concatenate(mouse,join="inner")
 ## define highly_variable in merged dataset
@@ -105,7 +105,7 @@ c = dd.obs["Clusters"].values.copy()
 c = [x if group_dict.get(x) == None else group_dict.get(x) for x in c]
 dd.obs["tidy_clusters"] = c.copy()
 
-## Add covatiates for different source
+## Add covariates for different source
 a = np.zeros(dd.shape[0])
 a[dd.obs["Source"] == "Ruan"] = 1
 dd.obs["cov1"] = a
