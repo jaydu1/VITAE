@@ -5,7 +5,6 @@ import tensorflow_probability as tfp
 from tensorflow.keras.utils import Progbar
 from .utils import compute_mmd, _nelem, _nan2zero, _nan2inf, _reduce_mean
 from tensorflow.keras import backend as K
-import time
 
  
 class cdf_layer(Layer):

@@ -13,15 +13,12 @@ import tensorflow.keras as keras
 from tensorflow.keras import backend as K
 
 import h5py
-import scanpy as sc
 import anndata
 
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-from sklearn.metrics import silhouette_score
 from umap.umap_ import nearest_neighbors, smooth_knn_dist
 import umap
-from sklearn.utils import check_random_state
 from scipy.sparse import coo_matrix
 import igraph as ig
 import leidenalg
@@ -103,33 +100,6 @@ def _comp_dist(x, y, mu=None, S=None):
                 dist[i,j] = (mu[i:i+1,:]-mu[j:j+1,:]) @ np.linalg.inv(S[i, :, :] + S[j, :, :]) @ (mu[i:i+1,:]-mu[j:j+1,:]).T
     dist = dist + dist.T
     return dist
-
-
-@jit((float32[:,:],), nopython=True, nogil=True)
-def _check_expression(A):
-    n_rows = A.shape[0]
-    out = np.ones(n_rows, dtype=int32)
-    for i in range(n_rows):        
-        for j in A[i,:]:
-            if j>0.0:
-                break
-        else:
-            out[i] = 0
-    return out
-
-
-@jit((float32[:,:],), nopython=True, nogil=True)
-def _check_variability(A):
-    n_cols = A.shape[1]
-    out = np.ones(n_cols, dtype=int32)
-    for i in range(n_cols):
-        init = A[0, i]
-        for j in A[1:, i]:
-            if j != init:
-                break
-        else:
-            out[i] = 0
-    return out
 
 
 def get_embedding(z, dimred='umap', **kwargs):
@@ -582,6 +552,7 @@ def DE_test(Y, X, gene_names, i_test, alpha: float = 0.05):
         )>0) & np.any(~np.isnan(Y), axis=0)]
 #     res_df = res_df.iloc[np.argsort(res_df.pvalue_adjusted).tolist(), :]
     return res_df
+
 
 #------------------------------------------------------------------------------
 # Data loader

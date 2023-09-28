@@ -332,7 +332,7 @@ class VITAE():
         Parameters
         ----------
         cluster_label : str, optional
-            the name of vector of labels that can be found in self.adata.obs. 
+            The name of vector of labels that can be found in self.adata.obs. 
             Default is None, which will perform leiden clustering on the pretrained z to get clusters
         mu : np.array, optional
             \([d,k]\) The value of initial \(\\mu\).
