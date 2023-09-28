@@ -76,9 +76,10 @@ class Early_Stopping():
 
 def reset_random_seeds(seed):
     os.environ['PYTHONHASHSEED']=str(seed)
-    tf.random.set_seed(seed)
-    np.random.seed(seed)
+    tf.keras.backend.clear_session()
     random.seed(seed)
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
 
 
 def _comp_dist(x, y, mu=None, S=None):
