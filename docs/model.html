@@ -32,7 +32,6 @@ import tensorflow_probability as tfp
 from tensorflow.keras.utils import Progbar
 from .utils import compute_mmd, _nelem, _nan2zero, _nan2inf, _reduce_mean
 from tensorflow.keras import backend as K
-import time
 
  
 class cdf_layer(Layer):
@@ -952,8 +951,8 @@ class VariationalAutoEncoder(tf.keras.Model):
 <ul class="hlist">
 <li>keras.engine.base_layer.Layer</li>
 <li>tensorflow.python.module.module.Module</li>
-<li>tensorflow.python.training.tracking.tracking.AutoTrackable</li>
-<li>tensorflow.python.training.tracking.base.Trackable</li>
+<li>tensorflow.python.trackable.autotrackable.AutoTrackable</li>
+<li>tensorflow.python.trackable.base.Trackable</li>
 <li>keras.utils.version_utils.LayerVersionSelector</li>
 </ul>
 <h3>Methods</h3>
@@ -1069,8 +1068,8 @@ Used in Encoder.</p></div>
 <ul class="hlist">
 <li>keras.engine.base_layer.Layer</li>
 <li>tensorflow.python.module.module.Module</li>
-<li>tensorflow.python.training.tracking.tracking.AutoTrackable</li>
-<li>tensorflow.python.training.tracking.base.Trackable</li>
+<li>tensorflow.python.trackable.autotrackable.AutoTrackable</li>
+<li>tensorflow.python.trackable.base.Trackable</li>
 <li>keras.utils.version_utils.LayerVersionSelector</li>
 </ul>
 <h3>Methods</h3>
@@ -1207,8 +1206,8 @@ Used in Encoder.</p></div>
 <ul class="hlist">
 <li>keras.engine.base_layer.Layer</li>
 <li>tensorflow.python.module.module.Module</li>
-<li>tensorflow.python.training.tracking.tracking.AutoTrackable</li>
-<li>tensorflow.python.training.tracking.base.Trackable</li>
+<li>tensorflow.python.trackable.autotrackable.AutoTrackable</li>
+<li>tensorflow.python.trackable.base.Trackable</li>
 <li>keras.utils.version_utils.LayerVersionSelector</li>
 </ul>
 <h3>Methods</h3>
@@ -1400,8 +1399,8 @@ def call(self, x, L=1, is_training=True):
 <ul class="hlist">
 <li>keras.engine.base_layer.Layer</li>
 <li>tensorflow.python.module.module.Module</li>
-<li>tensorflow.python.training.tracking.tracking.AutoTrackable</li>
-<li>tensorflow.python.training.tracking.base.Trackable</li>
+<li>tensorflow.python.trackable.autotrackable.AutoTrackable</li>
+<li>tensorflow.python.trackable.base.Trackable</li>
 <li>keras.utils.version_utils.LayerVersionSelector</li>
 </ul>
 <h3>Methods</h3>
@@ -1820,8 +1819,8 @@ def call(self, z, is_training=True):
 <ul class="hlist">
 <li>keras.engine.base_layer.Layer</li>
 <li>tensorflow.python.module.module.Module</li>
-<li>tensorflow.python.training.tracking.tracking.AutoTrackable</li>
-<li>tensorflow.python.training.tracking.base.Trackable</li>
+<li>tensorflow.python.trackable.autotrackable.AutoTrackable</li>
+<li>tensorflow.python.trackable.base.Trackable</li>
 <li>keras.utils.version_utils.LayerVersionSelector</li>
 </ul>
 <h3>Methods</h3>
@@ -2435,8 +2434,8 @@ def call(self, z, is_training=True):
 <li>keras.engine.training.Model</li>
 <li>keras.engine.base_layer.Layer</li>
 <li>tensorflow.python.module.module.Module</li>
-<li>tensorflow.python.training.tracking.tracking.AutoTrackable</li>
-<li>tensorflow.python.training.tracking.base.Trackable</li>
+<li>tensorflow.python.trackable.autotrackable.AutoTrackable</li>
+<li>tensorflow.python.trackable.base.Trackable</li>
 <li>keras.utils.version_utils.LayerVersionSelector</li>
 <li>keras.utils.version_utils.ModelVersionSelector</li>
 </ul>

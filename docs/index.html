@@ -34,7 +34,7 @@ __author__ = &#34;Jin-Hong Du, Tianyu Chen, Ming Gao, and Jingshu Wang&#34;
 __copyright__ = &#34;Copyright 2020, The Trajectory Inference Project&#34;
 
 __license__ = &#34;MIT&#34;
-__version__ = &#34;2.0.1&#34;
+__version__ = &#34;2.0.3&#34;
 __maintainer__ = &#34;Jin-Hong Du, Tianyu Chen, and Jingshu Wang&#34;
 __email__ = &#34;jinhongd@andrew.cmu.edu&#34;
 __status__ = &#34;Development&#34;</code></pre>
@@ -52,10 +52,6 @@ __status__ = &#34;Development&#34;</code></pre>
 <div class="desc"></div>
 </dd>
 <dt><code class="name"><a title="VITAE.model" href="model.html">VITAE.model</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="VITAE.preprocess" href="preprocess.html">VITAE.preprocess</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -424,7 +420,7 @@ adata.layers in order to use these models.</p>
         Parameters
         ----------
         cluster_label : str, optional
-            the name of vector of labels that can be found in self.adata.obs. 
+            The name of vector of labels that can be found in self.adata.obs. 
             Default is None, which will perform leiden clustering on the pretrained z to get clusters
         mu : np.array, optional
             \([d,k]\) The value of initial \(\\mu\).
@@ -1635,7 +1631,7 @@ The default is None. Same as scanpy.</dd>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>cluster_label</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>the name of vector of labels that can be found in self.adata.obs.
+<dd>The name of vector of labels that can be found in self.adata.obs.
 Default is None, which will perform leiden clustering on the pretrained z to get clusters</dd>
 <dt><strong><code>mu</code></strong> :&ensp;<code>np.array</code>, optional</dt>
 <dd><span><span class="MathJax_Preview">[d,k]</span><script type="math/tex">[d,k]</script></span> The value of initial <span><span class="MathJax_Preview">\mu</span><script type="math/tex">\mu</script></span>.</dd>
@@ -1658,7 +1654,7 @@ Higher values lead to more clusters. Deafult is 1.</dd>
      Parameters
      ----------
      cluster_label : str, optional
-         the name of vector of labels that can be found in self.adata.obs. 
+         The name of vector of labels that can be found in self.adata.obs. 
          Default is None, which will perform leiden clustering on the pretrained z to get clusters
      mu : np.array, optional
          \([d,k]\) The value of initial \(\\mu\).
@@ -2976,7 +2972,6 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
 <li><code><a title="VITAE.inference" href="inference.html">VITAE.inference</a></code></li>
 <li><code><a title="VITAE.metric" href="metric.html">VITAE.metric</a></code></li>
 <li><code><a title="VITAE.model" href="model.html">VITAE.model</a></code></li>
-<li><code><a title="VITAE.preprocess" href="preprocess.html">VITAE.preprocess</a></code></li>
 <li><code><a title="VITAE.train" href="train.html">VITAE.train</a></code></li>
 <li><code><a title="VITAE.utils" href="utils.html">VITAE.utils</a></code></li>
 </ul>
