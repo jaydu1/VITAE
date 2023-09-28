@@ -327,17 +327,17 @@ class LatentSpace(Layer):
             tf.gather(self.mu, self.B, axis=1), 0), 0)
             
         # [batch_size, L, n_categories]
-        _inv_sig = tf.reduce_sum(alpha_zc * alpha_zc, axis=2)
-        _nu = - tf.reduce_sum(alpha_zc * beta_zc, axis=2) * tf.math.reciprocal_no_nan(_inv_sig)
-        _t = - tf.reduce_sum(beta_zc * beta_zc, axis=2) + _nu**2*_inv_sig
-        return temp_pi, beta_zc, _inv_sig, _nu, _t
+        inv_sig = tf.reduce_sum(alpha_zc * alpha_zc, axis=2)
+        nu = - tf.reduce_sum(alpha_zc * beta_zc, axis=2) * tf.math.reciprocal_no_nan(inv_sig)
+        _t = - tf.reduce_sum(beta_zc * beta_zc, axis=2) + nu**2*inv_sig
+        return temp_pi, beta_zc, inv_sig, nu, _t
     
     @tf.function
-    def _get_pz(self, temp_pi, _inv_sig, beta_zc, log_p_z_c_L):
+    def _get_pz(self, temp_pi, inv_sig, beta_zc, log_p_z_c_L):
         # [batch_size, L, n_categories]
         log_p_zc_L = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(temp_pi) + \
-            tf.where(_inv_sig==0, 
+            tf.where(inv_sig==0, 
                     - 0.5 * tf.reduce_sum(beta_zc**2, axis=2), 
                     log_p_z_c_L)
         
@@ -360,7 +360,7 @@ class LatentSpace(Layer):
         return log_p_c_x
 
     @tf.function
-    def _get_inference(self, z, log_p_z_L, temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2):
+    def _get_inference(self, z, log_p_z_L, temp_pi, inv_sig, nu, beta_zc, log_eta0, eta1, eta2):
         batch_size = tf.shape(z)[0]
         L = tf.shape(z)[1]
         dist = tfp.distributions.Normal(
@@ -369,12 +369,12 @@ class LatentSpace(Layer):
             allow_nan_stats=False)
         
         # [batch_size, L, n_categories, n_clusters]
-        _inv_sig = tf.expand_dims(_inv_sig, -1)
-        _sig = tf.tile(tf.clip_by_value(tf.math.reciprocal_no_nan(_inv_sig), 1e-12, 1e30), (1,1,1,self.n_states))
+        inv_sig = tf.expand_dims(inv_sig, -1)
+        _sig = tf.tile(tf.clip_by_value(tf.math.reciprocal_no_nan(inv_sig), 1e-12, 1e30), (1,1,1,self.n_states))
         log_eta0 = tf.tile(tf.expand_dims(log_eta0, -1), (1,1,1,self.n_states))
         eta1 = tf.tile(tf.expand_dims(eta1, -1), (1,1,1,self.n_states))
         eta2 = tf.tile(tf.expand_dims(eta2, -1), (1,1,1,self.n_states))
-        _nu = tf.tile(tf.expand_dims(_nu, -1), (1,1,1,1))
+        nu = tf.tile(tf.expand_dims(nu, -1), (1,1,1,1))
         A = tf.tile(tf.expand_dims(tf.expand_dims(
             tf.one_hot(self.A, self.n_states, dtype=tf.keras.backend.floatx()), 
             0),0), (batch_size,L,1,1))
@@ -386,13 +386,13 @@ class LatentSpace(Layer):
         # w_tilde [batch_size, L, n_clusters]
         w_tilde = log_eta0 + tf.math.log(
             tf.clip_by_value(
-                (dist.cdf(eta1) - dist.cdf(eta2)) * (_nu * A + (1-_nu) * B)  -
+                (dist.cdf(eta1) - dist.cdf(eta2)) * (nu * A + (1-nu) * B)  -
                 (dist.prob(eta1) - dist.prob(eta2)) * tf.math.sqrt(_sig) * (A - B), 
                 0.0, 1e30)
             )
         w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(temp_pi) + \
-            tf.where(_inv_sig==0, 
+            tf.where(inv_sig==0, 
                     tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(beta_zc**2, axis=2), -1), -np.inf), 
                     w_tilde)
         w_tilde = tf.exp(tf.reduce_logsumexp(w_tilde, 2) - log_p_z_L)
@@ -405,14 +405,14 @@ class LatentSpace(Layer):
         # var_w_tilde [batch_size, L, n_clusters]
         var_w_tilde = log_eta0 + tf.math.log(
             tf.clip_by_value(
-                (dist.cdf(eta1) -  dist.cdf(eta2)) * ((_sig + _nu**2) * (A+B) + (1-2*_nu) * B)  -
-                (dist.prob(eta1) - dist.prob(eta2)) * tf.math.sqrt(_sig) * (_nu *(A+B)-B )*2 -
+                (dist.cdf(eta1) -  dist.cdf(eta2)) * ((_sig + nu**2) * (A+B) + (1-2*nu) * B)  -
+                (dist.prob(eta1) - dist.prob(eta2)) * tf.math.sqrt(_sig) * (nu *(A+B)-B )*2 -
                 (eta1*dist.prob(eta1) - eta2*dist.prob(eta2)) * _sig *(A+B), 
                 0.0, 1e30)
             )
         var_w_tilde = - 0.5 * self.dim_latent * tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) + \
             tf.math.log(temp_pi) + \
-            tf.where(_inv_sig==0, 
+            tf.where(inv_sig==0, 
                     tf.where(B==1, - 0.5 * tf.expand_dims(tf.reduce_sum(beta_zc**2, axis=2), -1), -np.inf), 
                     var_w_tilde) 
         var_w_tilde = tf.exp(tf.reduce_logsumexp(var_w_tilde, 2) - log_p_z_L) - w_tilde**2  
@@ -434,9 +434,9 @@ class LatentSpace(Layer):
         ----------
         temp_pi : tf.Tensor
             \([B, L, K]\) \(\\pi\).
-        _inv_sig : tf.Tensor
+        inv_sig : tf.Tensor
             \([B, L, K]\) \(\\sigma_{Z_ic_i}^{-1}\).
-        _nu : tf.Tensor
+        nu : tf.Tensor
             \([B, L, K]\) \(\\nu_{Z_ic_i}\).
         beta_zc : tf.Tensor
             \([B, L, d, K]\) \(\\beta_{Z_ic_i}\).
@@ -453,20 +453,20 @@ class LatentSpace(Layer):
         log_p_z : tf.Tensor
             \([B, 1]\) The estimated \(\\log p(Z_i|Y_i,X_i)\). 
         '''        
-        temp_pi, beta_zc, _inv_sig, _nu, _t = self._get_normal_params(z, pi)
+        temp_pi, beta_zc, inv_sig, nu, _t = self._get_normal_params(z, pi)
         temp_pi = tf.clip_by_value(temp_pi, eps, 1.0)
 
         log_eta0 = 0.5 * (tf.math.log(tf.constant(2 * np.pi, tf.keras.backend.floatx())) - \
-                    tf.math.log(tf.clip_by_value(_inv_sig, 1e-12, 1e30)) + _t)
-        eta1 = (1-_nu) * tf.math.sqrt(tf.clip_by_value(_inv_sig, 1e-12, 1e30))
-        eta2 = -_nu * tf.math.sqrt(tf.clip_by_value(_inv_sig, 1e-12, 1e30))
+                    tf.math.log(tf.clip_by_value(inv_sig, 1e-12, 1e30)) + _t)
+        eta1 = (1-nu) * tf.math.sqrt(tf.clip_by_value(inv_sig, 1e-12, 1e30))
+        eta2 = -nu * tf.math.sqrt(tf.clip_by_value(inv_sig, 1e-12, 1e30))
 
         log_p_z_c_L =  log_eta0 + tf.math.log(tf.clip_by_value(
             self.cdf_layer(eta1) - self.cdf_layer(eta2),
             eps, 1e30))
         
-        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, _inv_sig, beta_zc, log_p_z_c_L)
-        return temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z
+        log_p_zc_L, log_p_z_L, log_p_z = self._get_pz(temp_pi, inv_sig, beta_zc, log_p_z_c_L)
+        return temp_pi, inv_sig, nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z
 
     def get_posterior_c(self, z):
         '''Get \(p(c_i|Y_i,X_i)\).
@@ -511,13 +511,13 @@ class LatentSpace(Layer):
             The dict of posterior estimations - \(p(c_i|Y_i,X_i)\), \(c\), \(E(\\tilde{w}_i|Y_i,X_i)\), \(Var(\\tilde{w}_i|Y_i,X_i)\), \(D_{JS}\).
         '''                 
         eps = 1e-16 if not inference else 0.
-        temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z, eps, pi)
+        temp_pi, inv_sig, nu, beta_zc, log_eta0, eta1, eta2, log_p_zc_L, log_p_z_L, log_p_z = self.get_pz(z, eps, pi)
 
         if not inference:
             return log_p_z
         else:
             log_p_c_x = self._get_posterior_c(log_p_zc_L, log_p_z_L)
-            w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, _inv_sig, _nu, beta_zc, log_eta0, eta1, eta2)
+            w_tilde, var_w_tilde = self._get_inference(z, log_p_z_L, temp_pi, inv_sig, nu, beta_zc, log_eta0, eta1, eta2)
             
             res = {}
             res['p_c_x'] = tf.exp(log_p_c_x).numpy()
