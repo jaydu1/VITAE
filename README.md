@@ -23,10 +23,14 @@ In case GitHub rendering stops working, [NbViewer](https://nbviewer.jupyter.org/
 
 ## Dependency
 
-Our Python package is available on PyPI and the user can install the CPU version with the following command: 
+Our Python package is available on conda-forge and PyPI and the user can install the CPU version with the following command: 
 
 ```
->> pip install pyvitae
+# using conda with conda-forge channel
+>>> conda install -c conda-forge pyvitae
+
+# or using PyPI
+>>> pip install pyvitae
 ```
 To enable GPU for TensorFlow, one should install CUDA dependencies and the `tensorflow-gpu` package. We also recommend using `conda`, `miniconda`, or `virtualenv` to manage the Python environment and install the package in a new environment.
 After installing all required packages, one can open the Jupyter Notebook via the terminal:
