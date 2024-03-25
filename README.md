@@ -1,5 +1,6 @@
 [![Python](https://raw.githubusercontent.com/jaydu1/VITAE/master/docs/img/badge_python.svg)](https://www.python.org/)
-[![PyPI](https://raw.githubusercontent.com/jaydu1/VITAE/master/docs/img/badge_pypi.svg)](https://pypi.org/project/pyvitae/)
+[![PyPI-Downloads](https://img.shields.io/pepy/dt/pyvitae?label=PyPI%20v2.0.7|downloads&color=%23f7941d)](https://pepy.tech/project/pyvitae)
+[![Conda Downloads](https://img.shields.io/conda/d/conda-forge/pyvitae?label=conda%20v2.0.7|downloads&color=%231D80F7)](https://img.shields.io/conda/d/conda-forge/pyvitae)
 [![docs](https://raw.githubusercontent.com/jaydu1/VITAE/master/docs/img/badge_docs.svg)](https://jaydu1.github.io/VITAE/)
 
 
