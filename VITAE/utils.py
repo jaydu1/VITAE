@@ -535,7 +535,7 @@ def DE_test(Y, X, gene_names, i_test, alpha: float = 0.05):
         else:
             sigma = stats.median_absolute_deviation(res[:,len(i_test)+i], nan_policy='omit')
         pdt_new_pval = np.array([stats.norm.sf(x)*2 for x in np.abs(res[:,len(i_test)+i]/sigma)])
-        new_adj_pval = _p_adjust_bh(pdt_new_pval/len(i_test))
+        new_adj_pval = _p_adjust_bh(pdt_new_pval)
         _res_df = pd.DataFrame(np.c_[res[:,i], pdt_new_pval, new_adj_pval],
                         index=gene_names,
                         columns=['beta_{}'.format(j),
@@ -549,7 +549,7 @@ def DE_test(Y, X, gene_names, i_test, alpha: float = 0.05):
                     np.char.startswith(
                         np.array(res_df.columns, dtype=str),
                         'pvalue_adjusted')]
-            ] < alpha, axis=1
+            ] < alpha/len(i_test), axis=1
         )>0) & np.any(~np.isnan(Y), axis=0)]
 #     res_df = res_df.iloc[np.argsort(res_df.pvalue_adjusted).tolist(), :]
     return res_df

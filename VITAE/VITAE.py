@@ -944,7 +944,7 @@ class VITAE():
         return None
 
 
-    def infer_trajectory(self, root: Union[int,str], color = "pseudotime",
+    def infer_trajectory(self, root: Union[int,str], digraph = None, color = "pseudotime",
                          visualize: bool = True, path_to_fig = None,  **kwargs):
         '''Infer the trajectory.
 
@@ -952,6 +952,8 @@ class VITAE():
         ----------
         root : int or string
             The root of the inferred trajectory. Can provide either an int (vertex index) or string (label name)
+        digraph : nx.DiGraph, optional
+            The directed graph to be used for trajectory inference. If None, the minimum spanning tree of the estimated trajectory backbone will be used.
         cutoff : string, optional
             The threshold for filtering edges with scores less than cutoff.
         visualize: boolean
@@ -966,14 +968,24 @@ class VITAE():
                 raise ValueError("Root {} is not in the label names!".format(root))
             root = self.labels_map[self.labels_map['label_names']==root].index[0]
 
-        connected_comps = nx.node_connected_component(self.backbone, root)
-        subG = self.backbone.subgraph(connected_comps)
-        
-        ## generate directed backbone which contains no loops
-        DG = nx.DiGraph(nx.to_directed(self.backbone))
-        temp = DG.subgraph(connected_comps)
-        DG.remove_edges_from(temp.edges - nx.dfs_edges(DG, root))
-        self.directed_backbone = DG
+        if digraph is None:
+            connected_comps = nx.node_connected_component(self.backbone, root)
+            subG = self.backbone.subgraph(connected_comps)
+
+            ## generate directed backbone which contains no loops
+            DG = nx.DiGraph(nx.to_directed(self.backbone))
+            temp = DG.subgraph(connected_comps)
+            DG.remove_edges_from(temp.edges - nx.dfs_edges(DG, root))
+            self.directed_backbone = DG
+        else:
+            if not nx.is_directed_acyclic_graph(digraph):
+                raise ValueError("The graph 'digraph' should be a directed acyclic graph.")
+            if set(digraph.nodes) != set(self.backbone.nodes):
+                raise ValueError("The nodes in 'digraph' do not match the nodes in 'self.backbone'.")
+            self.directed_backbone = digraph
+
+            connected_comps = nx.node_connected_component(digraph, root)
+            subG = self.backbone.subgraph(connected_comps)
 
 
         if len(subG.edges)>0:
@@ -1031,12 +1043,12 @@ class VITAE():
         Y = self.adata.X[cell_subset,:]
 #        std_Y = np.std(Y, ddof=1, axis=0, keepdims=True)
 #        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
-        X = stats.rankdata(self.pseudotime[cell_subset])
-        X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
-        X = np.c_[np.ones_like(X), X]
+        X = stats.rankdata(self.pseudotime[cell_subset])        
         if order > 1:
             for _order in range(2, order+1):
                 X = np.c_[X, X**_order]
+        X = ((X-np.mean(X,axis=0, keepdims=True))/np.std(X, ddof=1, axis=0, keepdims=True))
+        X = np.c_[np.ones((X.shape[0],1)), X]
         if self.covariates is not None:
             X = np.c_[X, self.covariates[cell_subset, :]]
 

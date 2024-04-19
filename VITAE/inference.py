@@ -148,7 +148,6 @@ class Inferer(object):
         return w
 
      
-        
     def build_milestone_net(self, subgraph, init_node: int):
         '''Build the milestone network.
 
@@ -167,8 +166,13 @@ class Inferer(object):
         if len(subgraph)==1:
             warnings.warn('Singular node.')
             return []
+        elif nx.is_directed_acyclic_graph(subgraph):
+            milestone_net = []
+            for edge in list(subgraph.edges):
+                paths = nx.all_simple_paths(G, source=edge[0], target=edge[1])
+                milestone_net.append([edge[0], edge[1], np.max([len(p) for p in paths])-1])
         else:
-            # Dijkstra's Algorithm
+            # Dijkstra's Algorithm to find the shortest path
             unvisited = {node: {'parent':None,
                                 'score':np.inf,
                                 'distance':np.inf} for node in subgraph.nodes}
@@ -198,6 +202,7 @@ class Inferer(object):
                             key = lambda x: x[1])[0]
             return np.array(milestone_net)
     
+
     def comp_pseudotime(self, milestone_net, init_node: int, w):
         '''Compute pseudotime.
 
