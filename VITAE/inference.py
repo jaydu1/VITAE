@@ -169,8 +169,13 @@ class Inferer(object):
         elif nx.is_directed_acyclic_graph(subgraph):
             milestone_net = []
             for edge in list(subgraph.edges):
-                paths = nx.all_simple_paths(G, source=edge[0], target=edge[1])
-                milestone_net.append([edge[0], edge[1], np.max([len(p) for p in paths])-1])
+                if edge[0]==init_node:
+                    dist = 1
+                else:
+                    paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
+                    paths_1 = nx.all_simple_paths(subgraph, source=init_node, target=edge[1])
+                    dist = np.max([len(p) for p in paths_1]) - np.max([len(p) for p in paths_0])
+                milestone_net.append([edge[0], edge[1], dist])
         else:
             # Dijkstra's Algorithm to find the shortest path
             unvisited = {node: {'parent':None,
