@@ -171,6 +171,9 @@ class Inferer(object):
             for edge in list(subgraph.edges):
                 if edge[0]==init_node:
                     dist = 1
+                elif edge[1]==init_node:
+                    paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
+                    dist = - (np.max([len(p) for p in paths_1]) - 1)
                 else:
                     paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
                     paths_1 = nx.all_simple_paths(subgraph, source=init_node, target=edge[1])
