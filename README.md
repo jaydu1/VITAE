@@ -44,7 +44,7 @@ The required TensorFlow versions are:
 
 Package|Version
 ---|---
-tensorflow|>=2.3.0
+tensorflow|>=2.3.0,<2.16
 tensorflow_probability|>=0.11.0
 
 ## License
