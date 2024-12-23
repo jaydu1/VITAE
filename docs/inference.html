@@ -175,7 +175,6 @@ class Inferer(object):
         return w
 
      
-        
     def build_milestone_net(self, subgraph, init_node: int):
         &#39;&#39;&#39;Build the milestone network.
 
@@ -194,8 +193,21 @@ class Inferer(object):
         if len(subgraph)==1:
             warnings.warn(&#39;Singular node.&#39;)
             return []
+        elif nx.is_directed_acyclic_graph(subgraph):
+            milestone_net = []
+            for edge in list(subgraph.edges):
+                if edge[0]==init_node:
+                    dist = 1
+                elif edge[1]==init_node:
+                    paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
+                    dist = - (np.max([len(p) for p in paths_1]) - 1)
+                else:
+                    paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
+                    paths_1 = nx.all_simple_paths(subgraph, source=init_node, target=edge[1])
+                    dist = np.max([len(p) for p in paths_1]) - np.max([len(p) for p in paths_0])
+                milestone_net.append([edge[0], edge[1], dist])
         else:
-            # Dijkstra&#39;s Algorithm
+            # Dijkstra&#39;s Algorithm to find the shortest path
             unvisited = {node: {&#39;parent&#39;:None,
                                 &#39;score&#39;:np.inf,
                                 &#39;distance&#39;:np.inf} for node in subgraph.nodes}
@@ -225,6 +237,7 @@ class Inferer(object):
                             key = lambda x: x[1])[0]
             return np.array(milestone_net)
     
+
     def comp_pseudotime(self, milestone_net, init_node: int, w):
         &#39;&#39;&#39;Compute pseudotime.
 
@@ -424,7 +437,6 @@ class Inferer(object):
         return w
 
      
-        
     def build_milestone_net(self, subgraph, init_node: int):
         &#39;&#39;&#39;Build the milestone network.
 
@@ -443,8 +455,21 @@ class Inferer(object):
         if len(subgraph)==1:
             warnings.warn(&#39;Singular node.&#39;)
             return []
+        elif nx.is_directed_acyclic_graph(subgraph):
+            milestone_net = []
+            for edge in list(subgraph.edges):
+                if edge[0]==init_node:
+                    dist = 1
+                elif edge[1]==init_node:
+                    paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
+                    dist = - (np.max([len(p) for p in paths_1]) - 1)
+                else:
+                    paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
+                    paths_1 = nx.all_simple_paths(subgraph, source=init_node, target=edge[1])
+                    dist = np.max([len(p) for p in paths_1]) - np.max([len(p) for p in paths_0])
+                milestone_net.append([edge[0], edge[1], dist])
         else:
-            # Dijkstra&#39;s Algorithm
+            # Dijkstra&#39;s Algorithm to find the shortest path
             unvisited = {node: {&#39;parent&#39;:None,
                                 &#39;score&#39;:np.inf,
                                 &#39;distance&#39;:np.inf} for node in subgraph.nodes}
@@ -474,6 +499,7 @@ class Inferer(object):
                             key = lambda x: x[1])[0]
             return np.array(milestone_net)
     
+
     def comp_pseudotime(self, milestone_net, init_node: int, w):
         &#39;&#39;&#39;Compute pseudotime.
 
@@ -710,8 +736,21 @@ The projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="
     if len(subgraph)==1:
         warnings.warn(&#39;Singular node.&#39;)
         return []
+    elif nx.is_directed_acyclic_graph(subgraph):
+        milestone_net = []
+        for edge in list(subgraph.edges):
+            if edge[0]==init_node:
+                dist = 1
+            elif edge[1]==init_node:
+                paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
+                dist = - (np.max([len(p) for p in paths_1]) - 1)
+            else:
+                paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
+                paths_1 = nx.all_simple_paths(subgraph, source=init_node, target=edge[1])
+                dist = np.max([len(p) for p in paths_1]) - np.max([len(p) for p in paths_0])
+            milestone_net.append([edge[0], edge[1], dist])
     else:
-        # Dijkstra&#39;s Algorithm
+        # Dijkstra&#39;s Algorithm to find the shortest path
         unvisited = {node: {&#39;parent&#39;:None,
                             &#39;score&#39;:np.inf,
                             &#39;distance&#39;:np.inf} for node in subgraph.nodes}

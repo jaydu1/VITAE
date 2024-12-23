@@ -34,7 +34,7 @@ __author__ = &#34;Jin-Hong Du, Tianyu Chen, Ming Gao, and Jingshu Wang&#34;
 __copyright__ = &#34;Copyright 2020, The Trajectory Inference Project&#34;
 
 __license__ = &#34;MIT&#34;
-__version__ = &#34;2.0.7&#34;
+__version__ = &#34;2.0.8&#34;
 __maintainer__ = &#34;Jin-Hong Du, Tianyu Chen, and Jingshu Wang&#34;
 __email__ = &#34;jinhongd@andrew.cmu.edu&#34;
 __status__ = &#34;Development&#34;</code></pre>
@@ -395,7 +395,8 @@ adata.layers in order to use these models.</p>
             print(&#34;Calculate FA ...&#34;)
             sc.tl.draw_graph(self._adata_z)
             
-  
+
+        self._adata.obs = self.adata.obs.copy()
         self._adata.obsp = self._adata_z.obsp
 #        self._adata.uns = self._adata_z.uns
         self._adata.obsm = self._adata_z.obsm
@@ -414,7 +415,7 @@ adata.layers in order to use these models.</p>
 
 
     def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
-                          ratio_prune= None, dist_thres = 0.5, pilayer = False):
+                          ratio_prune= None, dist = None, dist_thres = 0.5, pilayer = False):
         &#39;&#39;&#39;Initialize the latent space.
 
         Parameters
@@ -457,37 +458,38 @@ adata.layers in order to use these models.</p>
         mu = np.zeros((z.shape[1], n_clusters))
         for i,l in enumerate(uni_cluster_labels):
             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
-   #         mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=1)),:]
        
-        ### update cluster centers if some cluster centers are too close
-        clustering = AgglomerativeClustering(
-            n_clusters=None,
-            distance_threshold=dist_thres,
-            linkage=&#39;complete&#39;
-            ).fit(mu.T/np.sqrt(mu.shape[0]))
-        n_clusters_new = clustering.n_clusters_
-        if n_clusters_new &lt; n_clusters:
-            print(&#34;Merge clusters for cluster centers that are too close ...&#34;)
-            n_clusters = n_clusters_new
-            for i in range(n_clusters):    
-                temp = uni_cluster_labels[clustering.labels_ == i]
-                idx = np.isin(cluster_labels, temp)
-                cluster_labels[idx] = &#39;,&#39;.join(temp)
-                if np.sum(clustering.labels_==i)&gt;1:
-                    print(&#39;Merge %s&#39;% &#39;,&#39;.join(temp))
-            uni_cluster_labels = np.unique(cluster_labels)
-            mu = np.zeros((z.shape[1], n_clusters))
-            for i,l in enumerate(uni_cluster_labels):
-                mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+        if dist is None:
+            ### update cluster centers if some cluster centers are too close
+            clustering = AgglomerativeClustering(
+                n_clusters=None,
+                distance_threshold=dist_thres,
+                linkage=&#39;complete&#39;
+                ).fit(mu.T/np.sqrt(mu.shape[0]))
+            n_clusters_new = clustering.n_clusters_
+            if n_clusters_new &lt; n_clusters:
+                print(&#34;Merge clusters for cluster centers that are too close ...&#34;)
+                n_clusters = n_clusters_new
+                for i in range(n_clusters):    
+                    temp = uni_cluster_labels[clustering.labels_ == i]
+                    idx = np.isin(cluster_labels, temp)
+                    cluster_labels[idx] = &#39;,&#39;.join(temp)
+                    if np.sum(clustering.labels_==i)&gt;1:
+                        print(&#39;Merge %s&#39;% &#39;,&#39;.join(temp))
+                uni_cluster_labels = np.unique(cluster_labels)
+                mu = np.zeros((z.shape[1], n_clusters))
+                for i,l in enumerate(uni_cluster_labels):
+                    mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
             
         self.adata.obs[&#39;vitae_init_clustering&#39;] = cluster_labels
         self.adata.obs[&#39;vitae_init_clustering&#39;] = self.adata.obs[&#39;vitae_init_clustering&#39;].astype(&#39;category&#39;)
         print(&#34;Initial clustering labels saved as &#39;vitae_init_clustering&#39; in self.adata.obs.&#34;)
-
    
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters&gt;3):                         
             n_states = int((n_clusters+1)*n_clusters/2)
-            d = _comp_dist(z, cluster_labels, mu.T)
+            
+            if dist is None:
+                dist = _comp_dist(z, cluster_labels, mu.T)
 
             C = np.triu(np.ones(n_clusters))
             C[C&gt;0] = np.arange(n_states)
@@ -496,9 +498,9 @@ adata.layers in order to use these models.</p>
             log_pi = np.zeros((1,n_states))
             ## pruning to throw away edges for far-away clusters if there are too many clusters
             if ratio_prune is not None:
-                log_pi[0, C[np.triu(d)&gt;np.quantile(d[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
+                log_pi[0, C[np.triu(dist)&gt;np.quantile(dist[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
             else:
-                log_pi[0, C[np.triu(d)&gt; np.quantile(d[np.triu_indices(n_clusters, 1)], 5/n_clusters) * 3]] = - np.inf
+                log_pi[0, C[np.triu(dist)&gt;np.quantile(dist[np.triu_indices(n_clusters, 1)], 5/n_clusters) * 3]] = - np.inf
 
         self.n_states = n_clusters
         self.labels = cluster_labels
@@ -1032,7 +1034,7 @@ adata.layers in order to use these models.</p>
         return None
 
 
-    def infer_trajectory(self, root: Union[int,str], color = &#34;pseudotime&#34;,
+    def infer_trajectory(self, root: Union[int,str], digraph = None, color = &#34;pseudotime&#34;,
                          visualize: bool = True, path_to_fig = None,  **kwargs):
         &#39;&#39;&#39;Infer the trajectory.
 
@@ -1040,6 +1042,8 @@ adata.layers in order to use these models.</p>
         ----------
         root : int or string
             The root of the inferred trajectory. Can provide either an int (vertex index) or string (label name)
+        digraph : nx.DiGraph, optional
+            The directed graph to be used for trajectory inference. If None, the minimum spanning tree of the estimated trajectory backbone will be used.
         cutoff : string, optional
             The threshold for filtering edges with scores less than cutoff.
         visualize: boolean
@@ -1054,14 +1058,24 @@ adata.layers in order to use these models.</p>
                 raise ValueError(&#34;Root {} is not in the label names!&#34;.format(root))
             root = self.labels_map[self.labels_map[&#39;label_names&#39;]==root].index[0]
 
-        connected_comps = nx.node_connected_component(self.backbone, root)
-        subG = self.backbone.subgraph(connected_comps)
-        
-        ## generate directed backbone which contains no loops
-        DG = nx.DiGraph(nx.to_directed(self.backbone))
-        temp = DG.subgraph(connected_comps)
-        DG.remove_edges_from(temp.edges - nx.dfs_edges(DG, root))
-        self.directed_backbone = DG
+        if digraph is None:
+            connected_comps = nx.node_connected_component(self.backbone, root)
+            subG = self.backbone.subgraph(connected_comps)
+
+            ## generate directed backbone which contains no loops
+            DG = nx.DiGraph(nx.to_directed(self.backbone))
+            temp = DG.subgraph(connected_comps)
+            DG.remove_edges_from(temp.edges - nx.dfs_edges(DG, root))
+            self.directed_backbone = DG
+        else:
+            if not nx.is_directed_acyclic_graph(digraph):
+                raise ValueError(&#34;The graph &#39;digraph&#39; should be a directed acyclic graph.&#34;)
+            if set(digraph.nodes) != set(self.backbone.nodes):
+                raise ValueError(&#34;The nodes in &#39;digraph&#39; do not match the nodes in &#39;self.backbone&#39;.&#34;)
+            self.directed_backbone = digraph
+
+            connected_comps = nx.node_connected_component(digraph, root)
+            subG = self.backbone.subgraph(connected_comps)
 
 
         if len(subG.edges)&gt;0:
@@ -1119,12 +1133,12 @@ adata.layers in order to use these models.</p>
         Y = self.adata.X[cell_subset,:]
 #        std_Y = np.std(Y, ddof=1, axis=0, keepdims=True)
 #        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
-        X = stats.rankdata(self.pseudotime[cell_subset])
-        X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
-        X = np.c_[np.ones_like(X), X]
+        X = stats.rankdata(self.pseudotime[cell_subset])        
         if order &gt; 1:
             for _order in range(2, order+1):
                 X = np.c_[X, X**_order]
+        X = ((X-np.mean(X,axis=0, keepdims=True))/np.std(X, ddof=1, axis=0, keepdims=True))
+        X = np.c_[np.ones((X.shape[0],1)), X]
         if self.covariates is not None:
             X = np.c_[X, self.covariates[cell_subset, :]]
 
@@ -1373,7 +1387,6 @@ adata.layers in order to use these models.</p>
             if not os.path.exists(path_to_file + &#39;.adata.h5ad&#39;):
                 raise AssertionError(&#39;AnnData file not exist!&#39;)
             self.adata = sc.read_h5ad(path_to_file + &#39;.adata.h5ad&#39;)
-            # Jingshu, what are the difference between adata, _adata, adata_z?
             self._adata.obs = self.adata.obs.copy()</code></pre>
 </details>
 <h3>Methods</h3>
@@ -1605,7 +1618,8 @@ The default is None. Same as scanpy.</dd>
             print(&#34;Calculate FA ...&#34;)
             sc.tl.draw_graph(self._adata_z)
             
-  
+
+        self._adata.obs = self.adata.obs.copy()
         self._adata.obsp = self._adata_z.obsp
 #        self._adata.uns = self._adata_z.uns
         self._adata.obsm = self._adata_z.obsm
@@ -1624,7 +1638,7 @@ The default is None. Same as scanpy.</dd>
 </details>
 </dd>
 <dt id="VITAE.VITAE.init_latent_space"><code class="name flex">
-<span>def <span class="ident">init_latent_space</span></span>(<span>self, cluster_label=None, log_pi=None, res: float = 1.0, ratio_prune=None, dist_thres=0.5, pilayer=False)</span>
+<span>def <span class="ident">init_latent_space</span></span>(<span>self, cluster_label=None, log_pi=None, res: float = 1.0, ratio_prune=None, dist=None, dist_thres=0.5, pilayer=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Initialize the latent space.</p>
@@ -1647,113 +1661,114 @@ Higher values lead to more clusters. Deafult is 1.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python"> def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
-                       ratio_prune= None, dist_thres = 0.5, pilayer = False):
-     &#39;&#39;&#39;Initialize the latent space.
+<pre><code class="python">def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
+                      ratio_prune= None, dist = None, dist_thres = 0.5, pilayer = False):
+    &#39;&#39;&#39;Initialize the latent space.
 
-     Parameters
-     ----------
-     cluster_label : str, optional
-         The name of vector of labels that can be found in self.adata.obs. 
-         Default is None, which will perform leiden clustering on the pretrained z to get clusters
-     mu : np.array, optional
-         \([d,k]\) The value of initial \(\\mu\).
-     log_pi : np.array, optional
-         \([1,K]\) The value of initial \(\\log(\\pi)\).
-     res: 
-         The resolution of leiden clustering, which is a parameter value controlling the coarseness of the clustering. 
-         Higher values lead to more clusters. Deafult is 1.
-     ratio_prune : float, optional
-         The ratio of edges to be removed before estimating.
-     &#39;&#39;&#39;   
- 
-     
-     if cluster_label is None:
-         print(&#34;Perform leiden clustering on the latent space z ...&#34;)
-         g = get_igraph(self.z)
-         cluster_labels = leidenalg_igraph(g, res = res)
-         cluster_labels = cluster_labels.astype(str) 
-         uni_cluster_labels = np.unique(cluster_labels)
-     else:
-         if isinstance(cluster_label,str):
-             cluster_labels = self.adata.obs[cluster_label].to_numpy()
-             uni_cluster_labels = np.array(self.adata.obs[cluster_label].cat.categories)
-         else:
-             ## if cluster_label is a list
-             cluster_labels = cluster_label
-             uni_cluster_labels = np.unique(cluster_labels)
+    Parameters
+    ----------
+    cluster_label : str, optional
+        The name of vector of labels that can be found in self.adata.obs. 
+        Default is None, which will perform leiden clustering on the pretrained z to get clusters
+    mu : np.array, optional
+        \([d,k]\) The value of initial \(\\mu\).
+    log_pi : np.array, optional
+        \([1,K]\) The value of initial \(\\log(\\pi)\).
+    res: 
+        The resolution of leiden clustering, which is a parameter value controlling the coarseness of the clustering. 
+        Higher values lead to more clusters. Deafult is 1.
+    ratio_prune : float, optional
+        The ratio of edges to be removed before estimating.
+    &#39;&#39;&#39;   
 
-     n_clusters = len(uni_cluster_labels)
-
-     if not hasattr(self, &#39;z&#39;):
-         self.update_z()        
-     z = self.z
-     mu = np.zeros((z.shape[1], n_clusters))
-     for i,l in enumerate(uni_cluster_labels):
-         mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
-#         mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=1)),:]
     
-     ### update cluster centers if some cluster centers are too close
-     clustering = AgglomerativeClustering(
-         n_clusters=None,
-         distance_threshold=dist_thres,
-         linkage=&#39;complete&#39;
-         ).fit(mu.T/np.sqrt(mu.shape[0]))
-     n_clusters_new = clustering.n_clusters_
-     if n_clusters_new &lt; n_clusters:
-         print(&#34;Merge clusters for cluster centers that are too close ...&#34;)
-         n_clusters = n_clusters_new
-         for i in range(n_clusters):    
-             temp = uni_cluster_labels[clustering.labels_ == i]
-             idx = np.isin(cluster_labels, temp)
-             cluster_labels[idx] = &#39;,&#39;.join(temp)
-             if np.sum(clustering.labels_==i)&gt;1:
-                 print(&#39;Merge %s&#39;% &#39;,&#39;.join(temp))
-         uni_cluster_labels = np.unique(cluster_labels)
-         mu = np.zeros((z.shape[1], n_clusters))
-         for i,l in enumerate(uni_cluster_labels):
-             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
-         
-     self.adata.obs[&#39;vitae_init_clustering&#39;] = cluster_labels
-     self.adata.obs[&#39;vitae_init_clustering&#39;] = self.adata.obs[&#39;vitae_init_clustering&#39;].astype(&#39;category&#39;)
-     print(&#34;Initial clustering labels saved as &#39;vitae_init_clustering&#39; in self.adata.obs.&#34;)
+    if cluster_label is None:
+        print(&#34;Perform leiden clustering on the latent space z ...&#34;)
+        g = get_igraph(self.z)
+        cluster_labels = leidenalg_igraph(g, res = res)
+        cluster_labels = cluster_labels.astype(str) 
+        uni_cluster_labels = np.unique(cluster_labels)
+    else:
+        if isinstance(cluster_label,str):
+            cluster_labels = self.adata.obs[cluster_label].to_numpy()
+            uni_cluster_labels = np.array(self.adata.obs[cluster_label].cat.categories)
+        else:
+            ## if cluster_label is a list
+            cluster_labels = cluster_label
+            uni_cluster_labels = np.unique(cluster_labels)
 
+    n_clusters = len(uni_cluster_labels)
 
-     if (log_pi is None) and (cluster_labels is not None) and (n_clusters&gt;3):                         
-         n_states = int((n_clusters+1)*n_clusters/2)
-         d = _comp_dist(z, cluster_labels, mu.T)
+    if not hasattr(self, &#39;z&#39;):
+        self.update_z()        
+    z = self.z
+    mu = np.zeros((z.shape[1], n_clusters))
+    for i,l in enumerate(uni_cluster_labels):
+        mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+   
+    if dist is None:
+        ### update cluster centers if some cluster centers are too close
+        clustering = AgglomerativeClustering(
+            n_clusters=None,
+            distance_threshold=dist_thres,
+            linkage=&#39;complete&#39;
+            ).fit(mu.T/np.sqrt(mu.shape[0]))
+        n_clusters_new = clustering.n_clusters_
+        if n_clusters_new &lt; n_clusters:
+            print(&#34;Merge clusters for cluster centers that are too close ...&#34;)
+            n_clusters = n_clusters_new
+            for i in range(n_clusters):    
+                temp = uni_cluster_labels[clustering.labels_ == i]
+                idx = np.isin(cluster_labels, temp)
+                cluster_labels[idx] = &#39;,&#39;.join(temp)
+                if np.sum(clustering.labels_==i)&gt;1:
+                    print(&#39;Merge %s&#39;% &#39;,&#39;.join(temp))
+            uni_cluster_labels = np.unique(cluster_labels)
+            mu = np.zeros((z.shape[1], n_clusters))
+            for i,l in enumerate(uni_cluster_labels):
+                mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+        
+    self.adata.obs[&#39;vitae_init_clustering&#39;] = cluster_labels
+    self.adata.obs[&#39;vitae_init_clustering&#39;] = self.adata.obs[&#39;vitae_init_clustering&#39;].astype(&#39;category&#39;)
+    print(&#34;Initial clustering labels saved as &#39;vitae_init_clustering&#39; in self.adata.obs.&#34;)
 
-         C = np.triu(np.ones(n_clusters))
-         C[C&gt;0] = np.arange(n_states)
-         C = C.astype(int)
+    if (log_pi is None) and (cluster_labels is not None) and (n_clusters&gt;3):                         
+        n_states = int((n_clusters+1)*n_clusters/2)
+        
+        if dist is None:
+            dist = _comp_dist(z, cluster_labels, mu.T)
 
-         log_pi = np.zeros((1,n_states))
-         ## pruning to throw away edges for far-away clusters if there are too many clusters
-         if ratio_prune is not None:
-             log_pi[0, C[np.triu(d)&gt;np.quantile(d[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
-         else:
-             log_pi[0, C[np.triu(d)&gt; np.quantile(d[np.triu_indices(n_clusters, 1)], 5/n_clusters) * 3]] = - np.inf
+        C = np.triu(np.ones(n_clusters))
+        C[C&gt;0] = np.arange(n_states)
+        C = C.astype(int)
 
-     self.n_states = n_clusters
-     self.labels = cluster_labels
+        log_pi = np.zeros((1,n_states))
+        ## pruning to throw away edges for far-away clusters if there are too many clusters
+        if ratio_prune is not None:
+            log_pi[0, C[np.triu(dist)&gt;np.quantile(dist[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
+        else:
+            log_pi[0, C[np.triu(dist)&gt;np.quantile(dist[np.triu_indices(n_clusters, 1)], 5/n_clusters) * 3]] = - np.inf
 
-     # Not sure if storing the this will be useful
-     # self.init_labels_name = cluster_label
-     
-     labels_map = pd.DataFrame.from_dict(
-         {i:label for i,label in enumerate(uni_cluster_labels)}, 
-         orient=&#39;index&#39;, columns=[&#39;label_names&#39;], dtype=str
-         )
-     
-     self.labels_map = labels_map
-     self.vae.init_latent_space(self.n_states, mu, log_pi)
-     self.inferer = Inferer(self.n_states)
-     self.mu = self.vae.latent_space.mu.numpy()
-     self.pi = np.triu(np.ones(self.n_states))
-     self.pi[self.pi &gt; 0] = tf.nn.softmax(self.vae.latent_space.pi).numpy()[0]
+    self.n_states = n_clusters
+    self.labels = cluster_labels
 
-     if pilayer:
-         self.vae.create_pilayer()</code></pre>
+    # Not sure if storing the this will be useful
+    # self.init_labels_name = cluster_label
+    
+    labels_map = pd.DataFrame.from_dict(
+        {i:label for i,label in enumerate(uni_cluster_labels)}, 
+        orient=&#39;index&#39;, columns=[&#39;label_names&#39;], dtype=str
+        )
+    
+    self.labels_map = labels_map
+    self.vae.init_latent_space(self.n_states, mu, log_pi)
+    self.inferer = Inferer(self.n_states)
+    self.mu = self.vae.latent_space.mu.numpy()
+    self.pi = np.triu(np.ones(self.n_states))
+    self.pi[self.pi &gt; 0] = tf.nn.softmax(self.vae.latent_space.pi).numpy()[0]
+
+    if pilayer:
+        self.vae.create_pilayer()</code></pre>
 </details>
 </dd>
 <dt id="VITAE.VITAE.update_latent_space"><code class="name flex">
@@ -2463,7 +2478,7 @@ Extra key-value arguments that can be passed to scanpy plotting functions (scanp
 </details>
 </dd>
 <dt id="VITAE.VITAE.infer_trajectory"><code class="name flex">
-<span>def <span class="ident">infer_trajectory</span></span>(<span>self, root: Union[int, str], color='pseudotime', visualize: bool = True, path_to_fig=None, **kwargs)</span>
+<span>def <span class="ident">infer_trajectory</span></span>(<span>self, root: Union[int, str], digraph=None, color='pseudotime', visualize: bool = True, path_to_fig=None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Infer the trajectory.</p>
@@ -2471,6 +2486,8 @@ Extra key-value arguments that can be passed to scanpy plotting functions (scanp
 <dl>
 <dt><strong><code>root</code></strong> :&ensp;<code>int</code> or <code>string</code></dt>
 <dd>The root of the inferred trajectory. Can provide either an int (vertex index) or string (label name)</dd>
+<dt><strong><code>digraph</code></strong> :&ensp;<code>nx.DiGraph</code>, optional</dt>
+<dd>The directed graph to be used for trajectory inference. If None, the minimum spanning tree of the estimated trajectory backbone will be used.</dd>
 <dt><strong><code>cutoff</code></strong> :&ensp;<code>string</code>, optional</dt>
 <dd>The threshold for filtering edges with scores less than cutoff.</dd>
 <dt><strong><code>visualize</code></strong> :&ensp;<code>boolean</code></dt>
@@ -2484,7 +2501,7 @@ Extra key-value arguments that can be passed to scanpy plotting functions (scanp
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def infer_trajectory(self, root: Union[int,str], color = &#34;pseudotime&#34;,
+<pre><code class="python">def infer_trajectory(self, root: Union[int,str], digraph = None, color = &#34;pseudotime&#34;,
                      visualize: bool = True, path_to_fig = None,  **kwargs):
     &#39;&#39;&#39;Infer the trajectory.
 
@@ -2492,6 +2509,8 @@ Extra key-value arguments that can be passed to scanpy plotting functions (scanp
     ----------
     root : int or string
         The root of the inferred trajectory. Can provide either an int (vertex index) or string (label name)
+    digraph : nx.DiGraph, optional
+        The directed graph to be used for trajectory inference. If None, the minimum spanning tree of the estimated trajectory backbone will be used.
     cutoff : string, optional
         The threshold for filtering edges with scores less than cutoff.
     visualize: boolean
@@ -2506,14 +2525,24 @@ Extra key-value arguments that can be passed to scanpy plotting functions (scanp
             raise ValueError(&#34;Root {} is not in the label names!&#34;.format(root))
         root = self.labels_map[self.labels_map[&#39;label_names&#39;]==root].index[0]
 
-    connected_comps = nx.node_connected_component(self.backbone, root)
-    subG = self.backbone.subgraph(connected_comps)
-    
-    ## generate directed backbone which contains no loops
-    DG = nx.DiGraph(nx.to_directed(self.backbone))
-    temp = DG.subgraph(connected_comps)
-    DG.remove_edges_from(temp.edges - nx.dfs_edges(DG, root))
-    self.directed_backbone = DG
+    if digraph is None:
+        connected_comps = nx.node_connected_component(self.backbone, root)
+        subG = self.backbone.subgraph(connected_comps)
+
+        ## generate directed backbone which contains no loops
+        DG = nx.DiGraph(nx.to_directed(self.backbone))
+        temp = DG.subgraph(connected_comps)
+        DG.remove_edges_from(temp.edges - nx.dfs_edges(DG, root))
+        self.directed_backbone = DG
+    else:
+        if not nx.is_directed_acyclic_graph(digraph):
+            raise ValueError(&#34;The graph &#39;digraph&#39; should be a directed acyclic graph.&#34;)
+        if set(digraph.nodes) != set(self.backbone.nodes):
+            raise ValueError(&#34;The nodes in &#39;digraph&#39; do not match the nodes in &#39;self.backbone&#39;.&#34;)
+        self.directed_backbone = digraph
+
+        connected_comps = nx.node_connected_component(digraph, root)
+        subG = self.backbone.subgraph(connected_comps)
 
 
     if len(subG.edges)&gt;0:
@@ -2596,12 +2625,12 @@ the estimated coefficients and the adjusted p-values.</dd>
         Y = self.adata.X[cell_subset,:]
 #        std_Y = np.std(Y, ddof=1, axis=0, keepdims=True)
 #        Y = np.divide(Y-np.mean(Y, axis=0, keepdims=True), std_Y, out=np.empty_like(Y)*np.nan, where=std_Y!=0)
-        X = stats.rankdata(self.pseudotime[cell_subset])
-        X = ((X-np.mean(X))/np.std(X, ddof=1)).reshape((-1,1))
-        X = np.c_[np.ones_like(X), X]
+        X = stats.rankdata(self.pseudotime[cell_subset])        
         if order &gt; 1:
             for _order in range(2, order+1):
                 X = np.c_[X, X**_order]
+        X = ((X-np.mean(X,axis=0, keepdims=True))/np.std(X, ddof=1, axis=0, keepdims=True))
+        X = np.c_[np.ones((X.shape[0],1)), X]
         if self.covariates is not None:
             X = np.c_[X, self.covariates[cell_subset, :]]
 
@@ -2952,7 +2981,6 @@ If load_labels is False, then the LatentSpace layer will not be initialized.</dd
         if not os.path.exists(path_to_file + &#39;.adata.h5ad&#39;):
             raise AssertionError(&#39;AnnData file not exist!&#39;)
         self.adata = sc.read_h5ad(path_to_file + &#39;.adata.h5ad&#39;)
-        # Jingshu, what are the difference between adata, _adata, adata_z?
         self._adata.obs = self.adata.obs.copy()</code></pre>
 </details>
 </dd>
