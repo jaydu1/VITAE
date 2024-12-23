@@ -307,7 +307,8 @@ class VITAE():
             print("Calculate FA ...")
             sc.tl.draw_graph(self._adata_z)
             
-  
+
+        self._adata.obs = self.adata.obs.copy()
         self._adata.obsp = self._adata_z.obsp
 #        self._adata.uns = self._adata_z.uns
         self._adata.obsm = self._adata_z.obsm
@@ -326,7 +327,7 @@ class VITAE():
 
 
     def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
-                          ratio_prune= None, dist_thres = 0.5, pilayer = False):
+                          ratio_prune= None, dist = None, dist_thres = 0.5, pilayer = False):
         '''Initialize the latent space.
 
         Parameters
@@ -369,37 +370,38 @@ class VITAE():
         mu = np.zeros((z.shape[1], n_clusters))
         for i,l in enumerate(uni_cluster_labels):
             mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
-   #         mu[:,i] = z[cluster_labels==l][np.argmin(np.mean((z[cluster_labels==l] - mu[:,i])**2, axis=1)),:]
        
-        ### update cluster centers if some cluster centers are too close
-        clustering = AgglomerativeClustering(
-            n_clusters=None,
-            distance_threshold=dist_thres,
-            linkage='complete'
-            ).fit(mu.T/np.sqrt(mu.shape[0]))
-        n_clusters_new = clustering.n_clusters_
-        if n_clusters_new < n_clusters:
-            print("Merge clusters for cluster centers that are too close ...")
-            n_clusters = n_clusters_new
-            for i in range(n_clusters):    
-                temp = uni_cluster_labels[clustering.labels_ == i]
-                idx = np.isin(cluster_labels, temp)
-                cluster_labels[idx] = ','.join(temp)
-                if np.sum(clustering.labels_==i)>1:
-                    print('Merge %s'% ','.join(temp))
-            uni_cluster_labels = np.unique(cluster_labels)
-            mu = np.zeros((z.shape[1], n_clusters))
-            for i,l in enumerate(uni_cluster_labels):
-                mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
+        if dist is None:
+            ### update cluster centers if some cluster centers are too close
+            clustering = AgglomerativeClustering(
+                n_clusters=None,
+                distance_threshold=dist_thres,
+                linkage='complete'
+                ).fit(mu.T/np.sqrt(mu.shape[0]))
+            n_clusters_new = clustering.n_clusters_
+            if n_clusters_new < n_clusters:
+                print("Merge clusters for cluster centers that are too close ...")
+                n_clusters = n_clusters_new
+                for i in range(n_clusters):    
+                    temp = uni_cluster_labels[clustering.labels_ == i]
+                    idx = np.isin(cluster_labels, temp)
+                    cluster_labels[idx] = ','.join(temp)
+                    if np.sum(clustering.labels_==i)>1:
+                        print('Merge %s'% ','.join(temp))
+                uni_cluster_labels = np.unique(cluster_labels)
+                mu = np.zeros((z.shape[1], n_clusters))
+                for i,l in enumerate(uni_cluster_labels):
+                    mu[:,i] = np.mean(z[cluster_labels==l], axis=0)
             
         self.adata.obs['vitae_init_clustering'] = cluster_labels
         self.adata.obs['vitae_init_clustering'] = self.adata.obs['vitae_init_clustering'].astype('category')
         print("Initial clustering labels saved as 'vitae_init_clustering' in self.adata.obs.")
-
    
         if (log_pi is None) and (cluster_labels is not None) and (n_clusters>3):                         
             n_states = int((n_clusters+1)*n_clusters/2)
-            d = _comp_dist(z, cluster_labels, mu.T)
+            
+            if dist is None:
+                dist = _comp_dist(z, cluster_labels, mu.T)
 
             C = np.triu(np.ones(n_clusters))
             C[C>0] = np.arange(n_states)
@@ -408,9 +410,9 @@ class VITAE():
             log_pi = np.zeros((1,n_states))
             ## pruning to throw away edges for far-away clusters if there are too many clusters
             if ratio_prune is not None:
-                log_pi[0, C[np.triu(d)>np.quantile(d[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
+                log_pi[0, C[np.triu(dist)>np.quantile(dist[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
             else:
-                log_pi[0, C[np.triu(d)> np.quantile(d[np.triu_indices(n_clusters, 1)], 5/n_clusters) * 3]] = - np.inf
+                log_pi[0, C[np.triu(dist)>np.quantile(dist[np.triu_indices(n_clusters, 1)], 5/n_clusters) * 3]] = - np.inf
 
         self.n_states = n_clusters
         self.labels = cluster_labels
@@ -1297,5 +1299,4 @@ class VITAE():
             if not os.path.exists(path_to_file + '.adata.h5ad'):
                 raise AssertionError('AnnData file not exist!')
             self.adata = sc.read_h5ad(path_to_file + '.adata.h5ad')
-            # Jingshu, what are the difference between adata, _adata, adata_z?
             self._adata.obs = self.adata.obs.copy()
