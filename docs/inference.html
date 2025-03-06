@@ -2,17 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.8.1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.1">
 <title>VITAE.inference API documentation</title>
-<meta name="description" content="" />
-<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
-<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_CHTML'></script>
+<script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { inlineMath: [ ['$','$'], ["\\(","\\)"] ], processEscapes: true } });</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
 </head>
 <body>
 <main>
@@ -21,254 +27,6 @@
 <h1 class="title">Module <code>VITAE.inference</code></h1>
 </header>
 <section id="section-intro">
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">import warnings
-#from typing import Optional
-
-import numpy as np
-import networkx as nx
-
-
-class Inferer(object):
-    &#39;&#39;&#39;
-    The class for doing inference based on posterior estimations.
-    &#39;&#39;&#39;
-
-    def __init__(self, n_states: int):
-        &#39;&#39;&#39;
-        Parameters
-        ----------
-        n_states : int
-            The number of vertices in the latent space.
-        &#39;&#39;&#39;        
-        self.n_states = n_states
-        self.n_categories = int(n_states*(n_states+1)/2)
-      #  self.A, self.B = np.nonzero(np.triu(np.ones(n_states)))
-       ## indicator of the catagories
-        self.C = np.triu(np.ones(n_states))
-        self.C[self.C&gt;0] = np.arange(self.n_categories)
-        self.C = self.C.astype(int)
-        
-    def build_graphs(self, w_tilde, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5, no_loop: bool = False, 
-            cutoff = 0):
-        &#39;&#39;&#39;Build the backbone.
-        
-        Parameters
-        ----------
-        pc_x : np.array
-            \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).        
-        method : string, optional 
-            &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
-        thres : float, optional 
-            The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
-
-        Retruns
-        ----------
-        G : nx.Graph
-            The graph of edge scores.
-        &#39;&#39;&#39;
-        self.no_loop = no_loop
-    #    self.w_tilde = w_tilde
-
-        graph = np.zeros((self.n_states,self.n_states))
-        if method==&#39;mean&#39;:
-            for i in range(self.n_states-1):
-                for j in range(i+1,self.n_states):
-                    idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
-                    if np.sum(idx)&gt;0:
-                        graph[i,j] = np.mean(pc_x[idx,self.C[i,j]]/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]], axis=-1))
-        elif method==&#39;modified_mean&#39;:
-            for i in range(self.n_states-1):
-                for j in range(i+1,self.n_states):
-                    idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
-                    if np.sum(idx)&gt;0:
-                        graph[i,j] = np.sum(pc_x[idx,self.C[i,j]])/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]])
-        elif method==&#39;map&#39;:
-            c = np.argmax(pc_x, axis=-1)
-            for i in range(self.n_states-1):
-                for j in range(i+1,self.n_states):
-                    if np.sum(c==self.C[i,j])&gt;0:
-                        graph[i,j] = np.sum(c==self.C[i,j])/np.sum((c==self.C[i,j])|(c==self.C[i,i])|(c==self.C[j,j]))
-        elif method==&#39;modified_map&#39;:
-            c = np.argmax(pc_x, axis=-1)
-            for i in range(self.n_states-1):
-                for j in range(i+1,self.n_states):
-                    graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((w_tilde[:,i]&gt;0.5)|(w_tilde[:,j]&gt;0.5))+1e-16)
-        elif method==&#39;raw_map&#39;:
-            c = np.argmax(pc_x, axis=-1)
-            for i in range(self.n_states-1):
-                for j in range(i+1,self.n_states):
-                    if np.sum(c==self.C[i,j])&gt;0:
-                        graph[i,j] = np.sum(c==self.C[i,j])/np.sum(np.isin(c, np.diagonal(self.C)) == False)
-        elif method == &#34;w_base&#34;:
-            for i in range(self.n_states):
-                for j in range(i+1,self.n_states):
-                    two_vertice_max_w = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j),:]
-                    num_two_vertice = two_vertice_max_w.shape[0]
-                    if num_two_vertice &gt; 0:
-                        graph[i, j] = np.sum(
-                            np.abs(two_vertice_max_w[:, i] - two_vertice_max_w[:, j]) &lt; 0.1) / num_two_vertice
-        elif method == &#34;modified_w_base&#34;:
-            top2_idx = np.argpartition(w_tilde, -2, axis=1)[:, -2:]
-            for i in range(self.n_states):
-                for j in range(i + 1, self.n_states):
-                    two_vertice_max_w = np.all(top2_idx == [i, j], axis=1) | np.all(top2_idx == [j, i], axis=1)
-                    two_vertice_max_w = w_tilde[two_vertice_max_w, :]
-                    vertice_count = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j), :]
-                    vertice_count = vertice_count.shape[0]
-                    if vertice_count &gt; 0:
-                        edge_count = \
-                            np.max((two_vertice_max_w[:, i], two_vertice_max_w[:, j]), axis=0) \
-                            / (two_vertice_max_w[:, i] + two_vertice_max_w[:, j])
-                        edge_count = np.sum(edge_count &lt; 0.55)
-                        graph[i, j] = edge_count / vertice_count
-        else:
-            raise ValueError(&#34;Invalid method, must be one of &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, &#39;modified_map&#39;,&#39;raw_map&#39;,&#39;w_base&#39;, and &#39;modified_w_base&#39;.&#34;)
-        
-        graph[graph&lt;=cutoff] = 0
-        G = nx.from_numpy_array(graph)
-        
-        if self.no_loop and not nx.is_tree(G):
-            # prune if there are no loops
-            G = nx.maximum_spanning_tree(G)
-            
-        return G
-
-    def modify_wtilde(self, w_tilde, edges):
-        &#39;&#39;&#39;Project \(\\tilde{w}\) to the estimated backbone.
-        
-        Parameters
-        ----------
-        w_tilde : np.array
-            \([N, k]\) The estimated \(\\tilde{w}\).        
-        edges : np.array
-            \([|\\mathcal{E}(\\widehat{\\mathcal{B}})|, 2]\).
-
-        Retruns
-        ----------
-        w : np.array
-            The projected \(\\tilde{w}\).
-        &#39;&#39;&#39;
-        w = np.zeros_like(w_tilde)
-        
-        # projection on nodes
-        best_proj_err_node = np.sum(w_tilde**2, axis=-1) - 2*np.max(w_tilde, axis=-1) +1
-        best_proj_err_node_ind = np.argmax(w_tilde, axis=-1)
-        
-        if len(edges)&gt;0:
-            # projection on edges
-            idc = np.tile(np.arange(w.shape[0]), (2,1)).T
-            ide = edges[np.argmax(np.sum(w_tilde[:,edges], axis=-1)**2 -
-                                  4 * np.prod(w_tilde[:,edges], axis=-1) +
-                                  2 * np.sum(w_tilde[:,edges], axis=-1), axis=-1)]
-            w[idc, ide] = w_tilde[idc, ide] + (1-np.sum(w_tilde[idc, ide], axis=-1, keepdims=True))/2
-            best_proj_err_edge = np.sum(w_tilde**2, axis=-1) - np.sum(w_tilde[idc, ide]**2, axis=-1) + (1-np.sum(w_tilde[idc, ide], axis=-1))**2/2
-                         
-            idc = (best_proj_err_node&lt;best_proj_err_edge)
-            w[idc,:] = np.eye(w_tilde.shape[-1])[best_proj_err_node_ind[idc]]
-        else:
-            idc = np.arange(w.shape[0])
-            w[idc, best_proj_err_node_ind] = 1
-        return w
-
-     
-    def build_milestone_net(self, subgraph, init_node: int):
-        &#39;&#39;&#39;Build the milestone network.
-
-        Parameters
-        ----------
-        subgraph : nx.Graph
-            The connected component of the backbone given the root vertex.
-        init_node : int
-            The root vertex.
-        
-        Returns
-        ----------
-        df_subgraph : pd.DataFrame 
-            The milestone network.
-        &#39;&#39;&#39;
-        if len(subgraph)==1:
-            warnings.warn(&#39;Singular node.&#39;)
-            return []
-        elif nx.is_directed_acyclic_graph(subgraph):
-            milestone_net = []
-            for edge in list(subgraph.edges):
-                if edge[0]==init_node:
-                    dist = 1
-                elif edge[1]==init_node:
-                    paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
-                    dist = - (np.max([len(p) for p in paths_1]) - 1)
-                else:
-                    paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
-                    paths_1 = nx.all_simple_paths(subgraph, source=init_node, target=edge[1])
-                    dist = np.max([len(p) for p in paths_1]) - np.max([len(p) for p in paths_0])
-                milestone_net.append([edge[0], edge[1], dist])
-        else:
-            # Dijkstra&#39;s Algorithm to find the shortest path
-            unvisited = {node: {&#39;parent&#39;:None,
-                                &#39;score&#39;:np.inf,
-                                &#39;distance&#39;:np.inf} for node in subgraph.nodes}
-            current = init_node
-            currentScore = 0
-            currentDistance = 0
-            unvisited[current][&#39;score&#39;] = currentScore
-
-            milestone_net = []
-            while True:
-                for neighbour in subgraph.neighbors(current):
-                    if neighbour not in unvisited: continue
-                    newScore = currentScore + subgraph[current][neighbour][&#39;weight&#39;]
-                    if unvisited[neighbour][&#39;score&#39;] &gt; newScore:
-                        unvisited[neighbour][&#39;score&#39;] = newScore
-                        unvisited[neighbour][&#39;parent&#39;] = current
-                        unvisited[neighbour][&#39;distance&#39;] = currentDistance+1
-
-                if len(unvisited)&lt;len(subgraph):
-                    milestone_net.append([unvisited[current][&#39;parent&#39;],
-                                          current,
-                                          unvisited[current][&#39;distance&#39;]])
-                del unvisited[current]
-                if not unvisited: break
-                current, currentScore, currentDistance = \
-                    sorted([(i[0],i[1][&#39;score&#39;],i[1][&#39;distance&#39;]) for i in unvisited.items()],
-                            key = lambda x: x[1])[0]
-            return np.array(milestone_net)
-    
-
-    def comp_pseudotime(self, milestone_net, init_node: int, w):
-        &#39;&#39;&#39;Compute pseudotime.
-
-        Parameters
-        ----------
-        milestone_net : pd.DataFrame
-            The milestone network.
-        init_node : int
-            The root vertex.
-        w : np.array
-            \([N, k]\) The projected \(\\tilde{w}\).
-        
-        Returns
-        ----------
-        pseudotime : np.array
-            \([N, k]\) The estimated pseudtotime.
-        &#39;&#39;&#39;
-        pseudotime = np.empty(w.shape[0])
-        pseudotime.fill(np.nan)
-        pseudotime[w[:,init_node]==1] = 0
-        
-        if len(milestone_net)&gt;0:
-            for i in range(len(milestone_net)):
-                _from, _to = milestone_net[i,:2]
-                _from, _to = int(_from), int(_to)
-
-                idc = ((w[:,_from]&gt;0)&amp;(w[:,_to]&gt;0)) | (w[:,_to]==1)
-                pseudotime[idc] = w[idc,_to] + milestone_net[i,-1] - 1
-        
-        return pseudotime</code></pre>
-</details>
 </section>
 <section>
 </section>
@@ -550,95 +308,6 @@ class Inferer(object):
 <h2 id="retruns">Retruns</h2>
 <p>G : nx.Graph
 The graph of edge scores.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def build_graphs(self, w_tilde, pc_x, method: str = &#39;mean&#39;, thres: float = 0.5, no_loop: bool = False, 
-        cutoff = 0):
-    &#39;&#39;&#39;Build the backbone.
-    
-    Parameters
-    ----------
-    pc_x : np.array
-        \([N, K]\) The estimated \(p(c_i|Y_i,X_i)\).        
-    method : string, optional 
-        &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, or &#39;modified_map&#39;.
-    thres : float, optional 
-        The threshold used for filtering edges \(e_{ij}\) that \((n_{i}+n_{j}+e_{ij})/N&lt;thres\), only applied to mean method.
-
-    Retruns
-    ----------
-    G : nx.Graph
-        The graph of edge scores.
-    &#39;&#39;&#39;
-    self.no_loop = no_loop
-#    self.w_tilde = w_tilde
-
-    graph = np.zeros((self.n_states,self.n_states))
-    if method==&#39;mean&#39;:
-        for i in range(self.n_states-1):
-            for j in range(i+1,self.n_states):
-                idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
-                if np.sum(idx)&gt;0:
-                    graph[i,j] = np.mean(pc_x[idx,self.C[i,j]]/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]], axis=-1))
-    elif method==&#39;modified_mean&#39;:
-        for i in range(self.n_states-1):
-            for j in range(i+1,self.n_states):
-                idx = np.sum(pc_x[:,self.C[[i,i,j],[i,j,j]]], axis=1)&gt;=thres
-                if np.sum(idx)&gt;0:
-                    graph[i,j] = np.sum(pc_x[idx,self.C[i,j]])/np.sum(pc_x[idx][:,self.C[[i,i,j],[i,j,j]]])
-    elif method==&#39;map&#39;:
-        c = np.argmax(pc_x, axis=-1)
-        for i in range(self.n_states-1):
-            for j in range(i+1,self.n_states):
-                if np.sum(c==self.C[i,j])&gt;0:
-                    graph[i,j] = np.sum(c==self.C[i,j])/np.sum((c==self.C[i,j])|(c==self.C[i,i])|(c==self.C[j,j]))
-    elif method==&#39;modified_map&#39;:
-        c = np.argmax(pc_x, axis=-1)
-        for i in range(self.n_states-1):
-            for j in range(i+1,self.n_states):
-                graph[i,j] = np.sum(c==self.C[i,j])/(np.sum((w_tilde[:,i]&gt;0.5)|(w_tilde[:,j]&gt;0.5))+1e-16)
-    elif method==&#39;raw_map&#39;:
-        c = np.argmax(pc_x, axis=-1)
-        for i in range(self.n_states-1):
-            for j in range(i+1,self.n_states):
-                if np.sum(c==self.C[i,j])&gt;0:
-                    graph[i,j] = np.sum(c==self.C[i,j])/np.sum(np.isin(c, np.diagonal(self.C)) == False)
-    elif method == &#34;w_base&#34;:
-        for i in range(self.n_states):
-            for j in range(i+1,self.n_states):
-                two_vertice_max_w = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j),:]
-                num_two_vertice = two_vertice_max_w.shape[0]
-                if num_two_vertice &gt; 0:
-                    graph[i, j] = np.sum(
-                        np.abs(two_vertice_max_w[:, i] - two_vertice_max_w[:, j]) &lt; 0.1) / num_two_vertice
-    elif method == &#34;modified_w_base&#34;:
-        top2_idx = np.argpartition(w_tilde, -2, axis=1)[:, -2:]
-        for i in range(self.n_states):
-            for j in range(i + 1, self.n_states):
-                two_vertice_max_w = np.all(top2_idx == [i, j], axis=1) | np.all(top2_idx == [j, i], axis=1)
-                two_vertice_max_w = w_tilde[two_vertice_max_w, :]
-                vertice_count = w_tilde[(np.argmax(w_tilde, axis=1) == i) | (np.argmax(w_tilde, axis=1) == j), :]
-                vertice_count = vertice_count.shape[0]
-                if vertice_count &gt; 0:
-                    edge_count = \
-                        np.max((two_vertice_max_w[:, i], two_vertice_max_w[:, j]), axis=0) \
-                        / (two_vertice_max_w[:, i] + two_vertice_max_w[:, j])
-                    edge_count = np.sum(edge_count &lt; 0.55)
-                    graph[i, j] = edge_count / vertice_count
-    else:
-        raise ValueError(&#34;Invalid method, must be one of &#39;mean&#39;, &#39;modified_mean&#39;, &#39;map&#39;, &#39;modified_map&#39;,&#39;raw_map&#39;,&#39;w_base&#39;, and &#39;modified_w_base&#39;.&#34;)
-    
-    graph[graph&lt;=cutoff] = 0
-    G = nx.from_numpy_array(graph)
-    
-    if self.no_loop and not nx.is_tree(G):
-        # prune if there are no loops
-        G = nx.maximum_spanning_tree(G)
-        
-    return G</code></pre>
-</details>
 </dd>
 <dt id="VITAE.inference.Inferer.modify_wtilde"><code class="name flex">
 <span>def <span class="ident">modify_wtilde</span></span>(<span>self, w_tilde, edges)</span>
@@ -655,47 +324,6 @@ The graph of edge scores.</p></div>
 <h2 id="retruns">Retruns</h2>
 <p>w : np.array
 The projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="math/tex">\tilde{w}</script></span>.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def modify_wtilde(self, w_tilde, edges):
-    &#39;&#39;&#39;Project \(\\tilde{w}\) to the estimated backbone.
-    
-    Parameters
-    ----------
-    w_tilde : np.array
-        \([N, k]\) The estimated \(\\tilde{w}\).        
-    edges : np.array
-        \([|\\mathcal{E}(\\widehat{\\mathcal{B}})|, 2]\).
-
-    Retruns
-    ----------
-    w : np.array
-        The projected \(\\tilde{w}\).
-    &#39;&#39;&#39;
-    w = np.zeros_like(w_tilde)
-    
-    # projection on nodes
-    best_proj_err_node = np.sum(w_tilde**2, axis=-1) - 2*np.max(w_tilde, axis=-1) +1
-    best_proj_err_node_ind = np.argmax(w_tilde, axis=-1)
-    
-    if len(edges)&gt;0:
-        # projection on edges
-        idc = np.tile(np.arange(w.shape[0]), (2,1)).T
-        ide = edges[np.argmax(np.sum(w_tilde[:,edges], axis=-1)**2 -
-                              4 * np.prod(w_tilde[:,edges], axis=-1) +
-                              2 * np.sum(w_tilde[:,edges], axis=-1), axis=-1)]
-        w[idc, ide] = w_tilde[idc, ide] + (1-np.sum(w_tilde[idc, ide], axis=-1, keepdims=True))/2
-        best_proj_err_edge = np.sum(w_tilde**2, axis=-1) - np.sum(w_tilde[idc, ide]**2, axis=-1) + (1-np.sum(w_tilde[idc, ide], axis=-1))**2/2
-                     
-        idc = (best_proj_err_node&lt;best_proj_err_edge)
-        w[idc,:] = np.eye(w_tilde.shape[-1])[best_proj_err_node_ind[idc]]
-    else:
-        idc = np.arange(w.shape[0])
-        w[idc, best_proj_err_node_ind] = 1
-    return w</code></pre>
-</details>
 </dd>
 <dt id="VITAE.inference.Inferer.build_milestone_net"><code class="name flex">
 <span>def <span class="ident">build_milestone_net</span></span>(<span>self, subgraph, init_node: int)</span>
@@ -714,72 +342,6 @@ The projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="
 <dt><strong><code>df_subgraph</code></strong> :&ensp;<code>pd.DataFrame </code></dt>
 <dd>The milestone network.</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def build_milestone_net(self, subgraph, init_node: int):
-    &#39;&#39;&#39;Build the milestone network.
-
-    Parameters
-    ----------
-    subgraph : nx.Graph
-        The connected component of the backbone given the root vertex.
-    init_node : int
-        The root vertex.
-    
-    Returns
-    ----------
-    df_subgraph : pd.DataFrame 
-        The milestone network.
-    &#39;&#39;&#39;
-    if len(subgraph)==1:
-        warnings.warn(&#39;Singular node.&#39;)
-        return []
-    elif nx.is_directed_acyclic_graph(subgraph):
-        milestone_net = []
-        for edge in list(subgraph.edges):
-            if edge[0]==init_node:
-                dist = 1
-            elif edge[1]==init_node:
-                paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
-                dist = - (np.max([len(p) for p in paths_1]) - 1)
-            else:
-                paths_0 = nx.all_simple_paths(subgraph, source=init_node, target=edge[0])
-                paths_1 = nx.all_simple_paths(subgraph, source=init_node, target=edge[1])
-                dist = np.max([len(p) for p in paths_1]) - np.max([len(p) for p in paths_0])
-            milestone_net.append([edge[0], edge[1], dist])
-    else:
-        # Dijkstra&#39;s Algorithm to find the shortest path
-        unvisited = {node: {&#39;parent&#39;:None,
-                            &#39;score&#39;:np.inf,
-                            &#39;distance&#39;:np.inf} for node in subgraph.nodes}
-        current = init_node
-        currentScore = 0
-        currentDistance = 0
-        unvisited[current][&#39;score&#39;] = currentScore
-
-        milestone_net = []
-        while True:
-            for neighbour in subgraph.neighbors(current):
-                if neighbour not in unvisited: continue
-                newScore = currentScore + subgraph[current][neighbour][&#39;weight&#39;]
-                if unvisited[neighbour][&#39;score&#39;] &gt; newScore:
-                    unvisited[neighbour][&#39;score&#39;] = newScore
-                    unvisited[neighbour][&#39;parent&#39;] = current
-                    unvisited[neighbour][&#39;distance&#39;] = currentDistance+1
-
-            if len(unvisited)&lt;len(subgraph):
-                milestone_net.append([unvisited[current][&#39;parent&#39;],
-                                      current,
-                                      unvisited[current][&#39;distance&#39;]])
-            del unvisited[current]
-            if not unvisited: break
-            current, currentScore, currentDistance = \
-                sorted([(i[0],i[1][&#39;score&#39;],i[1][&#39;distance&#39;]) for i in unvisited.items()],
-                        key = lambda x: x[1])[0]
-        return np.array(milestone_net)</code></pre>
-</details>
 </dd>
 <dt id="VITAE.inference.Inferer.comp_pseudotime"><code class="name flex">
 <span>def <span class="ident">comp_pseudotime</span></span>(<span>self, milestone_net, init_node: int, w)</span>
@@ -800,41 +362,6 @@ The projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="
 <dt><strong><code>pseudotime</code></strong> :&ensp;<code>np.array</code></dt>
 <dd><span><span class="MathJax_Preview">[N, k]</span><script type="math/tex">[N, k]</script></span> The estimated pseudtotime.</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def comp_pseudotime(self, milestone_net, init_node: int, w):
-    &#39;&#39;&#39;Compute pseudotime.
-
-    Parameters
-    ----------
-    milestone_net : pd.DataFrame
-        The milestone network.
-    init_node : int
-        The root vertex.
-    w : np.array
-        \([N, k]\) The projected \(\\tilde{w}\).
-    
-    Returns
-    ----------
-    pseudotime : np.array
-        \([N, k]\) The estimated pseudtotime.
-    &#39;&#39;&#39;
-    pseudotime = np.empty(w.shape[0])
-    pseudotime.fill(np.nan)
-    pseudotime[w[:,init_node]==1] = 0
-    
-    if len(milestone_net)&gt;0:
-        for i in range(len(milestone_net)):
-            _from, _to = milestone_net[i,:2]
-            _from, _to = int(_from), int(_to)
-
-            idc = ((w[:,_from]&gt;0)&amp;(w[:,_to]&gt;0)) | (w[:,_to]==1)
-            pseudotime[idc] = w[idc,_to] + milestone_net[i,-1] - 1
-    
-    return pseudotime</code></pre>
-</details>
 </dd>
 </dl>
 </dd>
@@ -842,7 +369,6 @@ The projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="
 </section>
 </article>
 <nav id="sidebar">
-<h1>Index</h1>
 <div class="toc">
 <ul></ul>
 </div>
@@ -869,9 +395,7 @@ The projected <span><span class="MathJax_Preview">\tilde{w}</span><script type="
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
 </footer>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-<script>hljs.initHighlightingOnLoad()</script>
 </body>
 </html>

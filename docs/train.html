@@ -2,17 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.8.1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.1">
 <title>VITAE.train API documentation</title>
-<meta name="description" content="" />
-<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
-<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_CHTML'></script>
+<script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { inlineMath: [ ['$','$'], ["\\(","\\)"] ], processEscapes: true } });</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
 </head>
 <body>
 <main>
@@ -21,323 +27,6 @@
 <h1 class="title">Module <code>VITAE.train</code></h1>
 </header>
 <section id="section-intro">
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python"># -*- coding: utf-8 -*-
-from typing import Optional
-
-from VITAE.utils import Early_Stopping
-from numba.core.types.scalars import Boolean
-
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.utils import Progbar
-
-
-def clear_session():
-    &#39;&#39;&#39;Clear Tensorflow sessions.
-    &#39;&#39;&#39;
-    tf.keras.backend.clear_session()
-    return None
-
-    
-def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None,
-    conditions = None, pi_cov = None, seed=0):
-    &#39;&#39;&#39;Get Tensorflow datasets.
-
-    Parameters
-    ----------
-    X_normalized : np.array
-        \([N, G]\) The preprocessed data.
-    c_score : float, optional
-        The normalizing constant.
-    batch_size : int
-        The batch size.
-    X : np.array, optional
-        \([N, G]\) The raw count data.
-    scale_factor : np.array, optional
-        \([N, ]\) The raw count data.
-    seed : int, optional
-        The random seed for data shuffling.
-    conditions: str or list, optional
-        The conditions of different cells
-
-    Returns
-    ----------
-    dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    &#39;&#39;&#39;
-    # fake c_score
-    if c_score is None:
-        c_score = np.zeros((X_normalized.shape[0],1), tf.keras.backend.floatx())
-
-    # fake conditions
-    if conditions is None:
-        conditions = np.zeros((X_normalized.shape[0],1), tf.keras.backend.floatx())
-        
-    if X is not None:
-        train_dataset = tf.data.Dataset.from_tensor_slices(
-            (X, X_normalized, c_score, scale_factor, conditions, pi_cov))
-        train_dataset = train_dataset.shuffle(
-            buffer_size = X.shape[0], seed=seed, reshuffle_each_iteration=True
-            ).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
-        return train_dataset
-    else:
-        test_dataset = tf.data.Dataset.from_tensor_slices(
-            (X_normalized, c_score, conditions, pi_cov)
-            ).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
-        return test_dataset
-
-
-def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, 
-    alpha: float, gamma: float, phi: float, num_epoch: int, num_step_per_epoch: int, 
-    es_patience: int, es_tolerance: int, es_relative: bool, verbose: bool = True):
-    &#39;&#39;&#39;Pretraining.
-
-    Parameters
-    ----------
-    train_dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    test_dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    vae : VariationalAutoEncoder
-        The model.
-    learning_rate : float
-        The initial learning rate for the Adam optimizer.
-    L : int
-        The number of MC samples.
-    alpha : float, optional
-        The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
-    phi : float, optional
-        The weight of Jocob norm of the encoder.
-    num_epoch : int
-        The maximum number of epoches.
-    num_step_per_epoch : int
-        The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
-    es_patience : int
-        The maximum number of epoches if there is no improvement.
-    es_tolerance : float
-        The minimum change of loss to be considered as an improvement.
-    es_relative : bool, optional
-        Whether monitor the relative change of loss or not.        
-    es_warmup : int, optional
-        The number of warmup epoches.
-    conditions : str or list
-        The conditions of different cells
-
-    Returns
-    ----------
-    vae : VariationalAutoEncoder
-        The pretrained model.
-    &#39;&#39;&#39;    
-    optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
-    loss_train = tf.keras.metrics.Mean()
-    loss_test = tf.keras.metrics.Mean()
-    early_stopping = Early_Stopping(patience=es_patience, tolerance=es_tolerance, relative=es_relative)
-
-    if not verbose:
-        progbar = Progbar(num_epoch)
-    for epoch in range(num_epoch):
-
-        if verbose:
-            progbar = Progbar(num_step_per_epoch)
-            print(&#39;Pretrain - Start of epoch %d&#39; % (epoch,))
-        else:
-            if (epoch+1)%2==0 or epoch+1==num_epoch:
-                    progbar.update(epoch+1)
-
-        # Iterate over the batches of the dataset.
-        for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, _) in enumerate(train_dataset):
-            with tf.GradientTape() as tape:
-                losses = vae(
-                    x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, 
-                    alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition)
-                # Compute reconstruction loss
-                loss = tf.reduce_sum(losses[0:3]) # neg_ll, Jacob, mmd_loss
-            grads = tape.gradient(loss, vae.trainable_weights,
-                        unconnected_gradients=tf.UnconnectedGradients.ZERO)
-            optimizer.apply_gradients(zip(grads, vae.trainable_weights))                                
-            loss_train(loss)
-            
-            if verbose:
-                if (step+1)%10==0 or step+1==num_step_per_epoch:
-                    progbar.update(step + 1, [
-                        (&#39;loss_neg_E_nb&#39;, float(losses[0])),
-                        (&#39;loss_Jacob&#39;, float(losses[1])),
-                        (&#39;loss_MMD&#39;, float(losses[2])),
-                        (&#39;loss_total&#39;, float(loss))
-                    ])
-                
-        for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, _) in enumerate(test_dataset):
-            losses = vae(
-                x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, 
-                alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition)
-            loss = tf.reduce_sum(losses[0:3]) # neg_ll, Jacob, mmd_loss
-            loss_test(loss)
-
-        if verbose:
-            print(&#39; Training loss over epoch: %.4f. Testing loss over epoch: %.4f&#39; % (float(loss_train.result()),
-                                                                            float(loss_test.result())))
-        if early_stopping(float(loss_test.result())):
-            print(&#39;Early stopping.&#39;)
-            break
-        loss_train.reset_states()
-        loss_test.reset_states()
-
-    print(&#39;Pretrain Done.&#39;)
-    return vae
-
-
-def train(train_dataset, test_dataset, vae,
-        learning_rate: float, 
-        L: int, alpha: float, beta: float, gamma: float, phi: float,
-        num_epoch: int, num_step_per_epoch: int, 
-        es_patience: int, es_tolerance: float, es_relative: bool, es_warmup: int, 
-        verbose: bool = False, pi_cov = None, **kwargs):
-    &#39;&#39;&#39;Training.
-
-    Parameters
-    ----------
-    train_dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    test_dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    vae : VariationalAutoEncoder
-        The model.
-    learning_rate : float
-        The initial learning rate for the Adam optimizer.
-    L : int
-        The number of MC samples.
-    alpha : float
-        The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
-    beta : float
-        The value of beta in beta-VAE.
-    gamma : float
-        The weight of mmd_loss.
-    phi : float
-        The weight of Jacob norm of the encoder.
-    num_epoch : int
-        The maximum number of epoches.
-    num_step_per_epoch : int
-        The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
-    es_patience : int
-        The maximum number of epoches if there is no improvement.
-    es_tolerance : float, optional 
-        The minimum change of loss to be considered as an improvement.
-    es_relative : bool, optional
-        Whether monitor the relative change of loss or not.          
-    es_warmup : int
-        The number of warmup epoches.
-    **kwargs : 
-        Extra key-value arguments for dimension reduction algorithms.    
-
-    Returns
-    ----------
-    vae : VariationalAutoEncoder
-        The trained model.
-    &#39;&#39;&#39;   
-    optimizer_ = tf.keras.optimizers.Adam(learning_rate)
-    optimizer = tf.keras.optimizers.Adam(learning_rate)
-    loss_test = [tf.keras.metrics.Mean() for _ in range(6)]
-    loss_train = [tf.keras.metrics.Mean() for _ in range(6)]
-    early_stopping = Early_Stopping(patience = es_patience, tolerance = es_tolerance, relative=es_relative, warmup=es_warmup)
-
-    print(&#39;Warmup:%d&#39;%es_warmup)
-    weight = np.array([1,1,1,beta,beta], dtype=tf.keras.backend.floatx())
-    weight = tf.convert_to_tensor(weight)
-    
-    if not verbose:
-        progbar = Progbar(num_epoch)
-    for epoch in range(num_epoch):
-
-        if verbose:
-            progbar = Progbar(num_step_per_epoch)
-            print(&#39;Start of epoch %d&#39; % (epoch,))
-        else:
-            if (epoch+1)%2==0 or epoch+1==num_epoch:
-                    progbar.update(epoch+1)
-
-        
-        # Iterate over the batches of the dataset.
-        for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, pi_cov) in enumerate(train_dataset):
-            if epoch&lt;es_warmup:
-                with tf.GradientTape() as tape:
-                    losses = vae(
-                        x_norm_batch, c_score, x_batch, x_scale_factor, L=L, 
-                        alpha=alpha, gamma = gamma,phi = phi, conditions = x_condition, pi_cov = pi_cov)
-                    # Compute reconstruction loss
-                    loss = tf.reduce_sum(losses[3:])
-                grads = tape.gradient(loss, vae.latent_space.trainable_weights,
-                            unconnected_gradients=tf.UnconnectedGradients.ZERO)
-                optimizer_.apply_gradients(zip(grads, vae.latent_space.trainable_weights))
-            else:
-                with tf.GradientTape() as tape:
-                    losses = vae(
-                        x_norm_batch, c_score, x_batch, x_scale_factor, L=L, 
-                        alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition, pi_cov = pi_cov)
-                    # Compute reconstruction loss
-                    loss = tf.reduce_sum(losses*weight)
-                grads = tape.gradient(loss, vae.trainable_weights,
-                            unconnected_gradients=tf.UnconnectedGradients.ZERO)
-                optimizer.apply_gradients(zip(grads, vae.trainable_weights))
-
-            loss_train[0](losses[0])
-            loss_train[1](losses[1])
-            loss_train[2](losses[2])
-            loss_train[3](losses[3])
-            loss_train[4](losses[4])
-            loss_train[5](loss)
-            
-            if verbose:
-                if (step+1)%10==0 or step+1==num_step_per_epoch:
-                    progbar.update(step+1, [
-                            (&#39;loss_neg_E_nb&#39;    ,   float(losses[0])),
-                            (&#39;loss_Jacob&#39;, float(losses[1])),
-                            (&#39;loss_MMD&#39;, float(losses[2])),
-                            (&#39;loss_neg_E_pz&#39;    ,   float(losses[3])),
-                            (&#39;loss_E_qzx   &#39;    ,   float(losses[4])),
-                            (&#39;loss_total&#39;       ,   float(loss))
-                            ])
-                        
-        for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, pi_cov) in enumerate(test_dataset):
-            losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition, pi_cov = pi_cov)
-            loss = tf.reduce_sum(losses*weight)
-            loss_test[0](losses[0])
-            loss_test[1](losses[1])
-            loss_test[2](losses[2])
-            loss_test[3](losses[3])
-            loss_test[4](losses[4])
-            loss_test[5](loss)
-            
-        if early_stopping(float(loss_test[5].result())):
-            print(&#39;Early stopping.&#39;)
-            break
-        
-        if verbose:
-            print(&#39; Training loss over epoch: %.4f (%.4f, %.4f, %.4f, %.4f, %.4f) Testing loss over epoch: %.4f (%.4f, %.4f, %.4f, %.4f, %.4f)&#39; % (
-                float(loss_train[5].result()),
-                float(loss_train[0].result()),
-                float(loss_train[1].result()),
-                float(loss_train[2].result()),
-                float(loss_train[3].result()),
-                float(loss_train[4].result()),
-                float(loss_test[5].result()),
-                float(loss_test[0].result()),
-                float(loss_test[1].result()),
-                float(loss_test[2].result()),
-                float(loss_test[3].result()),
-                float(loss_test[4].result())))
-
-        [l.reset_states() for l in loss_train]
-        [l.reset_states() for l in loss_test]
-
-
-    print(&#39;Training Done!&#39;)
-
-    return vae</code></pre>
-</details>
 </section>
 <section>
 </section>
@@ -351,16 +40,6 @@ def train(train_dataset, test_dataset, vae,
 </code></dt>
 <dd>
 <div class="desc"><p>Clear Tensorflow sessions.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def clear_session():
-    &#39;&#39;&#39;Clear Tensorflow sessions.
-    &#39;&#39;&#39;
-    tf.keras.backend.clear_session()
-    return None</code></pre>
-</details>
 </dd>
 <dt id="VITAE.train.warp_dataset"><code class="name flex">
 <span>def <span class="ident">warp_dataset</span></span>(<span>X_normalized, c_score, batch_size: int, X=None, scale_factor=None, conditions=None, pi_cov=None, seed=0)</span>
@@ -389,57 +68,6 @@ def train(train_dataset, test_dataset, vae,
 <dt><strong><code>dataset</code></strong> :&ensp;<code>tf.Dataset</code></dt>
 <dd>The Tensorflow Dataset object.</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def warp_dataset(X_normalized, c_score, batch_size:int, X=None, scale_factor=None,
-    conditions = None, pi_cov = None, seed=0):
-    &#39;&#39;&#39;Get Tensorflow datasets.
-
-    Parameters
-    ----------
-    X_normalized : np.array
-        \([N, G]\) The preprocessed data.
-    c_score : float, optional
-        The normalizing constant.
-    batch_size : int
-        The batch size.
-    X : np.array, optional
-        \([N, G]\) The raw count data.
-    scale_factor : np.array, optional
-        \([N, ]\) The raw count data.
-    seed : int, optional
-        The random seed for data shuffling.
-    conditions: str or list, optional
-        The conditions of different cells
-
-    Returns
-    ----------
-    dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    &#39;&#39;&#39;
-    # fake c_score
-    if c_score is None:
-        c_score = np.zeros((X_normalized.shape[0],1), tf.keras.backend.floatx())
-
-    # fake conditions
-    if conditions is None:
-        conditions = np.zeros((X_normalized.shape[0],1), tf.keras.backend.floatx())
-        
-    if X is not None:
-        train_dataset = tf.data.Dataset.from_tensor_slices(
-            (X, X_normalized, c_score, scale_factor, conditions, pi_cov))
-        train_dataset = train_dataset.shuffle(
-            buffer_size = X.shape[0], seed=seed, reshuffle_each_iteration=True
-            ).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
-        return train_dataset
-    else:
-        test_dataset = tf.data.Dataset.from_tensor_slices(
-            (X_normalized, c_score, conditions, pi_cov)
-            ).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
-        return test_dataset</code></pre>
-</details>
 </dd>
 <dt id="VITAE.train.pre_train"><code class="name flex">
 <span>def <span class="ident">pre_train</span></span>(<span>train_dataset, test_dataset, vae, learning_rate: float, L: int, alpha: float, gamma: float, phi: float, num_epoch: int, num_step_per_epoch: int, es_patience: int, es_tolerance: int, es_relative: bool, verbose: bool = True)</span>
@@ -482,108 +110,6 @@ def train(train_dataset, test_dataset, vae,
 <dt><strong><code>vae</code></strong> :&ensp;<code>VariationalAutoEncoder</code></dt>
 <dd>The pretrained model.</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def pre_train(train_dataset, test_dataset, vae, learning_rate: float, L: int, 
-    alpha: float, gamma: float, phi: float, num_epoch: int, num_step_per_epoch: int, 
-    es_patience: int, es_tolerance: int, es_relative: bool, verbose: bool = True):
-    &#39;&#39;&#39;Pretraining.
-
-    Parameters
-    ----------
-    train_dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    test_dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    vae : VariationalAutoEncoder
-        The model.
-    learning_rate : float
-        The initial learning rate for the Adam optimizer.
-    L : int
-        The number of MC samples.
-    alpha : float, optional
-        The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
-    phi : float, optional
-        The weight of Jocob norm of the encoder.
-    num_epoch : int
-        The maximum number of epoches.
-    num_step_per_epoch : int
-        The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
-    es_patience : int
-        The maximum number of epoches if there is no improvement.
-    es_tolerance : float
-        The minimum change of loss to be considered as an improvement.
-    es_relative : bool, optional
-        Whether monitor the relative change of loss or not.        
-    es_warmup : int, optional
-        The number of warmup epoches.
-    conditions : str or list
-        The conditions of different cells
-
-    Returns
-    ----------
-    vae : VariationalAutoEncoder
-        The pretrained model.
-    &#39;&#39;&#39;    
-    optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
-    loss_train = tf.keras.metrics.Mean()
-    loss_test = tf.keras.metrics.Mean()
-    early_stopping = Early_Stopping(patience=es_patience, tolerance=es_tolerance, relative=es_relative)
-
-    if not verbose:
-        progbar = Progbar(num_epoch)
-    for epoch in range(num_epoch):
-
-        if verbose:
-            progbar = Progbar(num_step_per_epoch)
-            print(&#39;Pretrain - Start of epoch %d&#39; % (epoch,))
-        else:
-            if (epoch+1)%2==0 or epoch+1==num_epoch:
-                    progbar.update(epoch+1)
-
-        # Iterate over the batches of the dataset.
-        for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, _) in enumerate(train_dataset):
-            with tf.GradientTape() as tape:
-                losses = vae(
-                    x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, 
-                    alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition)
-                # Compute reconstruction loss
-                loss = tf.reduce_sum(losses[0:3]) # neg_ll, Jacob, mmd_loss
-            grads = tape.gradient(loss, vae.trainable_weights,
-                        unconnected_gradients=tf.UnconnectedGradients.ZERO)
-            optimizer.apply_gradients(zip(grads, vae.trainable_weights))                                
-            loss_train(loss)
-            
-            if verbose:
-                if (step+1)%10==0 or step+1==num_step_per_epoch:
-                    progbar.update(step + 1, [
-                        (&#39;loss_neg_E_nb&#39;, float(losses[0])),
-                        (&#39;loss_Jacob&#39;, float(losses[1])),
-                        (&#39;loss_MMD&#39;, float(losses[2])),
-                        (&#39;loss_total&#39;, float(loss))
-                    ])
-                
-        for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, _) in enumerate(test_dataset):
-            losses = vae(
-                x_norm_batch, c_score, x_batch, x_scale_factor, pre_train=True, L=L, 
-                alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition)
-            loss = tf.reduce_sum(losses[0:3]) # neg_ll, Jacob, mmd_loss
-            loss_test(loss)
-
-        if verbose:
-            print(&#39; Training loss over epoch: %.4f. Testing loss over epoch: %.4f&#39; % (float(loss_train.result()),
-                                                                            float(loss_test.result())))
-        if early_stopping(float(loss_test.result())):
-            print(&#39;Early stopping.&#39;)
-            break
-        loss_train.reset_states()
-        loss_test.reset_states()
-
-    print(&#39;Pretrain Done.&#39;)
-    return vae</code></pre>
-</details>
 </dd>
 <dt id="VITAE.train.train"><code class="name flex">
 <span>def <span class="ident">train</span></span>(<span>train_dataset, test_dataset, vae, learning_rate: float, L: int, alpha: float, beta: float, gamma: float, phi: float, num_epoch: int, num_step_per_epoch: int, es_patience: int, es_tolerance: float, es_relative: bool, es_warmup: int, verbose: bool = False, pi_cov=None, **kwargs)</span>
@@ -630,158 +156,6 @@ def train(train_dataset, test_dataset, vae,
 <dt><strong><code>vae</code></strong> :&ensp;<code>VariationalAutoEncoder</code></dt>
 <dd>The trained model.</dd>
 </dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def train(train_dataset, test_dataset, vae,
-        learning_rate: float, 
-        L: int, alpha: float, beta: float, gamma: float, phi: float,
-        num_epoch: int, num_step_per_epoch: int, 
-        es_patience: int, es_tolerance: float, es_relative: bool, es_warmup: int, 
-        verbose: bool = False, pi_cov = None, **kwargs):
-    &#39;&#39;&#39;Training.
-
-    Parameters
-    ----------
-    train_dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    test_dataset : tf.Dataset
-        The Tensorflow Dataset object.
-    vae : VariationalAutoEncoder
-        The model.
-    learning_rate : float
-        The initial learning rate for the Adam optimizer.
-    L : int
-        The number of MC samples.
-    alpha : float
-        The value of alpha in [0,1] to encourage covariate adjustment. Not used if there is no covariates.
-    beta : float
-        The value of beta in beta-VAE.
-    gamma : float
-        The weight of mmd_loss.
-    phi : float
-        The weight of Jacob norm of the encoder.
-    num_epoch : int
-        The maximum number of epoches.
-    num_step_per_epoch : int
-        The number of step per epoch, it will be inferred from number of cells and batch size if it is None.            
-    es_patience : int
-        The maximum number of epoches if there is no improvement.
-    es_tolerance : float, optional 
-        The minimum change of loss to be considered as an improvement.
-    es_relative : bool, optional
-        Whether monitor the relative change of loss or not.          
-    es_warmup : int
-        The number of warmup epoches.
-    **kwargs : 
-        Extra key-value arguments for dimension reduction algorithms.    
-
-    Returns
-    ----------
-    vae : VariationalAutoEncoder
-        The trained model.
-    &#39;&#39;&#39;   
-    optimizer_ = tf.keras.optimizers.Adam(learning_rate)
-    optimizer = tf.keras.optimizers.Adam(learning_rate)
-    loss_test = [tf.keras.metrics.Mean() for _ in range(6)]
-    loss_train = [tf.keras.metrics.Mean() for _ in range(6)]
-    early_stopping = Early_Stopping(patience = es_patience, tolerance = es_tolerance, relative=es_relative, warmup=es_warmup)
-
-    print(&#39;Warmup:%d&#39;%es_warmup)
-    weight = np.array([1,1,1,beta,beta], dtype=tf.keras.backend.floatx())
-    weight = tf.convert_to_tensor(weight)
-    
-    if not verbose:
-        progbar = Progbar(num_epoch)
-    for epoch in range(num_epoch):
-
-        if verbose:
-            progbar = Progbar(num_step_per_epoch)
-            print(&#39;Start of epoch %d&#39; % (epoch,))
-        else:
-            if (epoch+1)%2==0 or epoch+1==num_epoch:
-                    progbar.update(epoch+1)
-
-        
-        # Iterate over the batches of the dataset.
-        for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, pi_cov) in enumerate(train_dataset):
-            if epoch&lt;es_warmup:
-                with tf.GradientTape() as tape:
-                    losses = vae(
-                        x_norm_batch, c_score, x_batch, x_scale_factor, L=L, 
-                        alpha=alpha, gamma = gamma,phi = phi, conditions = x_condition, pi_cov = pi_cov)
-                    # Compute reconstruction loss
-                    loss = tf.reduce_sum(losses[3:])
-                grads = tape.gradient(loss, vae.latent_space.trainable_weights,
-                            unconnected_gradients=tf.UnconnectedGradients.ZERO)
-                optimizer_.apply_gradients(zip(grads, vae.latent_space.trainable_weights))
-            else:
-                with tf.GradientTape() as tape:
-                    losses = vae(
-                        x_norm_batch, c_score, x_batch, x_scale_factor, L=L, 
-                        alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition, pi_cov = pi_cov)
-                    # Compute reconstruction loss
-                    loss = tf.reduce_sum(losses*weight)
-                grads = tape.gradient(loss, vae.trainable_weights,
-                            unconnected_gradients=tf.UnconnectedGradients.ZERO)
-                optimizer.apply_gradients(zip(grads, vae.trainable_weights))
-
-            loss_train[0](losses[0])
-            loss_train[1](losses[1])
-            loss_train[2](losses[2])
-            loss_train[3](losses[3])
-            loss_train[4](losses[4])
-            loss_train[5](loss)
-            
-            if verbose:
-                if (step+1)%10==0 or step+1==num_step_per_epoch:
-                    progbar.update(step+1, [
-                            (&#39;loss_neg_E_nb&#39;    ,   float(losses[0])),
-                            (&#39;loss_Jacob&#39;, float(losses[1])),
-                            (&#39;loss_MMD&#39;, float(losses[2])),
-                            (&#39;loss_neg_E_pz&#39;    ,   float(losses[3])),
-                            (&#39;loss_E_qzx   &#39;    ,   float(losses[4])),
-                            (&#39;loss_total&#39;       ,   float(loss))
-                            ])
-                        
-        for step, (x_batch, x_norm_batch, c_score, x_scale_factor, x_condition, pi_cov) in enumerate(test_dataset):
-            losses = vae(x_norm_batch, c_score, x_batch, x_scale_factor, L=L, alpha=alpha, gamma = gamma, phi = phi, conditions = x_condition, pi_cov = pi_cov)
-            loss = tf.reduce_sum(losses*weight)
-            loss_test[0](losses[0])
-            loss_test[1](losses[1])
-            loss_test[2](losses[2])
-            loss_test[3](losses[3])
-            loss_test[4](losses[4])
-            loss_test[5](loss)
-            
-        if early_stopping(float(loss_test[5].result())):
-            print(&#39;Early stopping.&#39;)
-            break
-        
-        if verbose:
-            print(&#39; Training loss over epoch: %.4f (%.4f, %.4f, %.4f, %.4f, %.4f) Testing loss over epoch: %.4f (%.4f, %.4f, %.4f, %.4f, %.4f)&#39; % (
-                float(loss_train[5].result()),
-                float(loss_train[0].result()),
-                float(loss_train[1].result()),
-                float(loss_train[2].result()),
-                float(loss_train[3].result()),
-                float(loss_train[4].result()),
-                float(loss_test[5].result()),
-                float(loss_test[0].result()),
-                float(loss_test[1].result()),
-                float(loss_test[2].result()),
-                float(loss_test[3].result()),
-                float(loss_test[4].result())))
-
-        [l.reset_states() for l in loss_train]
-        [l.reset_states() for l in loss_test]
-
-
-    print(&#39;Training Done!&#39;)
-
-    return vae</code></pre>
-</details>
 </dd>
 </dl>
 </section>
@@ -789,7 +163,6 @@ def train(train_dataset, test_dataset, vae,
 </section>
 </article>
 <nav id="sidebar">
-<h1>Index</h1>
 <div class="toc">
 <ul></ul>
 </div>
@@ -811,9 +184,7 @@ def train(train_dataset, test_dataset, vae,
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
 </footer>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-<script>hljs.initHighlightingOnLoad()</script>
 </body>
 </html>
