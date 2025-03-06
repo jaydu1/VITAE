@@ -3,9 +3,9 @@ VITAE/__pycache__
 VITAE/__pycache__/
 .ipynb_checkpoints
 PyPI/
-data/mouse_brain_merged.h5
-data/mouse_brain_miller.h5
-data/mouse_brain.h5
+data/human_hematopoiesis*
+data/mouse_brain*
+data/mouse_cortex*
 code.txt
 update.py
 update.bash

@@ -564,10 +564,8 @@ type_dict = {
     'dentate_withdays':'UMI',
     'dentate':'UMI', 
     'immune':'UMI', 
-    'neonatal':'UMI', 
-    'mouse_brain':'UMI', 
-    'mouse_brain_miller':'UMI',
-    'mouse_brain_merged':'UMI',
+    'neonatal':'UMI',     
+
     'planaria_full':'UMI', 
     'planaria_muscle':'UMI',
     'aging':'non-UMI', 
@@ -576,8 +574,6 @@ type_dict = {
     'germline':'non-UMI',    
     'human_embryos':'non-UMI', 
     'mesoderm':'non-UMI',
-    'human_hematopoiesis_scATAC':'UMI',
-    'human_hematopoiesis_scRNA':'UMI',
     
     # dyngen
     "linear_1":'non-UMI', 
@@ -598,12 +594,21 @@ type_dict = {
     'bifurcation':'UMI',
     'multifurcating':'UMI',
     'tree':'UMI',
+
+    # case studies
+    'mouse_brain':'UMI', 
+    'mouse_brain_miller':'UMI',
+    'mouse_brain_merged':'UMI',
+    'mouse_cortex_debella':'UMI',
+    'human_hematopoiesis_scATAC':'UMI',
+    'human_hematopoiesis_scRNA':'UMI',
+    'human_hematopoiesis_motif':'UMI'
 }
 
 
 
 
-def load_data(path, file_name,return_dict = False):
+def load_data(path, file_name, return_dict = False):
     '''Load h5df data.
 
     Parameters
@@ -612,79 +617,88 @@ def load_data(path, file_name,return_dict = False):
         The path of the h5 files.
     file_name : str
         The dataset name.
+    return_dict : boolean, optional
+        Whether to return the dict of the dataset or not.
     
     Returns:
     ----------
     data : dict
         The dict containing count, grouping, etc. of the dataset.
+    dd : anndata.AnnData
+        The AnnData object of the dataset.
     '''     
     data = {}
     
-    with h5py.File(os.path.join(path, file_name+'.h5'), 'r') as f:
-        data['count'] = np.array(f['count'], dtype=np.float32)
-        dd = anndata.AnnData(X=data["count"])
-        dd.layers["count"] = data["count"].copy()
+    if file_name == 'mouse_cortex_debella':
+        dd = anndata.read_h5ad(os.path.join(path, file_name+'.h5ad'))
+    else:
+        with h5py.File(os.path.join(path, file_name+'.h5'), 'r') as f:
+            data['count'] = np.array(f['count'], dtype=np.float32)
+            dd = anndata.AnnData(X=data["count"])
+            dd.layers["count"] = data["count"].copy()
 
-        data['grouping'] = np.array(f['grouping']).astype(str)
-        dd.obs["grouping"] = data["grouping"]
-        dd.obs["grouping"] = dd.obs["grouping"].astype("category")
-        if 'gene_names' in f:
-            data['gene_names'] = np.array(f['gene_names']).astype(str)
-            dd.var.index = data["gene_names"]
-        else:
-            data['gene_names'] = None
-        if 'cell_ids' in f:
-            data['cell_ids'] = np.array(f['cell_ids']).astype(str)
-            dd.obs.index = data["cell_ids"]
-        else:
-            data['cell_ids'] = None
-        if 'days' in f:
-            data['days'] = np.array(f['days']).astype(str)
-
-        if 'milestone_network' in f:
-            if file_name in ['linear','bifurcation','multifurcating','tree',
-                               "cycle_1", "cycle_2", "cycle_3",
-                            "linear_1", "linear_2", "linear_3", 
-                            "trifurcating_1", "trifurcating_2", 
-                            "bifurcating_1", 'bifurcating_2', "bifurcating_3", 
-                            "converging_1"]:
-                data['milestone_network'] = pd.DataFrame(
-                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype=str), 
-                    columns=['from','to','w']
-                ).astype({'w':np.float32})
+            if 'grouping' in f:
+                data['grouping'] = np.array(f['grouping']).astype(str)
+                dd.obs["grouping"] = data["grouping"]
+                dd.obs["grouping"] = dd.obs["grouping"].astype("category")
+            for feature_name in ['gene_names', 'motif_names']:
+                if feature_name in f:
+                    data[feature_name] = np.array(f[feature_name]).astype(str)
+                    dd.var.index = data[feature_name]
+                else:
+                    data[feature_name] = None
+            if 'cell_ids' in f:
+                data['cell_ids'] = np.array(f['cell_ids']).astype(str)
+                dd.obs.index = data["cell_ids"]
             else:
-                data['milestone_network'] = pd.DataFrame(
-                    np.array(np.array(list(f['milestone_network'])).tolist(), dtype=str), 
-                    columns=['from','to']
-                )
-            data['root_milestone_id'] = np.array(f['root_milestone_id']).astype(str)[0]            
-        else:
-            data['milestone_net'] = None
-            data['root_milestone_id'] = None
-            
-        if file_name in ['mouse_brain', 'mouse_brain_miller']:
-            data['grouping'] = np.array(['%02d'%int(i) for i in data['grouping']], dtype=object)
-            data['root_milestone_id'] = dict(zip(['mouse_brain', 'mouse_brain_miller'], ['06', '05']))[file_name]
-            data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
-        if file_name in ['mouse_brain_merged']:
-            data['grouping'] = np.array(data['grouping'], dtype=object)
-            data['root_milestone_id'] = np.array(f['root_milestone_id']).astype(str)[0]
-            data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
-        if file_name == 'dentate_withdays':
-            data['covariates'] = np.array([item.decode('utf-8').replace('*', '') for item in f['days']], dtype=object)
-            data['covariates'] = data['covariates'].astype(float).reshape(-1, 1)
-        if file_name.startswith('human_hematopoiesis'):
-            data['covariates'] = np.array(np.array(list(f['covariates'])[0], dtype=str).tolist()).reshape((-1,1))
-            
-    data['type'] = type_dict[file_name]
-    if data['type']=='non-UMI':
-        scale_factor = np.sum(data['count'],axis=1, keepdims=True)/1e6
-        data['count'] = data['count']/scale_factor
+                data['cell_ids'] = None
+            if 'days' in f:
+                data['days'] = np.array(f['days']).astype(str)
 
-    if data.get("covariates") is not None:
-        cov = data.get("covariates")
-        cov_name = ["covariate_" + str(i) for i in range(cov.shape[1])]
-        dd.obs[cov_name] = cov
+            if 'milestone_network' in f:
+                if file_name in ['linear','bifurcation','multifurcating','tree',
+                                "cycle_1", "cycle_2", "cycle_3",
+                                "linear_1", "linear_2", "linear_3", 
+                                "trifurcating_1", "trifurcating_2", 
+                                "bifurcating_1", 'bifurcating_2', "bifurcating_3", 
+                                "converging_1"]:
+                    data['milestone_network'] = pd.DataFrame(
+                        np.array(np.array(list(f['milestone_network'])).tolist(), dtype=str), 
+                        columns=['from','to','w']
+                    ).astype({'w':np.float32})
+                else:
+                    data['milestone_network'] = pd.DataFrame(
+                        np.array(np.array(list(f['milestone_network'])).tolist(), dtype=str), 
+                        columns=['from','to']
+                    )
+                data['root_milestone_id'] = np.array(f['root_milestone_id']).astype(str)[0]            
+            else:
+                data['milestone_net'] = None
+                data['root_milestone_id'] = None
+                
+            if file_name in ['mouse_brain', 'mouse_brain_miller']:
+                data['grouping'] = np.array(['%02d'%int(i) for i in data['grouping']], dtype=object)
+                data['root_milestone_id'] = dict(zip(['mouse_brain', 'mouse_brain_miller'], ['06', '05']))[file_name]
+                data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
+            if file_name in ['mouse_brain_merged']:
+                data['grouping'] = np.array(data['grouping'], dtype=object)
+                data['root_milestone_id'] = np.array(f['root_milestone_id']).astype(str)[0]
+                data['covariates'] = np.array(np.array(list(f['covariates'])).tolist(), dtype=np.float32)
+            if file_name == 'dentate_withdays':
+                data['covariates'] = np.array([item.decode('utf-8').replace('*', '') for item in f['days']], dtype=object)
+                data['covariates'] = data['covariates'].astype(float).reshape(-1, 1)
+            if file_name.startswith('human_hematopoiesis')and 'covariates' in f:
+                data['covariates'] = np.array(np.array(list(f['covariates'])[0], dtype=str).tolist()).reshape((-1,1))
+
+        data['type'] = type_dict[file_name]
+        if data['type']=='non-UMI':
+            scale_factor = np.sum(data['count'],axis=1, keepdims=True)/1e6
+            data['count'] = data['count']/scale_factor
+
+        if data.get("covariates") is not None:
+            cov = data.get("covariates")
+            cov_name = ["covariate_" + str(i) for i in range(cov.shape[1])]
+            dd.obs[cov_name] = cov
 
     if return_dict:
         return data,dd
