@@ -45,9 +45,10 @@ study|name|N|G|k|source
 ---|---|---|---|---|---
 Mouse brain | mouse\_brain\_merged |  6390 <br> 10261 | 14707 | 15 | [Yuzwa *et al.* (2017)](https://doi.org/10.1016/j.celrep.2017.12.017),<br> [Ruan *et al.* (2021)](https://doi.org/10.1073/pnas.2018866118)
 Mouse cortex | mouse\_cortex\_dibella | 91648 | 19712 | 24 | [Di Bella *et al.* (2021)](https://doi.org/10.1038/s41586-021-03670-5)
-Human hematopoiesis | human_hematopoiesis_scRNA <br> `human_hematopoiesis_motif <br> human_hematopoiesis_scATAC  | 34901 <br> 33819 <br> 33819 | 15714 <br> 15714 <br>  1764 | 21 | [Granja *et al.* (2019)](https://doi.org/10.1038/s41587-019-0332-7)
+Human hematopoiesis | human_hematopoiesis_scRNA <br> human_hematopoiesis_scATAC <br> human_hematopoiesis_motif | 34901 <br> 33819 <br> 33819 | 15714 <br> 15714 <br>  1764 | 21 | [Granja *et al.* (2019)](https://doi.org/10.1038/s41587-019-0332-7)
 
 
+Note: For mouse\_cortex\_dibella, the downloaded data from the original paper is after library size normalization and log transformation. The slot `count` of mouse\_cortex\_dibella is the transformed data.
 
 
 # Usage
