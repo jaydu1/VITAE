@@ -403,7 +403,7 @@ adata.layers in order to use these models.</p>
 
 
     def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
-                          ratio_prune= None, dist = None, dist_thres = 0.5, pilayer = False):
+                          ratio_prune= None, dist = None, dist_thres = 0.5, topk=0, pilayer = False):
         &#39;&#39;&#39;Initialize the latent space.
 
         Parameters
@@ -420,6 +420,8 @@ adata.layers in order to use these models.</p>
             Higher values lead to more clusters. Deafult is 1.
         ratio_prune : float, optional
             The ratio of edges to be removed before estimating.
+        topk : int, optional
+            The number of top k neighbors to keep for each cluster.
         &#39;&#39;&#39;   
     
         
@@ -481,20 +483,25 @@ adata.layers in order to use these models.</p>
 
             C = np.triu(np.ones(n_clusters))
             C[C&gt;0] = np.arange(n_states)
+            C = C + C.T - np.diag(np.diag(C))
             C = C.astype(int)
 
-            log_pi = np.zeros((1,n_states))
+            log_pi = np.zeros((1,n_states))            
+
             ## pruning to throw away edges for far-away clusters if there are too many clusters
             if ratio_prune is not None:
                 log_pi[0, C[np.triu(dist)&gt;np.quantile(dist[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
             else:
                 log_pi[0, C[np.triu(dist)&gt;np.quantile(dist[np.triu_indices(n_clusters, 1)], 5/n_clusters) * 3]] = - np.inf
 
+            ## also keep the top k neighbor of clusters
+            topk = max(0, min(topk, n_clusters-1)) + 1
+            topk_indices = np.argsort(dist,axis=1)[:,:topk]
+            for i in range(n_clusters):
+                log_pi[0, C[i, topk_indices[i]]] = 0
+
         self.n_states = n_clusters
         self.labels = cluster_labels
-
-        # Not sure if storing the this will be useful
-        # self.init_labels_name = cluster_label
         
         labels_map = pd.DataFrame.from_dict(
             {i:label for i,label in enumerate(uni_cluster_labels)}, 
@@ -510,6 +517,7 @@ adata.layers in order to use these models.</p>
 
         if pilayer:
             self.vae.create_pilayer()
+
 
     def update_latent_space(self, dist_thres: float=0.5):
         pi = self.pi[np.triu_indices(self.n_states)]
@@ -1370,7 +1378,7 @@ adata.layers in order to use these models.</p>
         self.vae.decoder(np.expand_dims(np.zeros((1,self.dim_latent + cov_dim)),1))
 
         self.vae.load_weights(path_to_file)
-
+        self.update_z()
         if load_adata:
             if not os.path.exists(path_to_file + &#39;.adata.h5ad&#39;):
                 raise AssertionError(&#39;AnnData file not exist!&#39;)
@@ -1456,7 +1464,7 @@ The default is None. Same as scanpy.</dd>
 <p>None.</p></div>
 </dd>
 <dt id="VITAE.VITAE.init_latent_space"><code class="name flex">
-<span>def <span class="ident">init_latent_space</span></span>(<span>self, cluster_label=None, log_pi=None, res: float = 1.0, ratio_prune=None, dist=None, dist_thres=0.5, pilayer=False)</span>
+<span>def <span class="ident">init_latent_space</span></span>(<span>self, cluster_label=None, log_pi=None, res: float = 1.0, ratio_prune=None, dist=None, dist_thres=0.5, topk=0, pilayer=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Initialize the latent space.</p>
@@ -1474,6 +1482,8 @@ Default is None, which will perform leiden clustering on the pretrained z to get
 Higher values lead to more clusters. Deafult is 1.</dd>
 <dt><strong><code>ratio_prune</code></strong> :&ensp;<code>float</code>, optional</dt>
 <dd>The ratio of edges to be removed before estimating.</dd>
+<dt><strong><code>topk</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The number of top k neighbors to keep for each cluster.</dd>
 </dl></div>
 </dd>
 <dt id="VITAE.VITAE.update_latent_space"><code class="name flex">
