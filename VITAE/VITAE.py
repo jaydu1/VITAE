@@ -327,7 +327,7 @@ class VITAE():
 
 
     def init_latent_space(self, cluster_label = None, log_pi = None, res: float = 1.0, 
-                          ratio_prune= None, dist = None, dist_thres = 0.5, pilayer = False):
+                          ratio_prune= None, dist = None, dist_thres = 0.5, topk=0, pilayer = False):
         '''Initialize the latent space.
 
         Parameters
@@ -344,6 +344,8 @@ class VITAE():
             Higher values lead to more clusters. Deafult is 1.
         ratio_prune : float, optional
             The ratio of edges to be removed before estimating.
+        topk : int, optional
+            The number of top k neighbors to keep for each cluster.
         '''   
     
         
@@ -405,20 +407,25 @@ class VITAE():
 
             C = np.triu(np.ones(n_clusters))
             C[C>0] = np.arange(n_states)
+            C = C + C.T - np.diag(np.diag(C))
             C = C.astype(int)
 
-            log_pi = np.zeros((1,n_states))
+            log_pi = np.zeros((1,n_states))            
+
             ## pruning to throw away edges for far-away clusters if there are too many clusters
             if ratio_prune is not None:
                 log_pi[0, C[np.triu(dist)>np.quantile(dist[np.triu_indices(n_clusters, 1)], 1-ratio_prune)]] = - np.inf
             else:
                 log_pi[0, C[np.triu(dist)>np.quantile(dist[np.triu_indices(n_clusters, 1)], 5/n_clusters) * 3]] = - np.inf
 
+            ## also keep the top k neighbor of clusters
+            topk = max(0, min(topk, n_clusters-1)) + 1
+            topk_indices = np.argsort(dist,axis=1)[:,:topk]
+            for i in range(n_clusters):
+                log_pi[0, C[i, topk_indices[i]]] = 0
+
         self.n_states = n_clusters
         self.labels = cluster_labels
-
-        # Not sure if storing the this will be useful
-        # self.init_labels_name = cluster_label
         
         labels_map = pd.DataFrame.from_dict(
             {i:label for i,label in enumerate(uni_cluster_labels)}, 
@@ -434,6 +441,7 @@ class VITAE():
 
         if pilayer:
             self.vae.create_pilayer()
+
 
     def update_latent_space(self, dist_thres: float=0.5):
         pi = self.pi[np.triu_indices(self.n_states)]
@@ -1294,7 +1302,7 @@ class VITAE():
         self.vae.decoder(np.expand_dims(np.zeros((1,self.dim_latent + cov_dim)),1))
 
         self.vae.load_weights(path_to_file)
-
+        self.update_z()
         if load_adata:
             if not os.path.exists(path_to_file + '.adata.h5ad'):
                 raise AssertionError('AnnData file not exist!')
